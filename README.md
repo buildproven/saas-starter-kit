@@ -8,9 +8,11 @@ A modern full-stack SaaS starter template with:
 - PostgreSQL
 - Tailwind CSS
 - Jest & React Testing Library
-- ESLint & TypeScript
+- ESLint & Prettier
 - GitHub Actions CI/CD
 - Vercel Deployment
+- Error tracking with Sentry
+- State management with Zustand
 
 ## Getting Started
 
@@ -41,7 +43,7 @@ npx prisma db push
 npm run dev
 ```
 
-## Scripts
+## Available Scripts
 
 - `npm run dev` - Start development server
 - `npm run build` - Build for production
@@ -49,6 +51,40 @@ npm run dev
 - `npm run lint` - Run ESLint
 - `npm run typecheck` - Check types
 - `npm test` - Run tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Run tests with coverage
+- `npm run format` - Format code with Prettier
+- `npm run format:check` - Check code formatting
+
+## Project Structure
+
+```
+├── .github/          # GitHub Actions workflows
+├── prisma/          # Prisma schema and migrations
+├── public/          # Static assets
+├── src/
+│   ├── app/         # Next.js app router pages
+│   ├── components/  # React components
+│   │   └── ui/     # Reusable UI components
+│   ├── lib/        # Utility functions
+│   └── types/      # TypeScript types
+├── tests/          # Test files
+└── ...config files
+```
+
+## Testing
+
+We use Jest and React Testing Library for testing. Run tests with:
+
+```bash
+npm test
+```
+
+Coverage requirements:
+- Branches: 80%
+- Functions: 80%
+- Lines: 80%
+- Statements: 80%
 
 ## Deployment
 
@@ -59,17 +95,10 @@ Required secrets for GitHub Actions:
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
 
-## Directory Structure
+## Contributing
 
-```
-├── .github/          # GitHub Actions workflows
-├── prisma/          # Prisma schema and migrations
-├── public/          # Static assets
-├── src/
-│   ├── app/         # Next.js app router
-│   ├── components/  # React components
-│   ├── lib/         # Utility functions
-│   └── types/       # TypeScript types
-├── tests/           # Test files
-└── ...config files
-```
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on contributing to this project.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
