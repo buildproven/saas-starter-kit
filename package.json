@@ -1,6 +1,6 @@
 {
   "name": "saas-starter-template",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -16,7 +16,11 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "security:audit": "npm audit --audit-level high",
+    "security:secrets": "node -e \"const fs=require('fs');const content=fs.readFileSync('package.json','utf8');if(/[\\\"\\'][a-zA-Z0-9+/]{20,}[\\\"\\']/.test(content)){console.error('❌ Potential hardcoded secrets in package.json');process.exit(1)}else{console.log('✅ No secrets detected in package.json')}\"",
+    "lint:fix": "eslint . --fix && stylelint \"src/**/*.{css,scss,sass,less,pcss}\" --fix --allow-empty-input",
+    "prepare": "husky"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -56,6 +60,35 @@
     "prisma": "^5.0.0",
     "tailwindcss": "^3.3.0",
     "tsx": "^4.20.6",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "husky": "^9.1.4",
+    "lint-staged": "^15.2.10",
+    "eslint-plugin-security": "^3.0.1",
+    "globals": "^15.9.0",
+    "stylelint": "^16.8.0",
+    "stylelint-config-standard": "^37.0.0"
+  },
+  "lint-staged": {
+    "package.json": [
+      "prettier --write"
+    ],
+    "**/*.{js,jsx,ts,tsx,mjs,cjs,html}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "**/*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "src/**/*.{css,scss,sass,less,pcss}": [
+      "stylelint --fix",
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "volta": {
+    "node": "20.11.1",
+    "npm": "10.2.4"
   }
 }
