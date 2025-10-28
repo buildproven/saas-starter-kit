@@ -26,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  componentDidCatch(error: Error, errorInfo: any) {
+  override componentDidCatch(error: Error, errorInfo: any) {
     // Log to Sentry
     Sentry.withScope((scope) => {
       scope.setTag('component', 'ErrorBoundary')
@@ -38,7 +38,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.props.onError?.(error, errorInfo)
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       // Render custom fallback or default error UI
       if (this.props.fallback) {
@@ -63,12 +63,8 @@ export class ErrorBoundary extends Component<Props, State> {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Something went wrong
-            </h3>
-            <p className="text-gray-600 mb-4">
-              This component failed to render properly.
-            </p>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Something went wrong</h3>
+            <p className="text-gray-600 mb-4">This component failed to render properly.</p>
             <button
               onClick={() => this.setState({ hasError: false, error: undefined })}
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import '@testing-library/jest-dom'
 
 // Mock Next.js router
@@ -34,7 +36,7 @@ Object.defineProperties(global, {
         }
         return this._body || {}
       }
-    }
+    },
   },
   Response: {
     value: class Response {
@@ -56,7 +58,7 @@ Object.defineProperties(global, {
         }
         return this._body
       }
-    }
+    },
   },
   Headers: {
     value: class Headers {
@@ -78,6 +80,6 @@ Object.defineProperties(global, {
       set(name: string, value: any) {
         this._headers.set(name.toLowerCase(), value)
       }
-    }
-  }
+    },
+  },
 })
