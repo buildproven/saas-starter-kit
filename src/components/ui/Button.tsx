@@ -35,6 +35,7 @@ export const Button: React.FC<ButtonProps> = ({
         isLoading ? 'opacity-50 cursor-not-allowed' : ''
       }`}
       disabled={disabled || isLoading}
+      aria-disabled={disabled || isLoading}
       {...props}
     >
       {isLoading ? (
