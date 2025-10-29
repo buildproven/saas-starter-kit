@@ -78,9 +78,9 @@ export default function SignOutPage() {
           <div className="flex space-x-4">
             <Button
               onClick={handleSignOut}
-              isLoading={loading}
+              disabled={loading}
               className="flex-1"
-              variant="primary"
+              variant="default"
             >
               {loading ? 'Signing out...' : 'Sign Out'}
             </Button>

@@ -11,39 +11,25 @@ describe('Button Component', () => {
 
     const button = screen.getByRole('button', { name: /click me/i })
     expect(button).toBeInTheDocument()
-    expect(button).toHaveClass('bg-blue-600', 'text-white', 'px-4', 'py-2')
+    expect(button).toHaveClass('bg-primary', 'text-primary-foreground')
   })
 
   it('renders with different variants', () => {
     const { rerender } = render(<Button variant="secondary">Secondary</Button>)
 
-    expect(screen.getByRole('button')).toHaveClass('bg-gray-200', 'text-gray-800')
+    expect(screen.getByRole('button')).toHaveClass('bg-secondary', 'text-secondary-foreground')
 
     rerender(<Button variant="outline">Outline</Button>)
-    expect(screen.getByRole('button')).toHaveClass('border-2', 'border-blue-600', 'text-blue-600')
+    expect(screen.getByRole('button')).toHaveClass('border', 'border-input')
   })
 
   it('renders with different sizes', () => {
     const { rerender } = render(<Button size="sm">Small</Button>)
 
-    expect(screen.getByRole('button')).toHaveClass('px-3', 'py-1.5', 'text-sm')
+    expect(screen.getByRole('button')).toHaveClass('h-9', 'px-3')
 
     rerender(<Button size="lg">Large</Button>)
-    expect(screen.getByRole('button')).toHaveClass('px-6', 'py-3', 'text-lg')
-  })
-
-  it('shows loading state', () => {
-    render(<Button isLoading>Loading</Button>)
-
-    const button = screen.getByRole('button')
-    expect(button).toBeDisabled()
-    expect(button).toHaveClass('opacity-50', 'cursor-not-allowed')
-    expect(screen.getByText('Loading...')).toBeInTheDocument()
-
-    // Check for spinner SVG
-    const spinner = button.querySelector('svg')
-    expect(spinner).toBeInTheDocument()
-    expect(spinner).toHaveClass('animate-spin')
+    expect(screen.getByRole('button')).toHaveClass('h-11', 'px-8')
   })
 
   it('handles click events', async () => {
@@ -61,17 +47,6 @@ describe('Button Component', () => {
     render(<Button onClick={handleClick} disabled>Disabled</Button>)
 
     const button = screen.getByRole('button', { name: /disabled/i })
-    expect(button).toBeDisabled()
-
-    await user.click(button)
-    expect(handleClick).not.toHaveBeenCalled()
-  })
-
-  it('does not handle clicks when loading', async () => {
-    const handleClick = jest.fn()
-    render(<Button onClick={handleClick} isLoading>Loading</Button>)
-
-    const button = screen.getByRole('button')
     expect(button).toBeDisabled()
 
     await user.click(button)
@@ -97,6 +72,6 @@ describe('Button Component', () => {
 
     const button = screen.getByRole('button', { name: /disabled/i })
     expect(button).toHaveAttribute('disabled')
-    expect(button).toHaveAttribute('aria-disabled', 'true')
+    expect(button).toHaveClass('disabled:pointer-events-none', 'disabled:opacity-50')
   })
 })

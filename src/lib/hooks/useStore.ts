@@ -23,9 +23,9 @@ export function useCurrentOrganization() {
   const setCurrentOrganization = useAppStore((state) => state.setCurrentOrganization)
   const updateOrganization = useAppStore((state) => state.updateOrganization)
 
-  const hasActiveSubscription = currentOrganization?.subscription?.status === 'active'
-  const isTrialing = currentOrganization?.subscription?.status === 'trialing'
-  const subscriptionEnded = ['canceled', 'past_due', 'unpaid'].includes(
+  const hasActiveSubscription = currentOrganization?.subscription?.status === 'ACTIVE'
+  const isTrialing = currentOrganization?.subscription?.status === 'TRIALING'
+  const subscriptionEnded = ['CANCELED', 'PAST_DUE', 'UNPAID'].includes(
     currentOrganization?.subscription?.status || ''
   )
 

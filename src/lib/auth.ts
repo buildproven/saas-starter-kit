@@ -26,9 +26,10 @@ export const authOptions = {
 
   callbacks: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async session({ session, user }: any) {
-      if (session.user && user) {
-        session.user.id = user.id
+    async session({ session, token }: any) {
+      if (session.user && token) {
+        session.user.id = token.id
+        session.user.role = token.role
       }
       return session
     },
@@ -36,13 +37,14 @@ export const authOptions = {
     async jwt({ token, user }: any) {
       if (user) {
         token.id = user.id
+        token.role = user.role
       }
       return token
     },
   },
 
   session: {
-    strategy: 'database' as const,
+    strategy: 'jwt' as const,
   },
 
   events: {

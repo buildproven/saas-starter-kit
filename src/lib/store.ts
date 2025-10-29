@@ -210,12 +210,15 @@ export const useAppStore = create<AppState>()(
       // Notification actions
       addNotification: (notification) => {
         try {
+          // Generate ID outside the state update so we can use it in the timeout
+          const notificationId = Math.random().toString(36).substr(2, 9)
+
           set((state) => ({
             notifications: [
               ...state.notifications,
               {
                 ...notification,
-                id: Math.random().toString(36).substr(2, 9),
+                id: notificationId,
                 timestamp: Date.now(),
               },
             ],
@@ -225,9 +228,9 @@ export const useAppStore = create<AppState>()(
           if (notification.type !== 'error') {
             setTimeout(() => {
               const { notifications } = get()
-              const notificationExists = notifications.find(n => n.timestamp === Date.now())
+              const notificationExists = notifications.find(n => n.id === notificationId)
               if (notificationExists) {
-                get().removeNotification(notificationExists.id)
+                get().removeNotification(notificationId)
               }
             }, 5000)
           }
