@@ -49,7 +49,7 @@ function mapSubscriptionStatus(stripeStatus: string): SubscriptionStatus {
 }
 
 // Validate webhook signature (simplified - in production use proper crypto verification)
-function validateWebhookSignature(_request: NextRequest): boolean {
+function validateWebhookSignature(): boolean {
   try {
     const headersList = headers()
     const signature = headersList.get('stripe-signature') || headersList.get('webhook-signature')
@@ -73,7 +73,7 @@ function validateWebhookSignature(_request: NextRequest): boolean {
 export async function POST(request: NextRequest) {
   try {
     // Validate webhook signature
-    if (!validateWebhookSignature(request)) {
+    if (!validateWebhookSignature()) {
       return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
     }
 
@@ -106,10 +106,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true })
   } catch (error) {
     console.error('Webhook processing error:', error)
-    return NextResponse.json(
-      { error: 'Webhook processing failed' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
 }
 
@@ -138,7 +135,9 @@ async function handleSubscriptionUpdate(event: WebhookEvent) {
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
       })
 
-      console.log(`Updated subscription ${subscription.id} for organization ${existingSubscription.organization.name}`)
+      console.log(
+        `Updated subscription ${subscription.id} for organization ${existingSubscription.organization.name}`
+      )
     } else {
       // This is a new subscription, but we need organization context
       // In practice, you'd store organization ID during checkout

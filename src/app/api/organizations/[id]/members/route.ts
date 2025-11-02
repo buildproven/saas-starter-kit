@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
@@ -10,10 +10,11 @@ const inviteMemberSchema = z.object({
   role: z.enum(['VIEWER', 'MEMBER', 'ADMIN']).default('MEMBER'),
 })
 
-const updateMemberSchema = z.object({
-  role: z.enum(['VIEWER', 'MEMBER', 'ADMIN']).optional(),
-  status: z.enum(['ACTIVE', 'SUSPENDED']).optional(),
-})
+// TODO: Implement member update functionality
+// const updateMemberSchema = z.object({
+//   role: z.enum(['VIEWER', 'MEMBER', 'ADMIN']).optional(),
+//   status: z.enum(['ACTIVE', 'SUSPENDED']).optional(),
+// })
 
 interface RouteParams {
   params: {
@@ -22,7 +23,11 @@ interface RouteParams {
 }
 
 // Helper function to check organization permissions
-async function checkOrganizationPermission(organizationId: string, userId: string, requiredRole: 'OWNER' | 'ADMIN' | 'MEMBER' = 'MEMBER') {
+async function checkOrganizationPermission(
+  organizationId: string,
+  userId: string,
+  requiredRole: 'OWNER' | 'ADMIN' | 'MEMBER' = 'MEMBER'
+) {
   const organization = await prisma.organization.findUnique({
     where: { id: organizationId },
     include: {
@@ -126,10 +131,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
   } catch (error) {
     console.error('Error fetching organization members:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -164,10 +166,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     })
 
     if (!inviteeUser) {
-      return NextResponse.json(
-        { error: 'User with this email does not exist' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'User with this email does not exist' }, { status: 404 })
     }
 
     // Check if user is already a member or owner
@@ -202,10 +201,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // TODO: Check against subscription plan limits
     // For now, we'll allow up to 10 members
     if (memberCount >= 10) {
-      return NextResponse.json(
-        { error: 'Member limit reached for current plan' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: 'Member limit reached for current plan' }, { status: 409 })
     }
 
     // Create membership
@@ -231,22 +227,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // TODO: Send invitation email
     console.log(`Invitation sent to ${validatedData.email} for organization ${organization.name}`)
 
-    return NextResponse.json({
-      member: newMember,
-      message: 'Invitation sent successfully',
-    }, { status: 201 })
+    return NextResponse.json(
+      {
+        member: newMember,
+        message: 'Invitation sent successfully',
+      },
+      { status: 201 }
+    )
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error inviting member:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

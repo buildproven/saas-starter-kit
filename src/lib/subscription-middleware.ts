@@ -1,14 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { SubscriptionService } from '@/lib/subscription'
 import { prisma } from '@/lib/prisma'
 
+export interface PlanFeatures {
+  maxUsers: number
+  maxProjects: number
+  maxApiKeys: number
+  maxApiCallsPerMonth: number
+  maxStorageGB: number
+  prioritySupport: boolean
+  analytics: boolean
+  sso: boolean
+  webhooks: boolean
+  customDomain: boolean
+}
+
+export interface UsageStats {
+  users: number
+  projects: number
+  apiKeys: number
+  apiCallsThisPeriod: number
+  storageGB: number
+}
+
 export interface SubscriptionContext {
   organizationId: string
   userId: string
-  features: any
-  usage: any
+  features: PlanFeatures
+  usage: UsageStats
 }
 
 /**
@@ -69,48 +90,63 @@ export async function withSubscriptionCheck(
         )
 
         if (!canPerform) {
-          const limit = features[options.feature]
+          const limit = features[options.feature as keyof PlanFeatures]
           const current = getCurrentCount(usage, options.feature)
 
-          return NextResponse.json({
-            error: 'Subscription limit exceeded',
-            details: {
-              feature: options.feature,
-              limit: limit === -1 ? 'unlimited' : limit,
-              current,
-              upgradeRequired: true,
+          return NextResponse.json(
+            {
+              error: 'Subscription limit exceeded',
+              details: {
+                feature: options.feature,
+                limit: limit === -1 ? 'unlimited' : limit,
+                current,
+                upgradeRequired: true,
+              },
             },
-          }, { status: 402 }) // Payment Required
+            { status: 402 }
+          ) // Payment Required
         }
       }
 
       // Check other feature restrictions
       if (options.feature === 'prioritySupport' && !features.prioritySupport) {
-        return NextResponse.json({
-          error: 'Priority support not available on current plan',
-          upgradeRequired: true,
-        }, { status: 402 })
+        return NextResponse.json(
+          {
+            error: 'Priority support not available on current plan',
+            upgradeRequired: true,
+          },
+          { status: 402 }
+        )
       }
 
       if (options.feature === 'analytics' && !features.analytics) {
-        return NextResponse.json({
-          error: 'Analytics not available on current plan',
-          upgradeRequired: true,
-        }, { status: 402 })
+        return NextResponse.json(
+          {
+            error: 'Analytics not available on current plan',
+            upgradeRequired: true,
+          },
+          { status: 402 }
+        )
       }
 
       if (options.feature === 'sso' && !features.sso) {
-        return NextResponse.json({
-          error: 'SSO not available on current plan',
-          upgradeRequired: true,
-        }, { status: 402 })
+        return NextResponse.json(
+          {
+            error: 'SSO not available on current plan',
+            upgradeRequired: true,
+          },
+          { status: 402 }
+        )
       }
 
       if (options.feature === 'webhooks' && !features.webhooks) {
-        return NextResponse.json({
-          error: 'Webhooks not available on current plan',
-          upgradeRequired: true,
-        }, { status: 402 })
+        return NextResponse.json(
+          {
+            error: 'Webhooks not available on current plan',
+            upgradeRequired: true,
+          },
+          { status: 402 }
+        )
       }
 
       // Call the actual handler with context
@@ -124,10 +160,7 @@ export async function withSubscriptionCheck(
       return await handler(request, context)
     } catch (error) {
       console.error('Subscription middleware error:', error)
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
   }
 }
@@ -135,7 +168,7 @@ export async function withSubscriptionCheck(
 /**
  * Helper to get current count for a specific feature
  */
-function getCurrentCount(usage: any, feature: string): number {
+function getCurrentCount(usage: UsageStats, feature: string): number {
   switch (feature) {
     case 'maxUsers':
       return usage.users
@@ -161,12 +194,7 @@ export async function recordApiUsage(
   projectId?: string
 ) {
   try {
-    await SubscriptionService.recordUsage(
-      'api_calls',
-      1,
-      projectId,
-      apiKeyId
-    )
+    await SubscriptionService.recordUsage('api_calls', 1, projectId, apiKeyId)
   } catch (error) {
     console.error('Failed to record API usage:', error)
     // Don't fail the request if usage recording fails
@@ -177,7 +205,7 @@ export async function recordApiUsage(
  * Middleware specifically for API key usage tracking
  */
 export async function withApiUsageTracking(
-  handler: (request: NextRequest, context: any) => Promise<NextResponse>
+  handler: (request: NextRequest, context: Record<string, unknown>) => Promise<NextResponse>
 ) {
   return async (request: NextRequest) => {
     const response = await handler(request, {})
@@ -239,10 +267,7 @@ export function withWebhookAuth(
       return await handler(request)
     } catch (error) {
       console.error('Webhook authentication error:', error)
-      return NextResponse.json(
-        { error: 'Webhook authentication failed' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Webhook authentication failed' }, { status: 401 })
     }
   }
 }

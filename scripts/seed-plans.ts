@@ -15,7 +15,7 @@ interface PlanSeed {
   amount: number
   currency: string
   interval: PlanInterval
-  features: typeof PLAN_CONFIGS[keyof typeof PLAN_CONFIGS]
+  features: Record<string, unknown>
   isActive: boolean
 }
 
@@ -27,7 +27,7 @@ const plans: PlanSeed[] = [
     amount: 1900, // $19/month in cents
     currency: 'usd',
     interval: 'MONTH',
-    features: PLAN_CONFIGS.starter,
+    features: PLAN_CONFIGS.starter!,
     isActive: true,
   },
   {
@@ -37,7 +37,7 @@ const plans: PlanSeed[] = [
     amount: 19000, // $190/year in cents (2 months free)
     currency: 'usd',
     interval: 'YEAR',
-    features: PLAN_CONFIGS.starter,
+    features: PLAN_CONFIGS.starter!,
     isActive: true,
   },
   {
@@ -47,7 +47,7 @@ const plans: PlanSeed[] = [
     amount: 4900, // $49/month in cents
     currency: 'usd',
     interval: 'MONTH',
-    features: PLAN_CONFIGS.pro,
+    features: PLAN_CONFIGS.pro!,
     isActive: true,
   },
   {
@@ -57,7 +57,7 @@ const plans: PlanSeed[] = [
     amount: 49000, // $490/year in cents (2 months free)
     currency: 'usd',
     interval: 'YEAR',
-    features: PLAN_CONFIGS.pro,
+    features: PLAN_CONFIGS.pro!,
     isActive: true,
   },
   {
@@ -67,7 +67,7 @@ const plans: PlanSeed[] = [
     amount: 9900, // $99/month in cents
     currency: 'usd',
     interval: 'MONTH',
-    features: PLAN_CONFIGS.enterprise,
+    features: PLAN_CONFIGS.enterprise!,
     isActive: true,
   },
   {
@@ -77,7 +77,7 @@ const plans: PlanSeed[] = [
     amount: 99000, // $990/year in cents (2 months free)
     currency: 'usd',
     interval: 'YEAR',
-    features: PLAN_CONFIGS.enterprise,
+    features: PLAN_CONFIGS.enterprise!,
     isActive: true,
   },
 ]
@@ -126,7 +126,6 @@ async function seedPlans() {
       const interval = plan.interval.toLowerCase()
       console.log(`  • ${plan.name} - $${price}/${interval} (${plan.priceId})`)
     })
-
   } catch (error) {
     console.error('❌ Error seeding plans:', error)
     process.exit(1)

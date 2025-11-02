@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { BillingService } from '@/lib/billing'
@@ -44,7 +44,7 @@ async function checkOrganizationAccess(organizationId: string, userId: string) {
   return {
     hasAccess: canManageBilling,
     userRole: member.role,
-    isOwner: false
+    isOwner: false,
   }
 }
 
@@ -70,9 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get organization subscription
-    const subscription = await SubscriptionService.getSubscription(
-      validatedData.organizationId
-    )
+    const subscription = await SubscriptionService.getSubscription(validatedData.organizationId)
 
     if (!subscription) {
       return NextResponse.json(
@@ -105,17 +103,11 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error creating portal session:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -132,10 +124,7 @@ export async function GET(request: NextRequest) {
     const returnUrl = searchParams.get('returnUrl')
 
     if (!organizationId) {
-      return NextResponse.json(
-        { error: 'Missing organizationId' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing organizationId' }, { status: 400 })
     }
 
     // Check organization access
@@ -149,10 +138,7 @@ export async function GET(request: NextRequest) {
     const subscription = await SubscriptionService.getSubscription(organizationId)
 
     if (!subscription) {
-      return NextResponse.json(
-        { error: 'No subscription found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'No subscription found' }, { status: 404 })
     }
 
     // Get organization details
@@ -178,9 +164,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(portalSession.url)
   } catch (error) {
     console.error('Error redirecting to portal:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

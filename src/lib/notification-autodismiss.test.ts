@@ -14,7 +14,7 @@ describe('Notification Auto-dismiss', () => {
   })
 
   it('should auto-dismiss non-error notifications after 5 seconds', () => {
-    const { addNotification, notifications } = useAppStore.getState()
+    const { addNotification } = useAppStore.getState()
 
     // Add a success notification
     addNotification({

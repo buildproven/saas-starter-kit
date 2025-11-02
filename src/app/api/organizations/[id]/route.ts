@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
@@ -7,7 +7,12 @@ import { z } from 'zod'
 // Input validation schemas
 const updateOrganizationSchema = z.object({
   name: z.string().min(1).max(100).optional(),
-  slug: z.string().min(1).max(50).regex(/^[a-z0-9-]+$/).optional(),
+  slug: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[a-z0-9-]+$/)
+    .optional(),
   description: z.string().optional(),
 })
 
@@ -18,7 +23,11 @@ interface RouteParams {
 }
 
 // Helper function to check user permissions
-async function checkUserPermission(organizationId: string, userId: string, requiredRole: 'OWNER' | 'ADMIN' | 'MEMBER' = 'MEMBER') {
+async function checkUserPermission(
+  organizationId: string,
+  userId: string,
+  requiredRole: 'OWNER' | 'ADMIN' | 'MEMBER' = 'MEMBER'
+) {
   const organization = await prisma.organization.findUnique({
     where: { id: organizationId },
     include: {
@@ -109,7 +118,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
               select: {
                 name: true,
                 features: true,
-                limits: true,
               },
             },
           },
@@ -119,13 +127,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             id: true,
             name: true,
             description: true,
-            status: true,
             createdAt: true,
-            _count: {
-              select: {
-                tasks: true,
-              },
-            },
           },
           orderBy: {
             updatedAt: 'desc',
@@ -161,10 +163,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
   } catch (error) {
     console.error('Error fetching organization:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -200,10 +199,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       })
 
       if (existingOrg) {
-        return NextResponse.json(
-          { error: 'Organization slug already exists' },
-          { status: 409 }
-        )
+        return NextResponse.json({ error: 'Organization slug already exists' }, { status: 409 })
       }
     }
 
@@ -233,17 +229,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error updating organization:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -292,9 +282,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting organization:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { SubscriptionService, PLAN_CONFIGS } from '@/lib/subscription'
 import { prisma } from '@/lib/prisma'
@@ -28,7 +28,7 @@ const createPlanSchema = z.object({
 })
 
 // GET /api/plans - Get available subscription plans
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -38,7 +38,7 @@ export async function GET(_request: NextRequest) {
     const plans = await SubscriptionService.getAvailablePlans()
 
     // Add pricing display information
-    const plansWithDisplayInfo = plans.map(plan => ({
+    const plansWithDisplayInfo = plans.map((plan) => ({
       ...plan,
       displayPrice: formatPrice(plan.amount, plan.currency, plan.interval),
       features: plan.features,
@@ -70,10 +70,7 @@ export async function GET(_request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching plans:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -104,10 +101,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingPlan) {
-      return NextResponse.json(
-        { error: 'Plan with this price ID already exists' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: 'Plan with this price ID already exists' }, { status: 409 })
     }
 
     const plan = await prisma.plan.create({
@@ -122,26 +116,23 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({
-      plan: {
-        ...plan,
-        displayPrice: formatPrice(plan.amount, plan.currency, plan.interval),
+    return NextResponse.json(
+      {
+        plan: {
+          ...plan,
+          displayPrice: formatPrice(plan.amount, plan.currency, plan.interval),
+        },
+        message: 'Plan created successfully',
       },
-      message: 'Plan created successfully',
-    }, { status: 201 })
+      { status: 201 }
+    )
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error creating plan:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 

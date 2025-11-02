@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit
 
     // Build where clause
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> = {
       organization: {
         OR: [
           { ownerId: session.user.id },
@@ -94,11 +94,6 @@ export async function GET(request: NextRequest) {
               slug: true,
             },
           },
-          _count: {
-            select: {
-              tasks: true,
-            },
-          },
         },
         orderBy: {
           updatedAt: 'desc',
@@ -120,10 +115,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching projects:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -174,7 +166,7 @@ export async function POST(request: NextRequest) {
             current: projectCount,
             limit: features.maxProjects === -1 ? 'unlimited' : features.maxProjects,
             upgradeRequired: true,
-          }
+          },
         },
         { status: 402 } // Payment Required
       )
@@ -184,7 +176,6 @@ export async function POST(request: NextRequest) {
       data: {
         name: validatedData.name,
         description: validatedData.description,
-        status: validatedData.status,
         organizationId: validatedData.organizationId,
       },
       include: {
@@ -195,29 +186,21 @@ export async function POST(request: NextRequest) {
             slug: true,
           },
         },
-        _count: {
-          select: {
-            tasks: true,
-          },
-        },
       },
     })
 
-    return NextResponse.json({
-      project,
-    }, { status: 201 })
+    return NextResponse.json(
+      {
+        project,
+      },
+      { status: 201 }
+    )
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error creating project:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

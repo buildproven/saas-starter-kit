@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
@@ -16,7 +16,17 @@ const createSubscriptionSchema = z.object({
 })
 
 const updateSubscriptionSchema = z.object({
-  status: z.enum(['INCOMPLETE', 'INCOMPLETE_EXPIRED', 'TRIALING', 'ACTIVE', 'PAST_DUE', 'CANCELED', 'UNPAID']).optional(),
+  status: z
+    .enum([
+      'INCOMPLETE',
+      'INCOMPLETE_EXPIRED',
+      'TRIALING',
+      'ACTIVE',
+      'PAST_DUE',
+      'CANCELED',
+      'UNPAID',
+    ])
+    .optional(),
   currentPeriodStart: z.string().datetime().optional(),
   currentPeriodEnd: z.string().datetime().optional(),
   cancelAtPeriodEnd: z.boolean().optional(),
@@ -133,10 +143,7 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error('Error fetching subscriptions:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -176,10 +183,7 @@ export async function POST(request: NextRequest) {
     // Verify the plan exists
     const plan = await SubscriptionService.getPlanByPriceId(validatedData.priceId)
     if (!plan) {
-      return NextResponse.json(
-        { error: 'Invalid plan selected' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 })
     }
 
     const subscription = await SubscriptionService.createSubscription({
@@ -189,23 +193,20 @@ export async function POST(request: NextRequest) {
       currentPeriodEnd: new Date(validatedData.currentPeriodEnd),
     })
 
-    return NextResponse.json({
-      subscription,
-      message: 'Subscription created successfully',
-    }, { status: 201 })
+    return NextResponse.json(
+      {
+        subscription,
+        message: 'Subscription created successfully',
+      },
+      { status: 201 }
+    )
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error creating subscription:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -221,10 +222,7 @@ export async function PUT(request: NextRequest) {
     const subscriptionId = searchParams.get('subscriptionId')
 
     if (!subscriptionId) {
-      return NextResponse.json(
-        { error: 'Subscription ID is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Subscription ID is required' }, { status: 400 })
     }
 
     const body = await request.json()
@@ -237,10 +235,7 @@ export async function PUT(request: NextRequest) {
     })
 
     if (!subscription) {
-      return NextResponse.json(
-        { error: 'Subscription not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Subscription not found' }, { status: 404 })
     }
 
     const { hasAccess, userRole, isOwner } = await checkOrganizationAccess(
@@ -253,7 +248,12 @@ export async function PUT(request: NextRequest) {
     }
 
     // Prepare update data
-    const updateData: any = {}
+    const updateData: {
+      status?: unknown
+      currentPeriodStart?: Date
+      currentPeriodEnd?: Date
+      cancelAtPeriodEnd?: boolean
+    } = {}
     if (validatedData.status) updateData.status = validatedData.status
     if (validatedData.currentPeriodStart) {
       updateData.currentPeriodStart = new Date(validatedData.currentPeriodStart)
@@ -267,7 +267,7 @@ export async function PUT(request: NextRequest) {
 
     const updatedSubscription = await SubscriptionService.updateSubscription(
       subscriptionId,
-      updateData
+      updateData as Parameters<typeof SubscriptionService.updateSubscription>[1]
     )
 
     return NextResponse.json({
@@ -276,16 +276,10 @@ export async function PUT(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error updating subscription:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

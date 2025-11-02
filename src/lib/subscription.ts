@@ -87,12 +87,12 @@ export class SubscriptionService {
     const subscription = await this.getSubscription(organizationId)
 
     if (!subscription || !subscription.plan) {
-      return PLAN_CONFIGS.free
+      return PLAN_CONFIGS.free!
     }
 
     // Parse features from plan JSON or use defaults
-    const planFeatures = subscription.plan.features as PlanFeatures
-    return planFeatures || PLAN_CONFIGS.free
+    const planFeatures = subscription.plan.features as unknown as PlanFeatures
+    return planFeatures || PLAN_CONFIGS.free!
   }
 
   /**
@@ -124,12 +124,7 @@ export class SubscriptionService {
    * Get current usage for an organization
    */
   static async getCurrentUsage(organizationId: string) {
-    const [
-      userCount,
-      projectCount,
-      apiKeyCount,
-      currentPeriodStart,
-    ] = await Promise.all([
+    const [userCount, projectCount, apiKeyCount, currentPeriodStart] = await Promise.all([
       prisma.organizationMember.count({
         where: { organizationId, status: 'ACTIVE' },
       }),
@@ -215,8 +210,13 @@ export class SubscriptionService {
       violations.push(`API key limit exceeded (${usage.apiKeys}/${features.maxApiKeys})`)
     }
 
-    if (features.maxApiCallsPerMonth !== -1 && usage.apiCallsThisPeriod > features.maxApiCallsPerMonth) {
-      violations.push(`API call limit exceeded (${usage.apiCallsThisPeriod}/${features.maxApiCallsPerMonth})`)
+    if (
+      features.maxApiCallsPerMonth !== -1 &&
+      usage.apiCallsThisPeriod > features.maxApiCallsPerMonth
+    ) {
+      violations.push(
+        `API call limit exceeded (${usage.apiCallsThisPeriod}/${features.maxApiCallsPerMonth})`
+      )
     }
 
     if (features.maxStorageGB !== -1 && usage.storageGB > features.maxStorageGB) {

@@ -149,7 +149,7 @@ export class BillingService {
   /**
    * Generate invoice preview for plan change
    */
-  static async previewInvoice(params: {
+  static async previewInvoice(_params: {
     customerId: string
     newPriceId: string
     currentSubscriptionId: string
@@ -190,16 +190,18 @@ export class BillingService {
   /**
    * Get customer's payment methods
    */
-  static async getPaymentMethods(_customerId: string): Promise<Array<{
-    id: string
-    type: string
-    card?: {
-      brand: string
-      last4: string
-      expMonth: number
-      expYear: number
-    }
-  }>> {
+  static async getPaymentMethods(_customerId: string): Promise<
+    Array<{
+      id: string
+      type: string
+      card?: {
+        brand: string
+        last4: string
+        expMonth: number
+        expYear: number
+      }
+    }>
+  > {
     // In production, this would call Stripe's API
     // For now, return mock payment methods
     return [
@@ -264,12 +266,12 @@ export class BillingService {
    */
   static getPlanDisplayName(priceId: string): string {
     const planNames: Record<string, string> = {
-      'price_starter_monthly': 'Starter Plan (Monthly)',
-      'price_starter_yearly': 'Starter Plan (Yearly)',
-      'price_pro_monthly': 'Pro Plan (Monthly)',
-      'price_pro_yearly': 'Pro Plan (Yearly)',
-      'price_enterprise_monthly': 'Enterprise Plan (Monthly)',
-      'price_enterprise_yearly': 'Enterprise Plan (Yearly)',
+      price_starter_monthly: 'Starter Plan (Monthly)',
+      price_starter_yearly: 'Starter Plan (Yearly)',
+      price_pro_monthly: 'Pro Plan (Monthly)',
+      price_pro_yearly: 'Pro Plan (Yearly)',
+      price_enterprise_monthly: 'Enterprise Plan (Monthly)',
+      price_enterprise_yearly: 'Enterprise Plan (Yearly)',
     }
 
     return planNames[priceId] || 'Unknown Plan'

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { BillingService } from '@/lib/billing'
@@ -46,7 +46,7 @@ async function checkOrganizationAccess(organizationId: string, userId: string) {
   return {
     hasAccess: canManageBilling,
     userRole: member.role,
-    isOwner: false
+    isOwner: false,
   }
 }
 
@@ -74,10 +74,7 @@ export async function POST(request: NextRequest) {
     // Verify the plan exists
     const plan = await SubscriptionService.getPlanByPriceId(validatedData.priceId)
     if (!plan) {
-      return NextResponse.json(
-        { error: 'Invalid plan selected' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 })
     }
 
     // Check if organization already has an active subscription
@@ -87,7 +84,10 @@ export async function POST(request: NextRequest) {
 
     if (existingSubscription && existingSubscription.status === 'ACTIVE') {
       return NextResponse.json(
-        { error: 'Organization already has an active subscription. Use billing portal to change plans.' },
+        {
+          error:
+            'Organization already has an active subscription. Use billing portal to change plans.',
+        },
         { status: 409 }
       )
     }
@@ -120,8 +120,10 @@ export async function POST(request: NextRequest) {
 
     // Create checkout session
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-    const successUrl = validatedData.successUrl || `${baseUrl}/dashboard/${organization.slug}/billing?success=true`
-    const cancelUrl = validatedData.cancelUrl || `${baseUrl}/dashboard/${organization.slug}/billing?canceled=true`
+    const successUrl =
+      validatedData.successUrl || `${baseUrl}/dashboard/${organization.slug}/billing?success=true`
+    const cancelUrl =
+      validatedData.cancelUrl || `${baseUrl}/dashboard/${organization.slug}/billing?canceled=true`
 
     const checkoutSession = await BillingService.createCheckoutSession({
       customerId,
@@ -142,17 +144,11 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error creating checkout session:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -169,10 +165,7 @@ export async function GET(request: NextRequest) {
     const organizationId = searchParams.get('organizationId')
 
     if (!sessionId || !organizationId) {
-      return NextResponse.json(
-        { error: 'Missing session_id or organizationId' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing session_id or organizationId' }, { status: 400 })
     }
 
     // Check organization access
@@ -194,9 +187,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching checkout session:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

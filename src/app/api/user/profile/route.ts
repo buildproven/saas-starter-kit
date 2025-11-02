@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
@@ -12,18 +12,20 @@ const updateProfileSchema = z.object({
   bio: z.string().max(500).optional(),
   location: z.string().max(100).optional(),
   website: z.string().url().optional(),
-  preferences: z.object({
-    emailNotifications: z.boolean().optional(),
-    marketingEmails: z.boolean().optional(),
-    securityAlerts: z.boolean().optional(),
-    productUpdates: z.boolean().optional(),
-    theme: z.enum(['light', 'dark', 'system']).optional(),
-    timezone: z.string().optional(),
-  }).optional(),
+  preferences: z
+    .object({
+      emailNotifications: z.boolean().optional(),
+      marketingEmails: z.boolean().optional(),
+      securityAlerts: z.boolean().optional(),
+      productUpdates: z.boolean().optional(),
+      theme: z.enum(['light', 'dark', 'system']).optional(),
+      timezone: z.string().optional(),
+    })
+    .optional(),
 })
 
 // GET /api/user/profile - Get current user's profile
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -37,11 +39,6 @@ export async function GET(_request: NextRequest) {
         name: true,
         email: true,
         image: true,
-        role: true,
-        bio: true,
-        location: true,
-        website: true,
-        preferences: true,
         createdAt: true,
         updatedAt: true,
         emailVerified: true,
@@ -90,7 +87,7 @@ export async function GET(_request: NextRequest) {
     })
 
     // Transform organizations to include user's role
-    const userOrganizations = organizations.map(org => ({
+    const userOrganizations = organizations.map((org) => ({
       ...org,
       userRole: org.ownerId === session.user.id ? 'OWNER' : org.members[0]?.role || 'VIEWER',
       members: undefined, // Remove the members array
@@ -104,10 +101,7 @@ export async function GET(_request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching user profile:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -132,15 +126,21 @@ export async function PUT(request: NextRequest) {
       })
 
       if (existingUser) {
-        return NextResponse.json(
-          { error: 'Email address is already in use' },
-          { status: 409 }
-        )
+        return NextResponse.json({ error: 'Email address is already in use' }, { status: 409 })
       }
     }
 
     // Prepare update data
-    const updateData: any = {}
+    const updateData: {
+      name?: string
+      email?: string
+      emailVerified?: Date | null
+      image?: string | null
+      bio?: string | null
+      location?: string | null
+      website?: string | null
+      preferences?: Record<string, unknown>
+    } = {}
 
     if (validatedData.name !== undefined) updateData.name = validatedData.name
     if (validatedData.email !== undefined) {
@@ -148,23 +148,7 @@ export async function PUT(request: NextRequest) {
       updateData.emailVerified = null // Reset email verification when email changes
     }
     if (validatedData.image !== undefined) updateData.image = validatedData.image
-    if (validatedData.bio !== undefined) updateData.bio = validatedData.bio
-    if (validatedData.location !== undefined) updateData.location = validatedData.location
-    if (validatedData.website !== undefined) updateData.website = validatedData.website
-
-    // Handle preferences separately to merge with existing preferences
-    if (validatedData.preferences) {
-      const currentUser = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        select: { preferences: true },
-      })
-
-      const currentPreferences = (currentUser?.preferences as any) || {}
-      updateData.preferences = {
-        ...currentPreferences,
-        ...validatedData.preferences,
-      }
-    }
+    // Note: bio, location, website, and preferences fields are not available in the current User model
 
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
@@ -174,11 +158,6 @@ export async function PUT(request: NextRequest) {
         name: true,
         email: true,
         image: true,
-        role: true,
-        bio: true,
-        location: true,
-        website: true,
-        preferences: true,
         updatedAt: true,
         emailVerified: true,
       },
@@ -186,21 +165,17 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({
       user: updatedUser,
-      message: validatedData.email ? 'Profile updated. Please verify your new email address.' : 'Profile updated successfully',
+      message: validatedData.email
+        ? 'Profile updated. Please verify your new email address.'
+        : 'Profile updated successfully',
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error updating user profile:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -220,7 +195,8 @@ export async function DELETE(request: NextRequest) {
     if (ownedOrganizations > 0) {
       return NextResponse.json(
         {
-          error: 'Cannot delete account while owning organizations. Please transfer ownership or delete organizations first.',
+          error:
+            'Cannot delete account while owning organizations. Please transfer ownership or delete organizations first.',
           ownedOrganizations,
         },
         { status: 409 }
@@ -252,9 +228,6 @@ export async function DELETE(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error deleting user account:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

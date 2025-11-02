@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
+import { PlanFeatures } from '@/lib/subscription-middleware'
 import { z } from 'zod'
 
 // Input validation schemas
@@ -48,7 +49,7 @@ async function checkSubscriptionAccess(organizationId: string, userId: string) {
   return {
     hasAccess: canManageSubscriptions,
     userRole: member.role,
-    isOwner: false
+    isOwner: false,
   }
 }
 
@@ -75,17 +76,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get current subscription
-    const subscription = await SubscriptionService.getSubscription(
-      validatedData.organizationId
-    )
+    const subscription = await SubscriptionService.getSubscription(validatedData.organizationId)
 
     switch (action) {
-      case 'cancel':
+      case 'cancel': {
         if (!subscription) {
-          return NextResponse.json(
-            { error: 'No active subscription found' },
-            { status: 404 }
-          )
+          return NextResponse.json({ error: 'No active subscription found' }, { status: 404 })
         }
 
         if (subscription.cancelAtPeriodEnd) {
@@ -103,13 +99,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           subscription: cancelledSubscription,
           message: 'Subscription will be cancelled at the end of the current billing period',
         })
+      }
 
-      case 'reactivate':
+      case 'reactivate': {
         if (!subscription) {
-          return NextResponse.json(
-            { error: 'No subscription found' },
-            { status: 404 }
-          )
+          return NextResponse.json({ error: 'No subscription found' }, { status: 404 })
         }
 
         if (!subscription.cancelAtPeriodEnd) {
@@ -134,17 +128,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           subscription: reactivatedSubscription,
           message: 'Subscription reactivated successfully',
         })
+      }
 
-      case 'usage':
+      case 'usage': {
         // Get current usage and limits
         const [usage, limits] = await Promise.all([
           SubscriptionService.getCurrentUsage(validatedData.organizationId),
           SubscriptionService.checkLimits(validatedData.organizationId),
         ])
 
-        const features = await SubscriptionService.getPlanFeatures(
-          validatedData.organizationId
-        )
+        const features = await SubscriptionService.getPlanFeatures(validatedData.organizationId)
 
         return NextResponse.json({
           usage,
@@ -153,12 +146,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           hasViolations: limits.hasViolations,
           subscription,
         })
+      }
 
-      case 'preview-downgrade':
+      case 'preview-downgrade': {
         // Check what would happen if user downgrades
-        const currentUsage = await SubscriptionService.getCurrentUsage(
-          validatedData.organizationId
-        )
+        const currentUsage = await SubscriptionService.getCurrentUsage(validatedData.organizationId)
 
         const requestedPriceId = body.newPriceId
         if (!requestedPriceId) {
@@ -170,25 +162,28 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
         const newPlan = await SubscriptionService.getPlanByPriceId(requestedPriceId)
         if (!newPlan) {
-          return NextResponse.json(
-            { error: 'Invalid plan selected' },
-            { status: 400 }
-          )
+          return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 })
         }
 
-        const newFeatures = newPlan.features as typeof features
+        const newFeatures = newPlan.features as unknown as PlanFeatures
         const warnings: string[] = []
 
         if (newFeatures.maxUsers !== -1 && currentUsage.users > newFeatures.maxUsers) {
-          warnings.push(`You currently have ${currentUsage.users} users but the new plan only allows ${newFeatures.maxUsers}`)
+          warnings.push(
+            `You currently have ${currentUsage.users} users but the new plan only allows ${newFeatures.maxUsers}`
+          )
         }
 
         if (newFeatures.maxProjects !== -1 && currentUsage.projects > newFeatures.maxProjects) {
-          warnings.push(`You currently have ${currentUsage.projects} projects but the new plan only allows ${newFeatures.maxProjects}`)
+          warnings.push(
+            `You currently have ${currentUsage.projects} projects but the new plan only allows ${newFeatures.maxProjects}`
+          )
         }
 
         if (newFeatures.maxApiKeys !== -1 && currentUsage.apiKeys > newFeatures.maxApiKeys) {
-          warnings.push(`You currently have ${currentUsage.apiKeys} API keys but the new plan only allows ${newFeatures.maxApiKeys}`)
+          warnings.push(
+            `You currently have ${currentUsage.apiKeys} API keys but the new plan only allows ${newFeatures.maxApiKeys}`
+          )
         }
 
         return NextResponse.json({
@@ -198,25 +193,17 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           warnings,
           canDowngrade: warnings.length === 0,
         })
+      }
 
       default:
-        return NextResponse.json(
-          { error: `Unknown action: ${action}` },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 })
     }
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error(`Error performing subscription action ${params.action}:`, error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

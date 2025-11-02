@@ -5,13 +5,10 @@ interface AuthContext {
   user: AuthenticatedUser | null
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function getUsersHandler(
-  request: NextRequest,
-  { user: _user }: AuthContext
-): Promise<NextResponse> {
+async function getUsersHandler(request: NextRequest, { user }: AuthContext): Promise<NextResponse> {
   // This route requires ADMIN role or higher
-  // Note: user context available but not used in mock implementation
+  // TODO: Use user context for admin-specific filtering
+  console.log('Admin user:', user?.id, 'accessing users endpoint')
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')

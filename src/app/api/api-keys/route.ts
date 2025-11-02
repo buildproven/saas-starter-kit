@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
@@ -67,20 +67,7 @@ export async function GET(request: NextRequest) {
     const organizationId = searchParams.get('organizationId')
 
     // Build where clause for organizations the user has access to
-    const whereClause: {
-      organization: {
-        OR: Array<{
-          ownerId?: string
-          members?: {
-            some: {
-              userId: string
-              status: string
-            }
-          }
-        }>
-      }
-      organizationId?: string
-    } = {
+    let whereClause: Record<string, unknown> = {
       organization: {
         OR: [
           { ownerId: session.user.id },
@@ -102,7 +89,22 @@ export async function GET(request: NextRequest) {
       if (!hasAccess) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
-      whereClause.organizationId = organizationId
+      whereClause = {
+        organizationId,
+        organization: {
+          OR: [
+            { ownerId: session.user.id },
+            {
+              members: {
+                some: {
+                  userId: session.user.id,
+                  status: 'ACTIVE',
+                },
+              },
+            },
+          ],
+        },
+      }
     }
 
     const apiKeys = await prisma.apiKey.findMany({
@@ -114,7 +116,6 @@ export async function GET(request: NextRequest) {
         lastUsedAt: true,
         createdAt: true,
         expiresAt: true,
-        scopes: true,
         organization: {
           select: {
             id: true,
@@ -129,7 +130,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Add status field
-    const apiKeysWithStatus = apiKeys.map(key => ({
+    const apiKeysWithStatus = apiKeys.map((key) => ({
       ...key,
       status: key.expiresAt && new Date(key.expiresAt) < new Date() ? 'expired' : 'active',
     }))
@@ -140,10 +141,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error fetching API keys:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -182,10 +180,7 @@ export async function POST(request: NextRequest) {
     // TODO: Check against subscription plan limits
     // For now, we'll allow up to 10 API keys per organization
     if (apiKeyCount >= 10) {
-      return NextResponse.json(
-        { error: 'API key limit reached for current plan' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: 'API key limit reached for current plan' }, { status: 409 })
     }
 
     // Generate API key
@@ -199,15 +194,12 @@ export async function POST(request: NextRequest) {
         keyHash: hashedKey,
         organizationId: validatedData.organizationId,
         expiresAt: validatedData.expiresAt ? new Date(validatedData.expiresAt) : null,
-        scopes: validatedData.scopes,
-        createdBy: session.user.id,
       },
       select: {
         id: true,
         name: true,
         createdAt: true,
         expiresAt: true,
-        scopes: true,
         organization: {
           select: {
             id: true,
@@ -218,26 +210,24 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({
-      apiKey: {
-        ...newApiKey,
-        key: apiKey, // Only returned once upon creation
-        status: 'active',
+    return NextResponse.json(
+      {
+        apiKey: {
+          ...newApiKey,
+          key: apiKey, // Only returned once upon creation
+          status: 'active',
+        },
+        message:
+          'API key created successfully. Please save this key securely as it will not be shown again.',
       },
-      message: 'API key created successfully. Please save this key securely as it will not be shown again.',
-    }, { status: 201 })
+      { status: 201 }
+    )
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error creating API key:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
@@ -17,7 +17,11 @@ interface RouteParams {
 }
 
 // Helper function to check API key permissions
-async function checkApiKeyPermission(apiKeyId: string, userId: string, requiredRole: 'OWNER' | 'ADMIN' = 'ADMIN') {
+async function checkApiKeyPermission(
+  apiKeyId: string,
+  userId: string,
+  requiredRole: 'OWNER' | 'ADMIN' = 'ADMIN'
+) {
   const apiKey = await prisma.apiKey.findUnique({
     where: { id: apiKeyId },
     include: {
@@ -37,6 +41,10 @@ async function checkApiKeyPermission(apiKeyId: string, userId: string, requiredR
   }
 
   const organization = apiKey.organization
+  if (!organization) {
+    return { apiKey: null, hasPermission: false, userRole: null }
+  }
+
   const isOwner = organization.ownerId === userId
   const member = organization.members[0]
 
@@ -69,10 +77,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { apiKey, hasPermission } = await checkApiKeyPermission(
-      params.id,
-      session.user.id
-    )
+    const { apiKey, hasPermission } = await checkApiKeyPermission(params.id, session.user.id)
 
     if (!apiKey) {
       return NextResponse.json({ error: 'API key not found' }, { status: 404 })
@@ -89,12 +94,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       lastUsedAt: apiKey.lastUsedAt,
       createdAt: apiKey.createdAt,
       expiresAt: apiKey.expiresAt,
-      scopes: apiKey.scopes,
       status: apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date() ? 'expired' : 'active',
       organization: {
-        id: apiKey.organization.id,
-        name: apiKey.organization.name,
-        slug: apiKey.organization.slug,
+        id: apiKey.organization!.id,
+        name: apiKey.organization!.name,
+        slug: apiKey.organization!.slug,
       },
     }
 
@@ -103,10 +107,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
   } catch (error) {
     console.error('Error fetching API key:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -118,10 +119,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { apiKey, hasPermission } = await checkApiKeyPermission(
-      params.id,
-      session.user.id
-    )
+    const { apiKey, hasPermission } = await checkApiKeyPermission(params.id, session.user.id)
 
     if (!apiKey) {
       return NextResponse.json({ error: 'API key not found' }, { status: 404 })
@@ -133,10 +131,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // Check if API key is expired
     if (apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date()) {
-      return NextResponse.json(
-        { error: 'Cannot update expired API key' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: 'Cannot update expired API key' }, { status: 409 })
     }
 
     const body = await request.json()
@@ -151,7 +146,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         lastUsedAt: true,
         createdAt: true,
         expiresAt: true,
-        scopes: true,
         organization: {
           select: {
             id: true,
@@ -165,22 +159,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       apiKey: {
         ...updatedApiKey,
-        status: updatedApiKey.expiresAt && new Date(updatedApiKey.expiresAt) < new Date() ? 'expired' : 'active',
+        status:
+          updatedApiKey.expiresAt && new Date(updatedApiKey.expiresAt) < new Date()
+            ? 'expired'
+            : 'active',
       },
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error updating API key:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -192,10 +183,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { apiKey, hasPermission } = await checkApiKeyPermission(
-      params.id,
-      session.user.id
-    )
+    const { apiKey, hasPermission } = await checkApiKeyPermission(params.id, session.user.id)
 
     if (!apiKey) {
       return NextResponse.json({ error: 'API key not found' }, { status: 404 })
@@ -215,9 +203,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     })
   } catch (error) {
     console.error('Error deleting API key:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

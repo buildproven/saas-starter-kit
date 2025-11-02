@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
@@ -18,7 +18,11 @@ interface RouteParams {
 }
 
 // Helper function to check project permissions
-async function checkProjectPermission(projectId: string, userId: string, requiredRole: 'OWNER' | 'ADMIN' | 'MEMBER' = 'MEMBER') {
+async function checkProjectPermission(
+  projectId: string,
+  userId: string,
+  requiredRole: 'OWNER' | 'ADMIN' | 'MEMBER' = 'MEMBER'
+) {
   const project = await prisma.project.findUnique({
     where: { id: projectId },
     include: {
@@ -101,25 +105,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
             },
           },
         },
-        tasks: {
-          select: {
-            id: true,
-            title: true,
-            status: true,
-            priority: true,
-            createdAt: true,
-            updatedAt: true,
-            assigneeId: true,
-          },
-          orderBy: {
-            updatedAt: 'desc',
-          },
-        },
-        _count: {
-          select: {
-            tasks: true,
-          },
-        },
       },
     })
 
@@ -131,10 +116,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
   } catch (error) {
     console.error('Error fetching project:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -174,11 +156,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             slug: true,
           },
         },
-        _count: {
-          select: {
-            tasks: true,
-          },
-        },
       },
     })
 
@@ -187,17 +164,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.errors },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error updating project:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -223,17 +194,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Check if project has tasks
-    const taskCount = await prisma.task.count({
-      where: { projectId: params.id },
-    })
-
-    if (taskCount > 0) {
-      return NextResponse.json(
-        { error: 'Cannot delete project with existing tasks' },
-        { status: 409 }
-      )
-    }
+    // Project can be deleted without task dependency checks
 
     await prisma.project.delete({
       where: { id: params.id },
@@ -242,9 +203,6 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting project:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
