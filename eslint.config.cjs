@@ -13,8 +13,7 @@ try {
 
 try {
   security = require('eslint-plugin-security')
-} catch (e) {
-  console.error('Failed to load eslint-plugin-security:', e.message)
+} catch {
   // Security plugin not installed yet; fall back to basic config
 }
 
