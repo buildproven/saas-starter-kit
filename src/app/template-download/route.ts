@@ -9,7 +9,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { logError, ErrorType } from '@/lib/error-logging'
+import { rateLimit } from '@/lib/auth/api-protection'
 import type { TemplateSaleCustomer as TemplateSaleCustomerModel } from '@prisma/client'
+import { DownloadStatus } from '@prisma/client'
 
 interface DownloadResult {
   fileBuffer: Buffer
@@ -35,25 +37,73 @@ type TokenValidationResult =
 
 // GET /template-download?token=...&format=zip
 export async function GET(request: NextRequest) {
+  const ipAddress = getClientIP(request)
+  const userAgent = request.headers.get('user-agent') || ''
+  let parsedRequest: { token: string; format: 'zip' | 'tar' } | null = null
+
   try {
     const url = new URL(request.url)
     const token = url.searchParams.get('token')
     const format = url.searchParams.get('format') || 'zip'
 
     const validatedData = DownloadRequestSchema.parse({ token, format })
+    parsedRequest = validatedData
+
+    const rateLimitKey = `${ipAddress}:${validatedData.token}`
+    const allowed = rateLimit(rateLimitKey, 5, 15 * 60 * 1000)
+    if (!allowed) {
+      await recordDownloadAudit({
+        token: validatedData.token,
+        status: DownloadStatus.RATE_LIMIT,
+        ipAddress,
+        userAgent,
+        format: validatedData.format,
+        reason: 'Download rate limit exceeded',
+      })
+      return NextResponse.json(
+        { error: 'Too many download attempts. Please try again later.' },
+        { status: 429 }
+      )
+    }
 
     const tokenValidation = await validateDownloadToken(validatedData.token)
     if (!tokenValidation.valid) {
+      await recordDownloadAudit({
+        token: validatedData.token,
+        status: DownloadStatus.INVALID_TOKEN,
+        ipAddress,
+        userAgent,
+        format: validatedData.format,
+        reason: tokenValidation.error,
+      })
       return NextResponse.json({ error: tokenValidation.error }, { status: tokenValidation.status })
     }
 
     const { customer } = tokenValidation
 
     if (customer.accessExpiresAt && customer.accessExpiresAt < new Date()) {
+      await recordDownloadAudit({
+        token: validatedData.token,
+        status: DownloadStatus.EXPIRED,
+        ipAddress,
+        userAgent,
+        format: validatedData.format,
+        customer,
+        reason: 'Download access window expired',
+      })
       return NextResponse.json({ error: 'Download access has expired' }, { status: 403 })
     }
 
     if (customer.sale.status !== 'COMPLETED') {
+      await recordDownloadAudit({
+        token: validatedData.token,
+        status: DownloadStatus.BLOCKED,
+        ipAddress,
+        userAgent,
+        format: validatedData.format,
+        customer,
+        reason: `Sale status ${customer.sale.status}`,
+      })
       return NextResponse.json({ error: 'Sale not completed' }, { status: 403 })
     }
 
@@ -63,13 +113,13 @@ export async function GET(request: NextRequest) {
       customer,
     })
 
-    await logDownload({
-      customerId: customer.id,
-      saleId: customer.saleId,
-      packageType: customer.package,
+    await recordDownloadAudit({
+      token: validatedData.token,
+      status: DownloadStatus.SUCCESS,
+      ipAddress,
+      userAgent,
       format: validatedData.format,
-      ipAddress: getClientIP(request),
-      userAgent: request.headers.get('user-agent') || '',
+      customer,
     })
 
     const body = new Uint8Array(downloadResult.fileBuffer)
@@ -94,6 +144,16 @@ export async function GET(request: NextRequest) {
     }
 
     logError(error as Error, ErrorType.SYSTEM)
+    if (parsedRequest) {
+      await recordDownloadAudit({
+        token: parsedRequest.token,
+        status: DownloadStatus.ERROR,
+        ipAddress,
+        userAgent,
+        format: parsedRequest.format,
+        reason: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
     return NextResponse.json({ error: 'Failed to process download request' }, { status: 500 })
   }
 }
@@ -145,7 +205,7 @@ async function generateTemplateDownload(params: {
     )
   }
 
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV !== 'production') {
     const mockContent = createMockTemplateZip(packageType, templateFiles)
 
     return {
@@ -272,18 +332,32 @@ Support:
   `
 }
 
-async function logDownload(params: {
-  customerId: string
-  saleId: string
-  packageType: string
-  format: string
+async function recordDownloadAudit(params: {
+  token: string
+  status: DownloadStatus
   ipAddress: string
   userAgent: string
+  format: string
+  reason?: string
+  customer?: ValidatedCustomer
 }): Promise<void> {
-  console.log('Template download:', {
-    ...params,
-    timestamp: new Date().toISOString(),
-  })
+  try {
+    await prisma.templateDownloadAudit.create({
+      data: {
+        downloadToken: params.token,
+        status: params.status,
+        ipAddress: params.ipAddress,
+        userAgent: params.userAgent || null,
+        format: params.format,
+        reason: params.reason || null,
+        saleId: params.customer?.saleId ?? null,
+        customerId: params.customer?.id ?? null,
+        package: params.customer?.package ?? null,
+      },
+    })
+  } catch (error) {
+    console.warn('Template download audit logging failed:', error)
+  }
 }
 
 function getClientIP(request: NextRequest): string {

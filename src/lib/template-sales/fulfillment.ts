@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { logError, ErrorType } from '@/lib/error-logging'
 import { sendTemplateDeliveryEmail } from '@/lib/email/template-delivery'
-import { grantGitHubAccess } from '@/lib/github/access-management'
+import { grantGitHubAccess, normalizeGithubUsername } from '@/lib/github/access-management'
 import crypto from 'node:crypto'
 
 type TemplatePackage = 'basic' | 'pro' | 'enterprise'
@@ -12,6 +12,7 @@ interface FulfillmentParams {
   package: TemplatePackage
   customerName?: string | null
   companyName?: string | null
+  githubUsername?: string | null
 }
 
 interface FulfillmentResult {
@@ -23,6 +24,7 @@ interface FulfillmentResult {
   emailSent: boolean
   githubAccessGranted: boolean
   githubTeamId?: string | null
+  githubUsername?: string | null
 }
 
 const SUPPORT_TIERS: Record<TemplatePackage, string> = {
@@ -38,7 +40,14 @@ const ACCESS_WINDOWS_DAYS: Record<TemplatePackage, number | null> = {
 }
 
 export async function fulfillTemplateSale(params: FulfillmentParams): Promise<FulfillmentResult> {
-  const { sessionId, customerEmail, package: packageType, customerName, companyName } = params
+  const {
+    sessionId,
+    customerEmail,
+    package: packageType,
+    customerName,
+    companyName,
+    githubUsername,
+  } = params
 
   const templateSale = await prisma.templateSale.findUnique({
     where: { sessionId },
@@ -56,7 +65,15 @@ export async function fulfillTemplateSale(params: FulfillmentParams): Promise<Fu
     throw new Error('Template already delivered')
   }
 
+  const normalizedGithubUsername = normalizeGithubUsername(
+    githubUsername || (templateSale.githubUsername ?? undefined)
+  )
+
   const accessCredentials = await generateAccessCredentials(templateSale.id, packageType)
+  const metadataAccess = {
+    ...accessCredentials,
+    expiresAt: accessCredentials.expiresAt ? accessCredentials.expiresAt.toISOString() : null,
+  }
 
   const emailResult = await sendTemplateDeliveryEmail({
     customerEmail,
@@ -66,6 +83,8 @@ export async function fulfillTemplateSale(params: FulfillmentParams): Promise<Fu
     companyName,
   })
 
+  const accessExpiresAt = accessCredentials.expiresAt
+
   let githubAccess: { success: boolean; teamId?: string | null } = { success: false }
   if (packageType === 'pro' || packageType === 'enterprise') {
     try {
@@ -73,6 +92,7 @@ export async function fulfillTemplateSale(params: FulfillmentParams): Promise<Fu
         email: customerEmail,
         package: packageType,
         saleId: templateSale.id,
+        githubUsername: normalizedGithubUsername,
       })
       githubAccess = { success: result.success, teamId: result.teamId ?? null }
     } catch (githubError) {
@@ -83,13 +103,15 @@ export async function fulfillTemplateSale(params: FulfillmentParams): Promise<Fu
   await prisma.templateSale.update({
     where: { sessionId },
     data: {
+      githubUsername: normalizedGithubUsername,
       metadata: {
         ...((templateSale.metadata as object) || {}),
         fulfilled: true,
         fulfilledAt: new Date().toISOString(),
         emailSent: emailResult.success,
         githubAccess: githubAccess.success,
-        accessCredentials,
+        accessCredentials: metadataAccess,
+        githubUsername: normalizedGithubUsername,
       },
     },
   })
@@ -102,12 +124,14 @@ export async function fulfillTemplateSale(params: FulfillmentParams): Promise<Fu
       licenseKey: accessCredentials.licenseKey,
       downloadToken: accessCredentials.downloadToken,
       githubTeamId: githubAccess.teamId || null,
+      githubUsername: normalizedGithubUsername || null,
       supportTier: getSupportTier(packageType),
-      accessExpiresAt: getAccessExpiration(packageType),
+      accessExpiresAt: accessExpiresAt,
       metadata: {
         emailDelivered: emailResult.success,
         githubAccessGranted: githubAccess.success,
         onboardingCompleted: false,
+        githubUsername: normalizedGithubUsername,
       },
     },
     create: {
@@ -117,12 +141,14 @@ export async function fulfillTemplateSale(params: FulfillmentParams): Promise<Fu
       licenseKey: accessCredentials.licenseKey,
       downloadToken: accessCredentials.downloadToken,
       githubTeamId: githubAccess.teamId || null,
+      githubUsername: normalizedGithubUsername || null,
       supportTier: getSupportTier(packageType),
-      accessExpiresAt: getAccessExpiration(packageType),
+      accessExpiresAt: accessExpiresAt,
       metadata: {
         emailDelivered: emailResult.success,
         githubAccessGranted: githubAccess.success,
         onboardingCompleted: false,
+        githubUsername: normalizedGithubUsername,
       },
     },
   })
@@ -136,6 +162,7 @@ export async function fulfillTemplateSale(params: FulfillmentParams): Promise<Fu
     emailSent: emailResult.success,
     githubAccessGranted: githubAccess.success,
     githubTeamId: githubAccess.teamId || null,
+    githubUsername: normalizedGithubUsername || null,
   }
 }
 

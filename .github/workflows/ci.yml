@@ -1,47 +1,62 @@
 name: CI/CD
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Lint
         run: npm run lint
-        
+
       - name: Type check
         run: npm run typecheck
-        
+
       - name: Test
         run: npm test
+
+      - name: Package template assets
+        env:
+          TEMPLATE_VERSION: ${{ github.sha }}
+        run: |
+          npm run template:package
+          for tier in basic pro enterprise; do
+            for format in zip tar; do
+              FILE="template-files/$tier/saas-starter-$tier-v${TEMPLATE_VERSION}.${format}"
+              if [ ! -f "$FILE" ]; then
+                echo "❌ Missing packaged asset: $FILE"
+                exit 1
+              fi
+            done
+          done
 
   security:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Security scan
         uses: github/codeql-action/init@v2
         with:
           languages: javascript
-          
+
       - name: Dependency review
         uses: actions/dependency-review-action@v3
-        
+
       - name: Analyze
         uses: github/codeql-action/analyze@v2
 
@@ -51,19 +66,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Build
         run: npm run build
-        
+
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v20
         with:

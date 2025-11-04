@@ -1,32 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { headers } from 'next/headers'
-import { SubscriptionService } from '@/lib/subscription'
+import Stripe from 'stripe'
+import { getStripeClient } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionStatus } from '@prisma/client'
+import { SubscriptionService } from '@/lib/subscription'
 
-// Webhook event types
-interface WebhookEvent {
-  type: string
-  data: {
-    object: {
-      id: string
-      customer: string
-      status: string
-      items: {
-        data: Array<{
-          price: {
-            id: string
-          }
-        }>
-      }
-      current_period_start: number
-      current_period_end: number
-      cancel_at_period_end: boolean
-    }
-  }
-}
-
-// Map Stripe status to our enum
 function mapSubscriptionStatus(stripeStatus: string): SubscriptionStatus {
   switch (stripeStatus.toLowerCase()) {
     case 'incomplete':
@@ -48,153 +26,186 @@ function mapSubscriptionStatus(stripeStatus: string): SubscriptionStatus {
   }
 }
 
-// Validate webhook signature (simplified - in production use proper crypto verification)
-function validateWebhookSignature(): boolean {
+async function recordEvent(eventId: string) {
   try {
-    const headersList = headers()
-    const signature = headersList.get('stripe-signature') || headersList.get('webhook-signature')
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || process.env.WEBHOOK_SECRET
-
-    if (!signature || !webhookSecret) {
-      console.error('Missing webhook signature or secret')
+    await prisma.stripeWebhookEvent.create({
+      data: {
+        eventId,
+      },
+    })
+    return true
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      (error as { code?: string }).code === 'P2002'
+    ) {
       return false
     }
-
-    // In production, implement proper signature validation
-    // For now, just check if signature exists
-    return signature.length > 0
-  } catch (error) {
-    console.error('Webhook signature validation error:', error)
-    return false
+    throw error
   }
 }
 
-// POST /api/webhooks/subscription - Handle subscription webhook events
-export async function POST(request: NextRequest) {
+async function upsertSubscription(subscription: Stripe.Subscription) {
+  const price = subscription.items.data[0]?.price
+  const priceId = typeof price === 'string' ? price : price?.id
+  const customerId =
+    typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id
+
+  if (!priceId) {
+    console.warn('Stripe webhook: subscription missing price ID', subscription.id)
+    return
+  }
+
+  const existingPlan = await prisma.plan.findUnique({ where: { priceId } })
+  if (!existingPlan) {
+    console.warn('Stripe webhook: price not found in plan table', priceId)
+  }
+
+  let organizationId = subscription.metadata?.organizationId
+
+  if (!organizationId) {
+    const existingRecord = await prisma.subscription.findUnique({
+      where: { subscriptionId: subscription.id },
+      select: { organizationId: true },
+    })
+
+    if (existingRecord) {
+      organizationId = existingRecord.organizationId
+    } else {
+      const byCustomer = await prisma.subscription.findFirst({
+        where: { customerId },
+        select: { organizationId: true },
+      })
+      organizationId = byCustomer?.organizationId
+    }
+  }
+
+  if (!organizationId) {
+    console.error(
+      'Stripe webhook: unable to resolve organization for subscription',
+      subscription.id
+    )
+    return
+  }
+
+  const data = {
+    customerId,
+    priceId,
+    status: mapSubscriptionStatus(subscription.status),
+    currentPeriodStart: new Date(subscription.current_period_start * 1000),
+    currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+    cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+  }
+
+  await prisma.subscription.upsert({
+    where: { subscriptionId: subscription.id },
+    update: data,
+    create: {
+      subscriptionId: subscription.id,
+      organizationId,
+      ...data,
+    },
+  })
+}
+
+async function cancelSubscription(subscription: Stripe.Subscription) {
   try {
-    // Validate webhook signature
-    if (!validateWebhookSignature()) {
-      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    await prisma.subscription.update({
+      where: { subscriptionId: subscription.id },
+      data: {
+        status: 'CANCELED',
+        cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
+      },
+    })
+  } catch (error) {
+    console.warn('Stripe webhook: cancel update skipped', subscription.id, error)
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const rawBody = await request.text()
+  const signature = request.headers.get('stripe-signature')
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+
+  if (!signature || !webhookSecret) {
+    return NextResponse.json({ error: 'Missing Stripe signature or secret' }, { status: 400 })
+  }
+
+  const stripe = getStripeClient()
+  let event: Stripe.Event
+
+  try {
+    event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
+  } catch (error) {
+    console.error('Stripe webhook signature verification failed', error)
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
+  }
+
+  try {
+    const shouldProcess = await recordEvent(event.id)
+    if (!shouldProcess) {
+      return NextResponse.json({ received: true })
     }
 
-    const body: WebhookEvent = await request.json()
-
-    console.log('Received webhook event:', body.type)
-
-    switch (body.type) {
+    switch (event.type) {
       case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-        await handleSubscriptionUpdate(body)
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription
+        await upsertSubscription(subscription)
         break
+      }
 
-      case 'customer.subscription.deleted':
-        await handleSubscriptionCancellation(body)
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription
+        await cancelSubscription(subscription)
         break
+      }
 
-      case 'invoice.payment_succeeded':
-        await handlePaymentSucceeded(body)
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice
+        if (typeof invoice.subscription === 'string') {
+          try {
+            await SubscriptionService.updateSubscription(invoice.subscription, {
+              status: 'ACTIVE',
+            })
+          } catch (err) {
+            console.warn(
+              'Stripe webhook: unable to mark subscription active',
+              invoice.subscription,
+              err
+            )
+          }
+        }
         break
+      }
 
-      case 'invoice.payment_failed':
-        await handlePaymentFailed(body)
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice
+        if (typeof invoice.subscription === 'string') {
+          try {
+            await SubscriptionService.updateSubscription(invoice.subscription, {
+              status: 'PAST_DUE',
+            })
+          } catch (err) {
+            console.warn(
+              'Stripe webhook: unable to mark subscription past due',
+              invoice.subscription,
+              err
+            )
+          }
+        }
         break
+      }
 
       default:
-        console.log(`Unhandled webhook event type: ${body.type}`)
+        // Unhandled event types can be logged for visibility
+        console.info(`Stripe webhook received unhandled event: ${event.type}`)
     }
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Webhook processing error:', error)
+    console.error('Stripe webhook processing error', error)
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
-  }
-}
-
-async function handleSubscriptionUpdate(event: WebhookEvent) {
-  try {
-    const subscription = event.data.object
-    const priceId = subscription.items.data[0]?.price.id
-
-    if (!priceId) {
-      console.error('No price ID found in subscription')
-      return
-    }
-
-    // Find organization by customer ID
-    const existingSubscription = await prisma.subscription.findFirst({
-      where: { customerId: subscription.customer },
-      include: { organization: true },
-    })
-
-    if (existingSubscription) {
-      // Update existing subscription
-      await SubscriptionService.updateSubscription(subscription.id, {
-        status: mapSubscriptionStatus(subscription.status),
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-        cancelAtPeriodEnd: subscription.cancel_at_period_end,
-      })
-
-      console.log(
-        `Updated subscription ${subscription.id} for organization ${existingSubscription.organization.name}`
-      )
-    } else {
-      // This is a new subscription, but we need organization context
-      // In practice, you'd store organization ID during checkout
-      console.warn(`No existing subscription found for customer ${subscription.customer}`)
-    }
-  } catch (error) {
-    console.error('Error handling subscription update:', error)
-    throw error
-  }
-}
-
-async function handleSubscriptionCancellation(event: WebhookEvent) {
-  try {
-    const subscription = event.data.object
-
-    await SubscriptionService.updateSubscription(subscription.id, {
-      status: 'CANCELED',
-    })
-
-    console.log(`Cancelled subscription ${subscription.id}`)
-  } catch (error) {
-    console.error('Error handling subscription cancellation:', error)
-    throw error
-  }
-}
-
-async function handlePaymentSucceeded(event: WebhookEvent) {
-  try {
-    // Payment succeeded, ensure subscription is active
-    const subscription = event.data.object
-
-    await SubscriptionService.updateSubscription(subscription.id, {
-      status: 'ACTIVE',
-    })
-
-    console.log(`Payment succeeded for subscription ${subscription.id}`)
-  } catch (error) {
-    console.error('Error handling payment success:', error)
-    throw error
-  }
-}
-
-async function handlePaymentFailed(event: WebhookEvent) {
-  try {
-    // Payment failed, mark subscription as past due
-    const subscription = event.data.object
-
-    await SubscriptionService.updateSubscription(subscription.id, {
-      status: 'PAST_DUE',
-    })
-
-    console.log(`Payment failed for subscription ${subscription.id}`)
-
-    // TODO: Send notification to organization admins
-    // TODO: Implement grace period logic
-  } catch (error) {
-    console.error('Error handling payment failure:', error)
-    throw error
   }
 }

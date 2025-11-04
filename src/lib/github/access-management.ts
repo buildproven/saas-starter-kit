@@ -5,10 +5,19 @@
  * based on their purchase tier (Pro/Enterprise get private repo access).
  */
 
+import { Octokit } from '@octokit/rest'
+
 interface GitHubAccessParams {
   email: string
   package: 'basic' | 'pro' | 'enterprise'
   saleId: string
+  githubUsername?: string | null
+}
+
+type ExistingAccess = {
+  teamId: string
+  inviteUrl?: string
+  githubUsername?: string | null
 }
 
 interface GitHubAccessResult {
@@ -16,10 +25,12 @@ interface GitHubAccessResult {
   teamId?: string
   inviteUrl?: string
   error?: string
+  githubUsername?: string | null
 }
 
 export async function grantGitHubAccess(params: GitHubAccessParams): Promise<GitHubAccessResult> {
   const { email, package: packageType, saleId } = params
+  const normalizedUsername = normalizeGithubUsername(params.githubUsername)
 
   // Basic tier doesn't get private repo access
   if (packageType === 'basic') {
@@ -31,34 +42,44 @@ export async function grantGitHubAccess(params: GitHubAccessParams): Promise<Git
   try {
     const octokit = getGitHubClient()
 
-    // Get the appropriate team and repository based on package tier
     const accessConfig = getAccessConfiguration(packageType)
 
-    // Check if user already has access (always returns null in prototype)
-    await checkExistingAccess(octokit, email, accessConfig.teamSlug)
-
-    // Invite user to the appropriate GitHub team (mock implementation)
-    const invitation = {
-      teamId: accessConfig.teamSlug,
-      invitationId: Math.floor(Math.random() * 10000),
-      inviteUrl: `https://github.com/orgs/${process.env.GITHUB_ORG}/invitations/mock-${Date.now()}`,
+    const existing = await checkExistingAccess(octokit, {
+      email,
+      teamSlug: accessConfig.teamSlug,
+      githubUsername: normalizedUsername || undefined,
+    })
+    if (existing) {
+      return {
+        success: true,
+        teamId: existing.teamId,
+        inviteUrl: existing.inviteUrl,
+        githubUsername: existing.githubUsername ?? normalizedUsername ?? null,
+      }
     }
 
-    // Log the access grant for audit purposes
+    const invitation = await inviteToGitHubTeam(octokit, {
+      email,
+      teamSlug: accessConfig.teamSlug,
+      role: accessConfig.role,
+      githubUsername: normalizedUsername || undefined,
+    })
+
     await logAccessGrant({
       email,
       packageType,
       saleId,
       teamId: invitation.teamId,
       invitationId: invitation.invitationId,
+      githubUsername: invitation.githubUsername,
     })
 
     return {
       success: true,
       teamId: invitation.teamId,
       inviteUrl: invitation.inviteUrl,
+      githubUsername: invitation.githubUsername,
     }
-
   } catch (error) {
     console.error('Failed to grant GitHub access:', error)
     return {
@@ -69,39 +90,18 @@ export async function grantGitHubAccess(params: GitHubAccessParams): Promise<Git
 }
 
 function getGitHubClient() {
-  // Initialize GitHub API client (Octokit)
-  if (!process.env.GITHUB_ACCESS_TOKEN) {
-    throw new Error('GITHUB_ACCESS_TOKEN not configured')
-  }
+  const token = process.env.GITHUB_ACCESS_TOKEN
+  const org = process.env.GITHUB_ORG
 
-  // In a real implementation, you'd import and configure Octokit:
-  /*
-  import { Octokit } from '@octokit/rest'
+  if (!token || !org) {
+    throw new Error(
+      'GitHub access requires GITHUB_ACCESS_TOKEN and GITHUB_ORG environment variables'
+    )
+  }
 
   return new Octokit({
-    auth: process.env.GITHUB_ACCESS_TOKEN,
+    auth: token,
   })
-  */
-
-  // Mock for development
-  return {
-    rest: {
-      teams: {
-        getMembershipForUserInOrg: async () => ({ data: null }),
-        addOrUpdateMembershipForUserInOrg: async () => ({
-          data: { url: 'https://github.com/orgs/yourorg/teams/premium/members/username' }
-        }),
-      },
-      orgs: {
-        createInvitation: async () => ({
-          data: {
-            id: 12345,
-            invitation_url: 'https://github.com/orgs/yourorg/invitations/token123',
-          }
-        }),
-      },
-    },
-  }
 }
 
 function getAccessConfiguration(packageType: string) {
@@ -123,36 +123,124 @@ function getAccessConfiguration(packageType: string) {
   return configs[packageType as keyof typeof configs] || configs.pro
 }
 
-async function checkExistingAccess(_octokit: unknown, _email: string, _teamSlug: string) {
-  // Convert email to GitHub username (this is tricky - GitHub API needs username, not email)
-  // In production, you'd either:
-  // 1. Ask for GitHub username during purchase
-  // 2. Use GitHub's user search API
-  // 3. Store username mapping in your database
+async function checkExistingAccess(
+  octokit: Octokit,
+  params: { email: string; teamSlug: string; githubUsername?: string }
+): Promise<ExistingAccess | null> {
+  const org = process.env.GITHUB_ORG!
+  const { email, teamSlug, githubUsername } = params
 
-  // For now, return null (no existing access)
+  if (githubUsername) {
+    try {
+      const membership = await octokit.rest.teams.getMembershipForUserInOrg({
+        org,
+        team_slug: teamSlug,
+        username: githubUsername,
+      })
+
+      if (membership.data?.state === 'active' || membership.data?.state === 'pending') {
+        return { teamId: teamSlug, githubUsername }
+      }
+    } catch (error) {
+      const status =
+        typeof error === 'object' && error !== null && 'status' in error
+          ? (error as { status?: number }).status
+          : undefined
+      if (!(error instanceof Error) || status !== 404) {
+        console.warn('GitHub access: unable to resolve existing membership', error)
+      }
+    }
+  }
+
+  try {
+    const invitations = await octokit.rest.orgs.listPendingInvitations({ org, per_page: 100 })
+    const pending = invitations.data.find((invite) => {
+      const matchesEmail = invite.email?.toLowerCase() === email.toLowerCase()
+      const matchesUsername =
+        githubUsername && invite.login?.toLowerCase() === githubUsername.toLowerCase()
+      return matchesEmail || matchesUsername
+    })
+    if (pending) {
+      const normalized = pending.login
+        ? pending.login.toLowerCase()
+        : githubUsername
+          ? githubUsername.toLowerCase()
+          : null
+      return { teamId: teamSlug, githubUsername: normalized }
+    }
+  } catch (error) {
+    console.warn('GitHub access: unable to list pending invitations', error)
+  }
+
   return null
 }
 
 // Note: This is a prototype implementation. In production, replace with actual GitHub API calls
 
-async function _getTeamId(_octokit: unknown, teamSlug: string): Promise<number> {
-  // In production, you'd fetch the team ID:
-  /*
+async function inviteToGitHubTeam(
+  octokit: Octokit,
+  params: {
+    email: string
+    teamSlug: string
+    role: 'member' | 'maintainer'
+    githubUsername?: string
+  }
+): Promise<{
+  teamId: string
+  invitationId: number
+  inviteUrl?: string
+  githubUsername: string | null
+}> {
+  const { email, teamSlug, githubUsername } = params
+  const org = process.env.GITHUB_ORG!
+
+  const teamId = await getTeamId(octokit, teamSlug)
+
+  const invitationPayload: {
+    org: string
+    role: 'direct_member'
+    team_ids: number[]
+    email?: string
+    invitee_id?: number
+  } = {
+    org,
+    role: 'direct_member',
+    team_ids: [teamId],
+  }
+
+  const normalizedUsername = normalizeGithubUsername(githubUsername)
+
+  if (normalizedUsername) {
+    const inviteeId = await getUserIdByUsername(octokit, normalizedUsername)
+    if (inviteeId) {
+      invitationPayload.invitee_id = inviteeId
+    } else {
+      console.warn(
+        `GitHub access: username ${normalizedUsername} not found, falling back to email invitation`
+      )
+      invitationPayload.email = email
+    }
+  } else {
+    invitationPayload.email = email
+  }
+
+  const invitation = await octokit.rest.orgs.createInvitation(invitationPayload)
+
+  return {
+    teamId: teamSlug,
+    invitationId: invitation.data.id,
+    inviteUrl: undefined,
+    githubUsername: normalizedUsername ?? null,
+  }
+}
+
+async function getTeamId(octokit: Octokit, teamSlug: string): Promise<number> {
+  const org = process.env.GITHUB_ORG!
   const team = await octokit.rest.teams.getByName({
-    org: process.env.GITHUB_ORG,
+    org,
     team_slug: teamSlug,
   })
   return team.data.id
-  */
-
-  // Mock team IDs for development
-  const teamIds = {
-    'saas-starter-pro': 1001,
-    'saas-starter-enterprise': 1002,
-  }
-
-  return teamIds[teamSlug as keyof typeof teamIds] || 1001
 }
 
 async function logAccessGrant(params: {
@@ -161,6 +249,7 @@ async function logAccessGrant(params: {
   saleId: string
   teamId: string
   invitationId: number
+  githubUsername: string | null
 }): Promise<void> {
   // Log to database or audit system
   console.log('GitHub access granted:', {
@@ -188,6 +277,31 @@ export async function revokeGitHubAccess(params: {
   })
 
   return { success: true }
+}
+
+async function getUserIdByUsername(octokit: Octokit, username: string): Promise<number | null> {
+  try {
+    const user = await octokit.rest.users.getByUsername({ username })
+    return user.data.id
+  } catch (error) {
+    const status =
+      typeof error === 'object' && error !== null && 'status' in error
+        ? (error as { status?: number }).status
+        : undefined
+    if (status !== 404) {
+      console.warn('GitHub access: failed to load user by username', error)
+    }
+    return null
+  }
+}
+
+export function normalizeGithubUsername(username?: string | null): string | null {
+  if (!username) return null
+  const trimmed = username.trim()
+  if (!trimmed) return null
+  const withoutAt = trimmed.startsWith('@') ? trimmed.slice(1) : trimmed
+  if (!withoutAt) return null
+  return withoutAt.toLowerCase()
 }
 
 async function _emailToGitHubUsername(_email: string): Promise<string | null> {
@@ -222,12 +336,9 @@ async function _emailToGitHubUsername(_email: string): Promise<string | null> {
 export async function setupGitHubTeamsAndRepos(): Promise<void> {
   console.log('GitHub teams setup (prototype mode)')
 
-  const teams = [
-    'SaaS Starter Pro',
-    'SaaS Starter Enterprise',
-  ]
+  const teams = ['SaaS Starter Pro', 'SaaS Starter Enterprise']
 
-  teams.forEach(team => {
+  teams.forEach((team) => {
     console.log(`Team setup: ${team}`)
   })
 

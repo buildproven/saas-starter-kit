@@ -4,6 +4,24 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   const startTime = Date.now()
 
+  if (process.env.SKIP_DB_HEALTHCHECK === 'true') {
+    const endTime = Date.now()
+    const duration = endTime - startTime
+
+    return NextResponse.json({
+      status: 'degraded',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: {
+        status: 'skipped',
+        responseTime: duration,
+        error: 'Health check skipped by SKIP_DB_HEALTHCHECK',
+      },
+      environment: process.env.NODE_ENV,
+      version: process.env.NEXT_PUBLIC_APP_VERSION || 'development',
+    })
+  }
+
   try {
     // Check database connectivity
     await prisma.$queryRaw`SELECT 1`

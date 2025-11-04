@@ -38,6 +38,22 @@ jobs:
       - name: Test
         run: npm test -- --runInBand
 
+      - name: Package template assets
+        env:
+          TEMPLATE_VERSION: ${{ github.sha }}
+        run: |
+          npm run template:package
+          for tier in basic pro enterprise; do
+            for format in zip tar; do
+              FILE="template-files/$tier/saas-starter-$tier-v${TEMPLATE_VERSION}.${format}"
+              if [ ! -f "$FILE" ]; then
+                echo "❌ Missing packaged asset: $FILE"
+                exit 1
+              fi
+            done
+          done
+          echo "✅ Template package artifacts verified"
+
       - name: Prettier check
         run: npm run format:check
 

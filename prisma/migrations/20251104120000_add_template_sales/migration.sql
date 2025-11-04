@@ -51,3 +51,9 @@ CREATE TABLE "TemplateSaleCustomer" (
 CREATE INDEX "TemplateSaleCustomer_email_idx" ON "TemplateSaleCustomer" ("email");
 CREATE INDEX "TemplateSaleCustomer_package_idx" ON "TemplateSaleCustomer" ("package");
 CREATE INDEX "TemplateSaleCustomer_supportTier_idx" ON "TemplateSaleCustomer" ("supportTier");
+
+CREATE TABLE "StripeWebhookEvent" (
+    "eventId" TEXT NOT NULL,
+    "processedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "StripeWebhookEvent_pkey" PRIMARY KEY ("eventId")
+);

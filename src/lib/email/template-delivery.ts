@@ -317,7 +317,33 @@ async function sendEmail(params: {
   html: string
   text: string
 }): Promise<{ messageId: string }> {
-  // TODO: Implement with SendGrid, Resend, or your preferred email service
+  const resendKey = process.env.RESEND_API_KEY
+  const fromEmail = process.env.FROM_EMAIL || 'SaaS Starter <noreply@example.com>'
+
+  if (resendKey) {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: fromEmail,
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
+        text: params.text,
+      }),
+    })
+
+    if (!response.ok) {
+      const message = await response.text()
+      throw new Error(`Resend request failed: ${message}`)
+    }
+
+    const data = (await response.json()) as { id?: string }
+    return { messageId: data.id ?? `resend-${Date.now()}` }
+  }
 
   if (process.env.NODE_ENV === 'development') {
     console.log('📧 Email would be sent:', {
@@ -328,23 +354,6 @@ async function sendEmail(params: {
 
     return { messageId: `dev-${Date.now()}` }
   }
-
-  // Example SendGrid implementation:
-  /*
-  const sgMail = require('@sendgrid/mail')
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-
-  const msg = {
-    to: params.to,
-    from: process.env.FROM_EMAIL,
-    subject: params.subject,
-    text: params.text,
-    html: params.html,
-  }
-
-  const result = await sgMail.send(msg)
-  return { messageId: result[0].headers['x-message-id'] }
-  */
 
   console.warn('Email service not configured. Skipping outbound template delivery email.')
   return { messageId: `noop-${Date.now()}` }

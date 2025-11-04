@@ -53,7 +53,7 @@ npx create-quality-automation@latest  # Apply/update standards
 ```bash
 # Located: .github/workflows/quality.yml
 # Triggers: Every push, PR
-# Checks: Build, test, lint, security audit
+# Checks: Lint, typecheck, tests, template packaging verification, security audit
 ```
 
 ## 🚫 Quality Anti-Patterns (PROHIBITED)

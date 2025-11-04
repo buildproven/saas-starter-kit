@@ -66,6 +66,8 @@ const TEMPLATE_PACKAGES = {
   },
 }
 
+const githubUsernameRegex = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i
+
 const CheckoutRequestSchema = z.object({
   package: z.enum(['basic', 'pro', 'enterprise']),
   email: z.string().email(),
@@ -73,6 +75,15 @@ const CheckoutRequestSchema = z.object({
   useCase: z.string().optional(),
   successUrl: z.string().url().optional(),
   cancelUrl: z.string().url().optional(),
+  githubUsername: z
+    .string()
+    .min(1)
+    .max(39)
+    .regex(
+      githubUsernameRegex,
+      'GitHub username must be 1-39 characters and may include letters, numbers, or single hyphens'
+    )
+    .optional(),
 })
 
 // POST /api/template-sales/checkout
@@ -146,9 +157,11 @@ export async function POST(request: NextRequest) {
         status: 'PENDING',
         companyName: validatedData.companyName,
         useCase: validatedData.useCase,
+        githubUsername: validatedData.githubUsername,
         metadata: {
           stripeSessionId: session.id,
           packageDetails: selectedPackage,
+          githubUsername: validatedData.githubUsername,
         },
       },
     })
@@ -248,12 +261,18 @@ export async function GET(request: NextRequest) {
     let fulfillmentSummary: Awaited<ReturnType<typeof fulfillTemplateSale>> | null = null
 
     try {
+      const metadata = (updatedSale.metadata as Record<string, unknown>) || {}
+      const githubUsername =
+        updatedSale.githubUsername ||
+        (typeof metadata.githubUsername === 'string' ? metadata.githubUsername : undefined)
+
       fulfillmentSummary = await fulfillTemplateSale({
         sessionId,
         customerEmail: session.customer_details?.email || updatedSale.email,
         package: updatedSale.package as 'basic' | 'pro' | 'enterprise',
         customerName: session.customer_details?.name,
         companyName: session.customer_details?.name || updatedSale.companyName || undefined,
+        githubUsername,
       })
     } catch (fulfillmentError) {
       logError(fulfillmentError as Error, ErrorType.SYSTEM)

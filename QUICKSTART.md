@@ -58,11 +58,18 @@ STRIPE_TEMPLATE_ENTERPRISE_PRICE_ID="price_..."
 # Internal secrets and asset configuration
 TEMPLATE_FULFILLMENT_SECRET="super-long-random-string"
 TEMPLATE_FILES_PATH="./template-files" # absolute path recommended in production
+RESEND_API_KEY="" # optional Resend email integration
+GITHUB_ACCESS_TOKEN="" # required for GitHub repo invitations (Pro/Enterprise)
+GITHUB_ORG="" # organization that owns the template repos
 ```
 
-Create the packaging files under `TEMPLATE_FILES_PATH` before fulfilling real orders.
+Create the packaging files under `TEMPLATE_FILES_PATH` before fulfilling real orders. When you update the template, run `npm run template:package` to regenerate the archives. If you are not selling the template, you can skip this step.
+
+The marketing purchase page now asks buyers for a GitHub username so Pro/Enterprise customers can be granted repository access without manual work. If the handle changes later, SUPER_ADMIN operators can call `POST /api/admin/template-sales/github-access` with the new username to retry the invitation.
 
 ## Quick Test Checklist
+
+> `npm run build` skips the Postgres health check by default. Set `SKIP_DB_HEALTHCHECK=false` before the command if you want to verify database connectivity during builds.
 
 - [ ] App loads at `http://localhost:3000`
 - [ ] `/api/health` returns green status

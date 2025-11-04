@@ -2,7 +2,14 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -72,6 +79,7 @@ export default function TemplatePurchasePage() {
     email: '',
     companyName: '',
     useCase: '',
+    githubUsername: '',
   })
   const [isLoading, setIsLoading] = useState(false)
 
@@ -84,6 +92,8 @@ export default function TemplatePurchasePage() {
     setIsLoading(true)
 
     try {
+      const githubUsername = formData.githubUsername.trim()
+
       const response = await fetch('/api/template-sales/checkout', {
         method: 'POST',
         headers: {
@@ -94,6 +104,7 @@ export default function TemplatePurchasePage() {
           email: formData.email,
           companyName: formData.companyName || undefined,
           useCase: formData.useCase || undefined,
+          githubUsername: githubUsername || undefined,
         }),
       })
 
@@ -104,7 +115,6 @@ export default function TemplatePurchasePage() {
 
       const { url } = await response.json()
       window.location.href = url
-
     } catch (error) {
       console.error('Purchase error:', error)
       alert(`Purchase failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -113,7 +123,7 @@ export default function TemplatePurchasePage() {
     }
   }
 
-  const selectedPkg = packages.find(pkg => pkg.id === selectedPackage)
+  const selectedPkg = packages.find((pkg) => pkg.id === selectedPackage)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
@@ -139,12 +149,10 @@ export default function TemplatePurchasePage() {
             <Star className="w-4 h-4 mr-1" />
             Limited Time Offer - 40% Off
           </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Get Your SaaS Template
-          </h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Get Your SaaS Template</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Skip months of development and launch your SaaS in days.
-            Complete template with authentication, billing, and more.
+            Skip months of development and launch your SaaS in days. Complete template with
+            authentication, billing, and more.
           </p>
         </div>
 
@@ -208,7 +216,8 @@ export default function TemplatePurchasePage() {
               Complete Your Purchase
             </CardTitle>
             <CardDescription>
-              You&apos;ve selected the <strong>{selectedPkg?.name}</strong> for <strong>{selectedPkg?.price}</strong>
+              You&apos;ve selected the <strong>{selectedPkg?.name}</strong> for{' '}
+              <strong>{selectedPkg?.price}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -235,6 +244,28 @@ export default function TemplatePurchasePage() {
                 value={formData.companyName}
                 onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="github">
+                GitHub Username{' '}
+                {selectedPackage !== 'basic' && (
+                  <span className="text-gray-500 font-normal">(required for repo access)</span>
+                )}
+              </Label>
+              <Input
+                id="github"
+                placeholder="github-handle"
+                value={formData.githubUsername}
+                onChange={(e) => setFormData({ ...formData, githubUsername: e.target.value })}
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+              <p className="text-sm text-gray-500">
+                Used to grant repository access for Pro/Enterprise packages. If you are purchasing
+                for a teammate, enter their GitHub username. Leave blank to invite via email
+                instead.
+              </p>
             </div>
 
             <div className="space-y-2">

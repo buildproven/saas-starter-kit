@@ -156,6 +156,7 @@ describe('useAppStore', () => {
 - **Statements**: 80%
 
 Run coverage with:
+
 ```bash
 npm run test:coverage
 ```
@@ -163,6 +164,7 @@ npm run test:coverage
 ## Best Practices
 
 ### 1. Test Behavior, Not Implementation
+
 ```tsx
 // ❌ Bad - testing implementation details
 expect(component.state.count).toBe(1)
@@ -172,6 +174,7 @@ expect(screen.getByText('Count: 1')).toBeInTheDocument()
 ```
 
 ### 2. Use Accessible Queries
+
 ```tsx
 // ✅ Preferred queries (accessibility-focused)
 screen.getByRole('button', { name: /submit/i })
@@ -184,6 +187,7 @@ screen.getByClassName('btn-primary')
 ```
 
 ### 3. Test User Interactions Realistically
+
 ```tsx
 // ✅ Good - simulates real user interaction
 await user.type(screen.getByLabelText(/email/i), 'test@example.com')
@@ -194,6 +198,7 @@ fireEvent.change(emailInput, { target: { value: 'test@example.com' } })
 ```
 
 ### 4. Use Descriptive Test Names
+
 ```tsx
 // ✅ Good - describes what the test verifies
 it('shows error message when email is invalid', () => {})
@@ -205,6 +210,7 @@ it('calls useState', () => {})
 ```
 
 ### 5. Arrange, Act, Assert (AAA)
+
 ```tsx
 it('updates theme when toggle button is clicked', async () => {
   // Arrange
@@ -237,9 +243,22 @@ npm test Button.test.tsx
 npm test -- --testNamePattern="renders"
 ```
 
+## Template-Sales Smoke Test
+
+- Location: `src/app/api/template-sales/smoke.test.ts`
+- Covers checkout → fulfillment → GitHub access → download token flows using mocked Stripe, email, GitHub, and rate limiting dependencies.
+- Run locally with:
+
+  ```bash
+  npm test -- --runInBand src/app/api/template-sales/smoke.test.ts
+  ```
+
+- For staging environments, complement this automated run with a manual Stripe test card checkout and verify that download audits appear in the `TemplateDownloadAudit` table.
+
 ## Debugging Tests
 
 1. **Add Console Logs**
+
    ```tsx
    screen.debug() // Prints current DOM
    console.log(screen.getByRole('button')) // Inspect element
@@ -257,11 +276,13 @@ npm test -- --testNamePattern="renders"
 ## Continuous Integration
 
 Tests run automatically on:
+
 - Every push to main/master branch
 - Every pull request
 - Before deployment
 
 CI will fail if:
+
 - Any test fails
 - Coverage drops below 80%
 - Tests take longer than 5 minutes

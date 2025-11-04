@@ -57,6 +57,7 @@ A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma
 - **Template sales (optional)** – `STRIPE_TEMPLATE_*` price IDs, `TEMPLATE_FULFILLMENT_SECRET`, `TEMPLATE_FILES_PATH` (points to packaged assets).
 - **Sentry (optional)** – `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`.
 - **App metadata** – `NEXT_PUBLIC_APP_VERSION`, `NEXT_PUBLIC_APP_URL`.
+- **Emails (optional)** – `SENDGRID_API_KEY` or `RESEND_API_KEY`, plus `FROM_EMAIL`.
 
 Refer to `.env.example` for the full list and descriptions.
 
@@ -96,6 +97,8 @@ Refer to `.env.example` for the full list and descriptions.
 
 Husky hooks run lint-staged tasks on staged files; ensure you install dependencies before committing.
 
+> **Note:** In restricted environments (CI or read-only worktrees) run `HUSKY=0 npm install` to skip Husky’s `prepare` hook when it cannot update `.git/config`.
+
 ## Optional: Selling the Template
 
 The repo includes APIs for monetising the starter itself. To enable them:
@@ -103,9 +106,13 @@ The repo includes APIs for monetising the starter itself. To enable them:
 1. Configure Stripe template products/prices (`STRIPE_TEMPLATE_*`).
 2. Set `TEMPLATE_FULFILLMENT_SECRET` and point `TEMPLATE_FILES_PATH` to the packaged assets.
 3. Wire an email provider in `src/lib/email/template-delivery.ts` (the default logs a warning instead of sending).
-4. Provide a GitHub access token if you want automated repo access for Pro/Enterprise buyers.
+4. Provide a GitHub access token if you want automated repo access for Pro/Enterprise buyers and collect GitHub usernames during checkout (the purchase form includes an optional field).
+5. Support staff can retry or override invitations via the `/api/admin/template-sales/github-access` endpoint (SUPER_ADMIN only).
+6. Download tokens are rate limited (5 requests per 15 minutes per IP/token) and every attempt is logged to `TemplateDownloadAudit` for auditing.
 
 Without these values the template-sales endpoints return informative errors and skip fulfillment.
+
+Once configured, package the deliverables with `npm run template:package` to populate the tiered archives under `TEMPLATE_FILES_PATH`.
 
 ## Testing & Quality Gates
 
@@ -121,6 +128,9 @@ Run the full suite before opening a PR:
 npm run lint
 npm run typecheck
 npm test
+
+# Optional: run template-sales smoke test
+npm test -- --runInBand src/app/api/template-sales/smoke.test.ts
 ```
 
 ## Documentation

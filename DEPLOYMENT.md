@@ -52,7 +52,7 @@ npm run db:seed
 
 > ℹ️ The `db:seed` script calls Stripe to fetch product and price metadata. Ensure `STRIPE_SECRET_KEY` and each `STRIPE_PRICE_*` variable are configured and point to existing Stripe prices before running the seed.
 
-`db:seed` inserts the default plans defined in `prisma/seed.ts`. Run it once per environment. If you plan to sell the template itself, make sure the Stripe template price IDs and template asset path (`TEMPLATE_FILES_PATH`) are configured before seeding.
+`db:seed` inserts the default plans defined in `prisma/seed.ts`. Run it once per environment. If you plan to sell the template itself, make sure the Stripe template price IDs, GitHub credentials (`GITHUB_ACCESS_TOKEN` / `GITHUB_ORG`), and template asset path (`TEMPLATE_FILES_PATH`) are configured before seeding. After updating the source, regenerate deliverable archives with `npm run template:package`. Support can resync GitHub access later through the SUPER_ADMIN-only endpoint at `/api/admin/template-sales/github-access`.
 
 ## 4. Deploy to Vercel
 

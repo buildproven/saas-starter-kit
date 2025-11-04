@@ -723,5 +723,10 @@ The optional template-sales APIs (see `src/app/api/template-sales/*` and `src/li
 - `TEMPLATE_FULFILLMENT_SECRET` for internal fulfillment calls.
 - Packaged assets stored at `TEMPLATE_FILES_PATH` so download requests succeed.
 - An email provider configured in `src/lib/email/template-delivery.ts` if you want automated delivery messages.
+- `GITHUB_ACCESS_TOKEN`/`GITHUB_ORG` so Pro/Enterprise buyers receive repository access. Capture GitHub usernames during checkout (the marketing page includes the field) or override later through the admin API at `/api/admin/template-sales/github-access`.
+- Download requests are protected by rate limiting (5 requests / 15 minutes per IP+token) and auditable via the `TemplateDownloadAudit` table.
+- Run `npm test -- --runInBand src/app/api/template-sales/smoke.test.ts` to exercise the end-to-end template-sales flow (Stripe checkout, fulfillment, GitHub access, download token redemption) using mocked providers before touching production credentials.
 
 Without these values the routes short-circuit with informative errors and no assets are released.
+
+Run `npm run template:package` to rebuild the ZIP/TAR artifacts under `TEMPLATE_FILES_PATH` whenever you change core files.
