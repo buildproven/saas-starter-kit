@@ -12,6 +12,7 @@ const config = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
+  testPathIgnorePatterns: ['<rootDir>/examples/'],
   coverageThreshold: {
     global: {
       branches: 80,

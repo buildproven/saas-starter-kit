@@ -175,15 +175,30 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // In production, you'd retrieve the actual session from Stripe
-    // For now, return success status
+    const checkoutSession = await BillingService.getCheckoutSession(sessionId)
+
+    let planDetails = null
+
+    if (checkoutSession.priceId) {
+      planDetails = await SubscriptionService.getPlanByPriceId(checkoutSession.priceId)
+    }
+
     return NextResponse.json({
-      status: 'complete',
-      paymentStatus: 'paid',
-      customerEmail: session.user.email,
+      status: checkoutSession.status,
+      paymentStatus: checkoutSession.paymentStatus,
+      customerEmail: checkoutSession.customerEmail ?? session.user.email,
       organization: {
         id: organizationId,
       },
+      priceId: checkoutSession.priceId,
+      plan: planDetails
+        ? {
+            name: planDetails.name,
+            amount: planDetails.amount,
+            currency: planDetails.currency,
+            interval: planDetails.interval,
+          }
+        : null,
     })
   } catch (error) {
     console.error('Error fetching checkout session:', error)

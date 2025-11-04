@@ -1,0 +1,42 @@
+name: Feature Request
+description: Propose a new capability or significant enhancement.
+title: "feat: "
+labels:
+  - enhancement
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us evaluate new product work. Clearly describe the problem before proposing a solution.
+  - type: input
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What user problem are we trying to solve?
+      placeholder: "Customers cannot self-serve plan upgrades."
+    validations:
+      required: true
+  - type: textarea
+    id: goals
+    attributes:
+      label: Success Criteria
+      description: What outcomes or metrics signal success?
+      placeholder: "- Increase upgrade rate by 15%\n- Reduce support tickets for billing by 30%"
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: Describe the experience, technical approach, or acceptance criteria.
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies & Risks
+      description: Call out blockers (integrations, compliance, migrations).
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Link designs, user feedback, or related issues.

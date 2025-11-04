@@ -1,91 +1,86 @@
-import { render, screen, user, resetMocks, mockStore } from '@/lib/test-utils'
+import { render, screen, resetMocks } from '@/lib/test-utils'
 import Home from './page'
 
-// Mock the store module
-jest.mock('@/lib/store')
+// Mock next-auth
+jest.mock('next-auth/react', () => ({
+  useSession: () => ({ data: null }),
+}))
 
 describe('Home Page', () => {
   beforeEach(() => {
     resetMocks()
-    // Reset store to default state
-    mockStore.theme = 'light'
-    mockStore.user = null
-    mockStore.isAuthenticated = false
   })
 
-  it('renders the welcome message', () => {
+  it('renders the marketing page', () => {
     render(<Home />)
 
-    expect(screen.getByRole('heading', { name: /welcome to your saas/i })).toBeInTheDocument()
+    // Should have the main marketing heading
+    expect(screen.getByRole('heading', { name: /launch your saas in days, not months/i })).toBeInTheDocument()
   })
 
-  it('displays the current theme', () => {
+  it('has navigation links', () => {
     render(<Home />)
 
-    expect(screen.getByText('Current theme: light')).toBeInTheDocument()
+    // Navigation links - Features and Pricing appear in both header and footer
+    expect(screen.getAllByRole('link', { name: /features/i })).toHaveLength(2) // Header and footer
+    expect(screen.getAllByRole('link', { name: /pricing/i })).toHaveLength(2) // Header and footer
+
+    // Testimonials only appears in header
+    expect(screen.getByRole('link', { name: /testimonials/i })).toBeInTheDocument()
   })
 
-  it('displays dark theme when store has dark theme', () => {
-    mockStore.theme = 'dark'
-
+  it('has call-to-action buttons', () => {
     render(<Home />)
 
-    expect(screen.getByText('Current theme: dark')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /get started free/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /buy template/i })).toBeInTheDocument()
   })
 
-  it('has a theme toggle button', () => {
+  it('has proper page structure', () => {
     render(<Home />)
 
-    const toggleButton = screen.getByRole('button', { name: /toggle theme/i })
-    expect(toggleButton).toBeInTheDocument()
-    expect(toggleButton).toHaveClass('px-4', 'py-2', 'bg-blue-500', 'text-white')
+    // Should have header
+    expect(screen.getByRole('banner')).toBeInTheDocument()
+
+    // Should have navigation
+    expect(screen.getByRole('navigation')).toBeInTheDocument()
+
+    // Should have the main heading
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
   })
 
-  it('calls setTheme when toggle button is clicked (light to dark)', async () => {
-    mockStore.theme = 'light'
-
+  it('displays features section', () => {
     render(<Home />)
 
-    const toggleButton = screen.getByRole('button', { name: /toggle theme/i })
-    await user.click(toggleButton)
-
-    expect(mockStore.setTheme).toHaveBeenCalledWith('dark')
-    expect(mockStore.setTheme).toHaveBeenCalledTimes(1)
+    expect(screen.getByText(/everything you need to launch/i)).toBeInTheDocument()
+    expect(screen.getByText(/lightning fast/i)).toBeInTheDocument()
+    expect(screen.getByText(/enterprise security/i)).toBeInTheDocument()
   })
 
-  it('calls setTheme when toggle button is clicked (dark to light)', async () => {
-    mockStore.theme = 'dark'
-
+  it('displays pricing section', () => {
     render(<Home />)
 
-    const toggleButton = screen.getByRole('button', { name: /toggle theme/i })
-    await user.click(toggleButton)
-
-    expect(mockStore.setTheme).toHaveBeenCalledWith('light')
-    expect(mockStore.setTheme).toHaveBeenCalledTimes(1)
-  })
-
-  it('has proper layout structure', () => {
-    render(<Home />)
-
-    const main = screen.getByRole('main')
-    expect(main).toHaveClass('flex', 'min-h-screen', 'flex-col', 'items-center', 'justify-between', 'p-24')
-
-    const themeSection = screen.getByText(/current theme:/i).parentElement
-    expect(themeSection).toHaveClass('flex', 'items-center', 'gap-4')
+    expect(screen.getByText(/simple, transparent pricing/i)).toBeInTheDocument()
+    expect(screen.getByText(/monthly/i)).toBeInTheDocument()
+    expect(screen.getByText(/yearly/i)).toBeInTheDocument()
   })
 
   it('has accessible structure', () => {
     render(<Home />)
 
-    // Should have a main landmark
-    expect(screen.getByRole('main')).toBeInTheDocument()
+    // Should have a banner (header)
+    expect(screen.getByRole('banner')).toBeInTheDocument()
 
-    // Should have a heading
+    // Should have navigation
+    expect(screen.getByRole('navigation')).toBeInTheDocument()
+
+    // Should have a main heading
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
 
-    // Button should be focusable
-    const button = screen.getByRole('button', { name: /toggle theme/i })
-    expect(button).not.toHaveAttribute('disabled')
+    // Buttons should be focusable
+    const buttons = screen.getAllByRole('button')
+    buttons.forEach(button => {
+      expect(button).not.toHaveAttribute('disabled')
+    })
   })
 })

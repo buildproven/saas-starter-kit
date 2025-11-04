@@ -2,6 +2,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import '@testing-library/jest-dom'
 
+process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'sk_test_1234567890abcdef'
+process.env.STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_secret'
+process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_1234567890abcdef'
+
+const stripePriceEnvDefaults: Record<string, string> = {
+  STRIPE_PRICE_STARTER_MONTHLY: 'price_test_starter_monthly',
+  STRIPE_PRICE_STARTER_YEARLY: 'price_test_starter_yearly',
+  STRIPE_PRICE_PRO_MONTHLY: 'price_test_pro_monthly',
+  STRIPE_PRICE_PRO_YEARLY: 'price_test_pro_yearly',
+  STRIPE_PRICE_ENTERPRISE_MONTHLY: 'price_test_enterprise_monthly',
+  STRIPE_PRICE_ENTERPRISE_YEARLY: 'price_test_enterprise_yearly',
+}
+
+Object.entries(stripePriceEnvDefaults).forEach(([key, value]) => {
+  if (!process.env[key]) {
+    process.env[key] = value
+  }
+})
+
 // Mock Next.js router
 jest.mock('next/router', () => require('next-router-mock'))
 jest.mock('next/navigation', () => require('next-router-mock'))

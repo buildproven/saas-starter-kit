@@ -1,111 +1,143 @@
 # SaaS Starter Template
 
-A modern full-stack SaaS starter template with:
+A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma, and Stripe-ready billing flows. Use it to launch multi-tenant products with authentication, RBAC, subscriptions, and modern DX defaults already wired together.
 
-- Next.js 14 (App Router)
-- TypeScript
-- Prisma ORM
-- PostgreSQL
-- Tailwind CSS
-- Jest & React Testing Library
-- ESLint & Prettier
-- GitHub Actions CI/CD
-- Vercel Deployment
-- Error tracking with Sentry
-- State management with Zustand
+## Highlights
 
-## Getting Started
+- **Next.js App Router** with hybrid rendering, server actions, and middleware-driven RBAC.
+- **Authentication & Authorization** using NextAuth (JWT strategy), Prisma adapter, and role-aware middleware (`USER`, `ADMIN`, `SUPER_ADMIN`).
+- **Multi-tenant data model** with Organizations, Projects, API Keys, Plans, and Usage tracking powered by Prisma & PostgreSQL.
+- **Billing scaffolding** with Stripe-compatible helpers (checkout, billing portal, subscription enforcement).
+- **Production tooling**: Jest + Testing Library, ESLint (security plugin), Prettier, Tailwind (shadcn/ui tokens), Sentry, Husky + lint-staged, and GitHub Actions.
+- **State management & UI**: Zustand global store, shadcn-style component primitives, and Lucide iconography.
 
-1. Clone the repository:
+## Prerequisites
 
-```bash
-git clone https://github.com/yourusername/saas-starter-template.git
-cd saas-starter-template
-```
+- Node.js ≥ 20 (Volta and `.nvmrc` are provided).
+- PostgreSQL 14+ (local or managed). SQLite is not supported.
+- npm ≥ 10 (installed automatically via Volta if desired).
+- Stripe + Sentry credentials when enabling billing or production monitoring (optional in local dev).
 
-2. Install dependencies:
+## Quick Start
 
-```bash
-npm install
-```
+1. **Clone & Install**
+   ```bash
+   git clone https://github.com/yourusername/saas-starter-template.git
+   cd saas-starter-template
+   npm install
+   ```
 
-3. Set up environment variables:
+2. **Configure environment**
+   ```bash
+   cp .env.example .env.local
+   # Fill in database, NextAuth, Stripe, and Sentry values
+   ```
 
-```bash
-cp .env.example .env.local
-# Edit .env.local with your values
-```
+3. **Database bootstrap**
+   ```bash
+   npm run db:push        # Apply Prisma schema
+   npm run db:seed        # (Optional) Seed plans & demo data
+   ```
 
-4. Set up the database:
+4. **Run the app**
+   ```bash
+   npm run dev
+   ```
+   Visit `http://localhost:3000` and sign in with any configured OAuth provider (Google/GitHub by default).
 
-```bash
-npx prisma db push
-```
+## Environment Cheat Sheet
 
-5. Run the development server:
+`DATABASE_URL` is required for Prisma. The following groups should be populated before deploying:
 
-```bash
-npm run dev
-```
+- **NextAuth** – `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, provider IDs/secrets.
+- **Stripe** – `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` identifiers for each active plan.
+- **Sentry (optional)** – `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`.
+- **App metadata** – `NEXT_PUBLIC_APP_VERSION`, `NEXT_PUBLIC_APP_URL`.
 
-## Available Scripts
+Refer to `.env.example` for the full list and descriptions.
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run typecheck` - Check types
-- `npm test` - Run tests
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:coverage` - Run tests with coverage
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
-
-## Project Structure
+## Project Layout
 
 ```
-├── .github/          # GitHub Actions workflows
-├── prisma/          # Prisma schema and migrations
-├── public/          # Static assets
+├── prisma/                 # Prisma schema, seeds, migrations
 ├── src/
-│   ├── app/         # Next.js app router pages
-│   ├── components/  # React components
-│   │   └── ui/     # Reusable UI components
-│   ├── lib/        # Utility functions
-│   └── types/      # TypeScript types
-├── tests/          # Test files
-└── ...config files
+│   ├── app/                # Next.js App Router routes & API endpoints
+│   │   ├── api/            # REST endpoints (organizations, billing, etc.)
+│   │   ├── auth/           # Auth pages (signin, signout, error)
+│   │   └── dashboard/      # Example authenticated UI
+│   ├── components/         # UI primitives (shadcn-derived) & feature widgets
+│   ├── lib/                # Services: auth, billing, subscription, Zustand store
+│   └── styles/             # Tailwind globals and tokens
+├── docs/                   # Additional product documentation (optional)
+├── API.md                  # Endpoint reference
+├── ARCHITECTURE.md         # System design & module overview
+├── DEPLOYMENT.md           # Production deployment playbook
+└── CONTRIBUTING.md         # Developer workflow guidelines
 ```
 
-## Testing
+## Development Workflow
 
-We use Jest and React Testing Library for testing. Run tests with:
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Next.js dev server with hot reload |
+| `npm run lint` | ESLint (including security and React hooks rules) |
+| `npm run typecheck` | TypeScript project validation (`tsc --noEmit`) |
+| `npm test` / `npm run test:watch` | Jest + Testing Library (JS DOM environment) |
+| `npm run test:coverage` | Enforce 80% global coverage threshold |
+| `npm run format` / `npm run format:check` | Prettier and Stylelint |
+| `npm run db:push` / `npm run db:generate` | Prisma schema application & client generation |
+| `npm run db:seed` | Populate core Plan data and sample content |
+| `npm run security:audit` | `npm audit` high severity gate |
+| `npm run security:secrets` | Detect hardcoded secrets in repository |
 
+Husky hooks run lint-staged tasks on staged files; ensure you install dependencies before committing.
+
+## Testing & Quality Gates
+
+- Unit/integration tests live alongside source files (`*.test.ts[x]`) and under `src/lib`.
+- `jest.setup.ts` configures the JS DOM environment, mocks Next navigation, and polyfills web streams.
+- Coverage target: 80% branches/functions/lines/statements (enforced in `jest.config.js`).
+- ESLint includes `eslint-plugin-security` to surface common security pitfalls.
+- Stylelint enforces consistency for Tailwind and utility CSS.
+
+Run the full suite before opening a PR:
 ```bash
+npm run lint
+npm run typecheck
 npm test
 ```
 
-Coverage requirements:
+## Documentation
 
-- Branches: 80%
-- Functions: 80%
-- Lines: 80%
-- Statements: 80%
+- [API.md](./API.md) – HTTP endpoints and authentication expectations.
+- [ARCHITECTURE.md](./ARCHITECTURE.md) – Module boundaries, data flow, and extension points.
+- [DEPLOYMENT.md](./DEPLOYMENT.md) – How to promote the stack to production/Vercel.
+- [CONTRIBUTING.md](./CONTRIBUTING.md) – Coding standards, branch strategy, and PR checklist.
 
 ## Deployment
 
-This template is configured for deployment on Vercel. The GitHub Actions workflow will automatically deploy to Vercel when pushing to main/master branch.
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for step-by-step instructions on deploying to Vercel (or another Node-friendly platform), configuring environment variables, seeding databases, enabling Sentry, and wiring Stripe webhooks.
 
-Required secrets for GitHub Actions:
+## 💰 Commercial Template Sales
 
-- `VERCEL_TOKEN`
-- `VERCEL_ORG_ID`
-- `VERCEL_PROJECT_ID`
+This open-source template is free to use under MIT license. We also offer **premium packages** with advanced features:
 
-## Contributing
+| Package | Price | Features |
+|---------|-------|----------|
+| **Basic** | $299 | Complete template + docs + email support |
+| **Pro** | $599 | Basic + white-label + videos + GitHub access + consultation |
+| **Enterprise** | $1,499 | Pro + deployment + training + extended support + customization |
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on contributing to this project.
+**[🚀 Purchase Premium Packages](https://your-domain.com/template-purchase)**
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+**Dual Licensed:**
+- **Open Source**: MIT License (see [LICENSE](./LICENSE)) - Free for personal and commercial use
+- **Commercial**: Premium packages include additional rights and restrictions (see [COMMERCIAL_LICENSE.md](./COMMERCIAL_LICENSE.md))
+
+The open-source version is free to use for any purpose. Premium packages provide enhanced features, support, and commercial protections.
+
+## Support & Feedback
+
+Issues and pull requests are encouraged. If you launch something with the template, let us know!

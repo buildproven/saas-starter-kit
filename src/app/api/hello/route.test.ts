@@ -37,9 +37,7 @@ describe('/api/hello Route', () => {
 
   describe('GET /api/hello', () => {
     it('returns a successful response with message', async () => {
-      const request = createMockRequest({ method: 'GET' })
-
-      const response = await GET(request)
+      const response = await GET()
       const data = await response.json()
 
       expect(response.status).toBe(200)
@@ -47,9 +45,7 @@ describe('/api/hello Route', () => {
     })
 
     it('returns a Response object', async () => {
-      const request = createMockRequest({ method: 'GET' })
-
-      const response = await GET(request)
+      const response = await GET()
 
       expect(response).toBeTruthy()
       expect(response.status).toBeDefined()

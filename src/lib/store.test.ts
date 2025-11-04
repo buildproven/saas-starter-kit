@@ -227,7 +227,8 @@ describe('App Store', () => {
         result.current.updateOrganization('1', { name: 'Updated Org' })
       })
 
-      expect(result.current.organizations[0].name).toBe('Updated Org')
+      expect(result.current.organizations[0]).toBeDefined()
+      expect(result.current.organizations[0]?.name).toBe('Updated Org')
       expect(result.current.currentOrganization?.name).toBe('Updated Org')
     })
   })
@@ -285,16 +286,19 @@ describe('App Store', () => {
       })
 
       expect(result.current.notifications).toHaveLength(1)
-      expect(result.current.notifications[0]).toMatchObject({
+      const [notification] = result.current.notifications
+      expect(notification).toBeDefined()
+      expect(notification).toMatchObject({
         type: 'success',
         title: 'Test notification',
         message: 'Test message',
       })
 
-      const notificationId = result.current.notifications[0].id
+      const notificationId = notification?.id
+      expect(notificationId).toBeDefined()
 
       act(() => {
-        result.current.removeNotification(notificationId)
+        result.current.removeNotification(notificationId as string)
       })
 
       expect(result.current.notifications).toHaveLength(0)

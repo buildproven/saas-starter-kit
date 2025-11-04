@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, master, develop]
   pull_request:
-    branches: [main, master, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
   quality:
@@ -29,11 +29,17 @@ jobs:
             npm install
           fi
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test -- --runInBand
+
       - name: Prettier check
         run: npm run format:check
-
-      - name: ESLint
-        run: npx eslint . --ext .js,.jsx,.ts,.tsx,.html --max-warnings=0
 
       - name: Stylelint
         run: npx stylelint "**/*.{css,scss,sass,less,pcss}" --allow-empty-input

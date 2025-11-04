@@ -1,10 +1,23 @@
 import { renderHook } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
+import type { Session } from 'next-auth'
+import type { SessionContextValue } from 'next-auth/react'
 import { useAuth, usePermissions } from '../useAuth'
 
 // Mock next-auth
 jest.mock('next-auth/react')
 const mockUseSession = useSession as jest.MockedFunction<typeof useSession>
+const asAuthenticated = (session: Session): SessionContextValue => ({
+  data: session,
+  status: 'authenticated',
+  update: jest.fn(),
+})
+
+const asStatus = (status: Exclude<SessionContextValue['status'], 'authenticated'>): SessionContextValue => ({
+  data: null,
+  status,
+  update: jest.fn(),
+})
 
 describe('useAuth', () => {
   beforeEach(() => {
@@ -12,10 +25,7 @@ describe('useAuth', () => {
   })
 
   it('should return loading state when session is loading', () => {
-    mockUseSession.mockReturnValue({
-      data: null,
-      status: 'loading',
-    })
+    mockUseSession.mockReturnValue(asStatus('loading'))
 
     const { result } = renderHook(() => useAuth())
 
@@ -25,10 +35,7 @@ describe('useAuth', () => {
   })
 
   it('should return unauthenticated state when no session', () => {
-    mockUseSession.mockReturnValue({
-      data: null,
-      status: 'unauthenticated',
-    })
+    mockUseSession.mockReturnValue(asStatus('unauthenticated'))
 
     const { result } = renderHook(() => useAuth())
 
@@ -41,19 +48,17 @@ describe('useAuth', () => {
   })
 
   it('should return user data when authenticated', () => {
-    const mockSession = {
+    const mockSession: Session = {
       user: {
         id: '1',
         email: 'user@example.com',
         name: 'John Doe',
         role: 'USER',
       },
+      expires: '2025-01-01T00:00:00.000Z',
     }
 
-    mockUseSession.mockReturnValue({
-      data: mockSession,
-      status: 'authenticated',
-    })
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
 
     const { result } = renderHook(() => useAuth())
 
@@ -71,18 +76,16 @@ describe('useAuth', () => {
   })
 
   it('should correctly identify admin user', () => {
-    const mockSession = {
+    const mockSession: Session = {
       user: {
         id: '1',
         email: 'admin@example.com',
         role: 'ADMIN',
       },
+      expires: '2025-01-01T00:00:00.000Z',
     }
 
-    mockUseSession.mockReturnValue({
-      data: mockSession,
-      status: 'authenticated',
-    })
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
 
     const { result } = renderHook(() => useAuth())
 
@@ -94,18 +97,16 @@ describe('useAuth', () => {
   })
 
   it('should correctly identify super admin user', () => {
-    const mockSession = {
+    const mockSession: Session = {
       user: {
         id: '1',
         email: 'superadmin@example.com',
         role: 'SUPER_ADMIN',
       },
+      expires: '2025-01-01T00:00:00.000Z',
     }
 
-    mockUseSession.mockReturnValue({
-      data: mockSession,
-      status: 'authenticated',
-    })
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
 
     const { result } = renderHook(() => useAuth())
 
@@ -117,18 +118,16 @@ describe('useAuth', () => {
   })
 
   it('should handle role checks correctly', () => {
-    const mockSession = {
+    const mockSession: Session = {
       user: {
         id: '1',
         email: 'admin@example.com',
         role: 'ADMIN',
       },
+      expires: '2025-01-01T00:00:00.000Z',
     }
 
-    mockUseSession.mockReturnValue({
-      data: mockSession,
-      status: 'authenticated',
-    })
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
 
     const { result } = renderHook(() => useAuth())
 
@@ -144,18 +143,16 @@ describe('useAuth', () => {
   })
 
   it('should default to USER role when no role provided', () => {
-    const mockSession = {
+    const mockSession: Session = {
       user: {
         id: '1',
         email: 'user@example.com',
         // No role property
       },
+      expires: '2025-01-01T00:00:00.000Z',
     }
 
-    mockUseSession.mockReturnValue({
-      data: mockSession,
-      status: 'authenticated',
-    })
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
 
     const { result } = renderHook(() => useAuth())
 
@@ -166,18 +163,16 @@ describe('useAuth', () => {
 
 describe('usePermissions', () => {
   it('should provide correct permission methods for admin user', () => {
-    const mockSession = {
+    const mockSession: Session = {
       user: {
         id: '1',
         email: 'admin@example.com',
         role: 'ADMIN',
       },
+      expires: '2025-01-01T00:00:00.000Z',
     }
 
-    mockUseSession.mockReturnValue({
-      data: mockSession,
-      status: 'authenticated',
-    })
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
 
     const { result } = renderHook(() => usePermissions())
 
@@ -190,18 +185,16 @@ describe('usePermissions', () => {
   })
 
   it('should provide correct permission methods for super admin user', () => {
-    const mockSession = {
+    const mockSession: Session = {
       user: {
         id: '1',
         email: 'superadmin@example.com',
         role: 'SUPER_ADMIN',
       },
+      expires: '2025-01-01T00:00:00.000Z',
     }
 
-    mockUseSession.mockReturnValue({
-      data: mockSession,
-      status: 'authenticated',
-    })
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
 
     const { result } = renderHook(() => usePermissions())
 
@@ -214,18 +207,16 @@ describe('usePermissions', () => {
   })
 
   it('should deny all admin permissions for regular user', () => {
-    const mockSession = {
+    const mockSession: Session = {
       user: {
         id: '1',
         email: 'user@example.com',
         role: 'USER',
       },
+      expires: '2025-01-01T00:00:00.000Z',
     }
 
-    mockUseSession.mockReturnValue({
-      data: mockSession,
-      status: 'authenticated',
-    })
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
 
     const { result } = renderHook(() => usePermissions())
 

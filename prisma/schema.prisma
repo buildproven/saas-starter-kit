@@ -143,6 +143,7 @@ model Plan {
   name        String
   description String?
   priceId     String   @unique
+  productId   String
   amount      Int      // Amount in cents
   currency    String   @default("usd")
   interval    PlanInterval
@@ -205,4 +206,62 @@ model UsageRecord {
 
   @@index([metric, timestamp])
   @@index([projectId, timestamp])
+}
+
+model TemplateSale {
+  id               String   @id @default(cuid())
+  sessionId        String   @unique // Stripe checkout session ID
+  email            String
+  package          String   // 'basic', 'pro', 'enterprise'
+  amount           Int      // Amount in cents
+  status           TemplateSaleStatus @default(PENDING)
+  paymentIntentId  String?  // Stripe payment intent ID
+  companyName      String?
+  useCase          String?
+  completedAt      DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // JSON fields for flexible data storage
+  metadata         Json?    // Package details, Stripe session data
+  customerDetails  Json?    // Customer information from Stripe
+
+  // Relation to customer record
+  customer         TemplateSaleCustomer?
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum TemplateSaleStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+model TemplateSaleCustomer {
+  id              String   @id @default(cuid())
+  saleId          String   @unique
+  email           String
+  package         String   // 'basic', 'pro', 'enterprise'
+  licenseKey      String   @unique
+  downloadToken   String   @unique
+  githubTeamId    String?  // GitHub team ID for repo access
+  supportTier     String   // 'email', 'priority_email', 'phone_email_dedicated'
+  accessExpiresAt DateTime? // null = lifetime access
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // JSON field for flexible metadata
+  metadata        Json?    // onboarding status, support history, etc.
+
+  // Relation to the original sale
+  sale            TemplateSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([licenseKey])
+  @@index([package])
+  @@index([supportTier])
 }

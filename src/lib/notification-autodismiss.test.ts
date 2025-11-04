@@ -25,7 +25,9 @@ describe('Notification Auto-dismiss', () => {
 
     // Verify notification was added
     expect(useAppStore.getState().notifications).toHaveLength(1)
-    expect(useAppStore.getState().notifications[0].title).toBe('Test Success')
+    const successNotification = useAppStore.getState().notifications[0]
+    expect(successNotification).toBeDefined()
+    expect(successNotification?.title).toBe('Test Success')
 
     // Fast-forward time by 5 seconds
     jest.advanceTimersByTime(5000)
@@ -52,7 +54,9 @@ describe('Notification Auto-dismiss', () => {
 
     // Verify error notification is still there
     expect(useAppStore.getState().notifications).toHaveLength(1)
-    expect(useAppStore.getState().notifications[0].title).toBe('Test Error')
+    const errorNotification = useAppStore.getState().notifications[0]
+    expect(errorNotification).toBeDefined()
+    expect(errorNotification?.title).toBe('Test Error')
   })
 
   it('should handle multiple notifications with different auto-dismiss behaviors', () => {
@@ -83,8 +87,10 @@ describe('Notification Auto-dismiss', () => {
     // Verify only error notification remains
     const remainingNotifications = useAppStore.getState().notifications
     expect(remainingNotifications).toHaveLength(1)
-    expect(remainingNotifications[0].title).toBe('Error 1')
-    expect(remainingNotifications[0].type).toBe('error')
+    const [remainingNotification] = remainingNotifications
+    expect(remainingNotification).toBeDefined()
+    expect(remainingNotification?.title).toBe('Error 1')
+    expect(remainingNotification?.type).toBe('error')
   })
 
   it('should not remove notification if manually removed before timeout', () => {
@@ -96,10 +102,11 @@ describe('Notification Auto-dismiss', () => {
       title: 'Manual Remove Test',
     })
 
-    const notificationId = useAppStore.getState().notifications[0].id
+    const notificationId = useAppStore.getState().notifications[0]?.id
+    expect(notificationId).toBeDefined()
 
     // Manually remove the notification
-    removeNotification(notificationId)
+    removeNotification(notificationId as string)
 
     // Verify notification was removed
     expect(useAppStore.getState().notifications).toHaveLength(0)

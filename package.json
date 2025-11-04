@@ -43,6 +43,8 @@
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
     "@sentry/nextjs": "^7.0.0",
+    "@types/archiver": "^7.0.0",
+    "archiver": "^7.0.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.548.0",
@@ -50,6 +52,7 @@
     "next-auth": "^4.24.11",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "stripe": "^16.12.0",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^4.1.12",
@@ -57,6 +60,7 @@
   },
   "devDependencies": {
     "@jest/types": "^29.0.0",
+    "@lhci/cli": "^0.14.0",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.0.0",
@@ -88,8 +92,7 @@
     "tailwindcss": "^3.3.0",
     "tsx": "^4.20.6",
     "typescript": "^5.0.0",
-    "webpack-bundle-analyzer": "^4.10.2",
-    "@lhci/cli": "^0.14.0"
+    "webpack-bundle-analyzer": "^4.10.2"
   },
   "lint-staged": {
     "package.json": [

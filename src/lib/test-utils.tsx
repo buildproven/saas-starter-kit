@@ -7,7 +7,7 @@ export const mockStore = {
   user: null,
   isAuthenticated: false,
   sidebarOpen: false,
-  theme: 'light' as const,
+  theme: 'light' as 'light' | 'dark',
   setUser: jest.fn(),
   toggleSidebar: jest.fn(),
   setTheme: jest.fn(),
@@ -21,6 +21,7 @@ export const mockSession = {
     name: 'Test User',
     email: 'test@example.com',
     image: 'https://example.com/avatar.jpg',
+    role: 'USER',
   },
   expires: '2025-01-01',
 }
@@ -35,6 +36,7 @@ jest.mock('next-auth/react', () => ({
   useSession: jest.fn(() => ({
     data: mockSession,
     status: 'authenticated',
+    update: jest.fn(),
   })),
   SessionProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
@@ -88,5 +90,6 @@ export const mockUseSession = (sessionData: any = mockSession, status = 'authent
   useSession.mockReturnValue({
     data: sessionData,
     status,
+    update: jest.fn(),
   })
 }

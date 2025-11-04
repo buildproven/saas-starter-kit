@@ -6,6 +6,7 @@
     "prettier"
   ],
   "plugins": ["@typescript-eslint", "jest", "react-hooks"],
+  "ignorePatterns": ["examples/**/*", "scripts/**/*", "jest.setup.ts"],
   "rules": {
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",

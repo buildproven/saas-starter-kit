@@ -1,140 +1,145 @@
 /**
- * Seed script to populate default subscription plans
+ * Seed script to synchronize pricing plans with Stripe products/prices.
  * Run with: npx tsx scripts/seed-plans.ts
  */
 
-import { PrismaClient, PlanInterval } from '@prisma/client'
+import { Prisma, PrismaClient, PlanInterval } from '@prisma/client'
+import type Stripe from 'stripe'
 import { PLAN_CONFIGS } from '../src/lib/subscription'
-
-const prisma = new PrismaClient()
+import { getStripeClient } from '../src/lib/stripe'
+import {
+  PLAN_VARIANTS,
+  getPlanLabel,
+  getPriceIdFromEnv,
+  type BillingIntervalSlug,
+} from '../src/lib/billing/plan-definitions'
 
 interface PlanSeed {
   name: string
   description: string
   priceId: string
+  productId: string
   amount: number
   currency: string
   interval: PlanInterval
-  features: Record<string, unknown>
+  features: Prisma.JsonObject
   isActive: boolean
 }
 
-const plans: PlanSeed[] = [
-  {
-    name: 'Starter',
-    description: 'Perfect for small teams getting started',
-    priceId: 'price_starter_monthly',
-    amount: 1900, // $19/month in cents
-    currency: 'usd',
-    interval: 'MONTH',
-    features: PLAN_CONFIGS.starter!,
-    isActive: true,
-  },
-  {
-    name: 'Starter (Yearly)',
-    description: 'Perfect for small teams getting started - billed yearly',
-    priceId: 'price_starter_yearly',
-    amount: 19000, // $190/year in cents (2 months free)
-    currency: 'usd',
-    interval: 'YEAR',
-    features: PLAN_CONFIGS.starter!,
-    isActive: true,
-  },
-  {
-    name: 'Pro',
-    description: 'Advanced features for growing businesses',
-    priceId: 'price_pro_monthly',
-    amount: 4900, // $49/month in cents
-    currency: 'usd',
-    interval: 'MONTH',
-    features: PLAN_CONFIGS.pro!,
-    isActive: true,
-  },
-  {
-    name: 'Pro (Yearly)',
-    description: 'Advanced features for growing businesses - billed yearly',
-    priceId: 'price_pro_yearly',
-    amount: 49000, // $490/year in cents (2 months free)
-    currency: 'usd',
-    interval: 'YEAR',
-    features: PLAN_CONFIGS.pro!,
-    isActive: true,
-  },
-  {
-    name: 'Enterprise',
-    description: 'Everything you need for large organizations',
-    priceId: 'price_enterprise_monthly',
-    amount: 9900, // $99/month in cents
-    currency: 'usd',
-    interval: 'MONTH',
-    features: PLAN_CONFIGS.enterprise!,
-    isActive: true,
-  },
-  {
-    name: 'Enterprise (Yearly)',
-    description: 'Everything you need for large organizations - billed yearly',
-    priceId: 'price_enterprise_yearly',
-    amount: 99000, // $990/year in cents (2 months free)
-    currency: 'usd',
-    interval: 'YEAR',
-    features: PLAN_CONFIGS.enterprise!,
-    isActive: true,
-  },
-]
+const serializeFeatures = (plan: keyof typeof PLAN_CONFIGS) =>
+  PLAN_CONFIGS[plan] as unknown as Prisma.JsonObject
 
-async function seedPlans() {
-  console.log('🌱 Seeding subscription plans...')
+const toInterval = (interval: BillingIntervalSlug): PlanInterval =>
+  interval === 'year' ? 'YEAR' : 'MONTH'
 
-  try {
-    for (const planData of plans) {
-      const existingPlan = await prisma.plan.findUnique({
-        where: { priceId: planData.priceId },
-      })
+const requirePriceId = (envName: string): string => {
+  const value = getPriceIdFromEnv(envName)
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${envName}`)
+  }
+  return value
+}
 
-      if (existingPlan) {
-        console.log(`Plan "${planData.name}" already exists, updating...`)
-        await prisma.plan.update({
-          where: { priceId: planData.priceId },
-          data: {
-            name: planData.name,
-            description: planData.description,
-            amount: planData.amount,
-            currency: planData.currency,
-            interval: planData.interval,
-            features: planData.features,
-            isActive: planData.isActive,
-          },
-        })
-      } else {
-        console.log(`Creating plan "${planData.name}"...`)
-        await prisma.plan.create({
-          data: planData,
-        })
-      }
+const isDeletedProduct = (
+  product: Stripe.Product | Stripe.DeletedProduct
+): product is Stripe.DeletedProduct => 'deleted' in product && product.deleted === true
+
+async function buildPlanSeeds(): Promise<PlanSeed[]> {
+  const stripe = getStripeClient()
+  const seeds: PlanSeed[] = []
+
+  for (const variant of PLAN_VARIANTS) {
+    const priceId = requirePriceId(variant.priceEnv)
+
+    const price = await stripe.prices.retrieve(priceId, {
+      expand: ['product'],
+    })
+
+    if (!price.unit_amount || !price.currency || !price.recurring) {
+      throw new Error(
+        `Price ${priceId} must be a recurring price with a fixed unit amount and currency.`
+      )
     }
 
-    console.log('✅ Successfully seeded subscription plans!')
+    const productRecord =
+      typeof price.product === 'string'
+        ? await stripe.products.retrieve(price.product)
+        : price.product
 
-    // Display created plans
-    const allPlans = await prisma.plan.findMany({
+    if (isDeletedProduct(productRecord)) {
+      throw new Error(`Stripe product ${productRecord.id} is deleted. Restore or update pricing before seeding.`)
+    }
+
+    const productName = productRecord.name || getPlanLabel(variant.tier)
+    const displayName = `${productName} (${variant.interval === 'year' ? 'Yearly' : 'Monthly'})`
+
+    seeds.push({
+      name: displayName,
+      description: productRecord.description ?? `${productName} subscription`,
+      priceId: price.id,
+      productId: productRecord.id,
+      amount: price.unit_amount,
+      currency: price.currency,
+      interval: toInterval(variant.interval),
+      features: serializeFeatures(variant.tier),
+      isActive: Boolean(productRecord.active && price.active),
+    })
+  }
+
+  return seeds
+}
+
+export async function seedPlans(passedPrisma?: PrismaClient) {
+  console.log('🌱 Seeding Stripe-backed subscription plans...')
+
+  const prisma = passedPrisma ?? new PrismaClient()
+
+  try {
+    const planSeeds = await buildPlanSeeds()
+
+    for (const planData of planSeeds) {
+      await prisma.plan.upsert({
+        where: { priceId: planData.priceId },
+        update: {
+          name: planData.name,
+          description: planData.description,
+          amount: planData.amount,
+          currency: planData.currency,
+          interval: planData.interval,
+          features: planData.features,
+          isActive: planData.isActive,
+          productId: planData.productId,
+        },
+        create: planData,
+      })
+
+      console.log(`✔ Plan synced: ${planData.name} (${planData.priceId})`)
+    }
+
+    // Display summary
+    const plans = await prisma.plan.findMany({
+      where: { isActive: true },
       orderBy: { amount: 'asc' },
     })
 
-    console.log('\n📋 Available Plans:')
-    allPlans.forEach((plan) => {
+    console.log('\n📋 Active Plans:')
+    plans.forEach((plan) => {
       const price = (plan.amount / 100).toFixed(2)
       const interval = plan.interval.toLowerCase()
-      console.log(`  • ${plan.name} - $${price}/${interval} (${plan.priceId})`)
+      console.log(`  • ${plan.name} - $${price}/${interval} [${plan.priceId}]`)
     })
+
+    console.log('\n✅ Successfully synchronized plans with Stripe pricing')
   } catch (error) {
-    console.error('❌ Error seeding plans:', error)
+    console.error('❌ Failed to seed plans:', error)
     process.exit(1)
   } finally {
-    await prisma.$disconnect()
+    if (!passedPrisma) {
+      await prisma.$disconnect()
+    }
   }
 }
 
-// Run the seed function
 if (require.main === module) {
   seedPlans()
 }

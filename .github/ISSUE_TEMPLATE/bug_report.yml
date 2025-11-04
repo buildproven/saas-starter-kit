@@ -1,0 +1,67 @@
+name: Bug Report
+description: Report a reproducible defect impacting users or developers.
+title: "bug: "
+labels:
+  - bug
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to help us stabilize the platform. Please fill out each section to speed up triage.
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the unexpected behavior.
+      placeholder: "Stripe webhook fails when replaying old events"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps To Reproduce
+      description: Provide the minimal steps to reproduce the issue or link to an automated reproduction.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen instead?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior & Logs
+      description: Include errors, screenshots, and/or request IDs.
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - Local
+        - Staging
+        - Production
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Describe user impact, scope, and urgency. Include approximate number of affected customers.
+    validations:
+      required: true
+  - type: textarea
+    id: workarounds
+    attributes:
+      label: Temporary Workarounds Tried
+      description: Document any mitigations or quick fixes already attempted.
