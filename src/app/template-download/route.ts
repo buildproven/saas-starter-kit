@@ -5,12 +5,11 @@
  * time-limited access to template files based on purchase tier.
  */
 
-interface TemplateSaleCustomer {
-  id: string
-  package: string
-  accessExpiresAt: Date | null
-  saleId: string
-}
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { prisma } from '@/lib/prisma'
+import { logError, ErrorType } from '@/lib/error-logging'
+import type { TemplateSaleCustomer as TemplateSaleCustomerModel } from '@prisma/client'
 
 interface DownloadResult {
   fileBuffer: Buffer
@@ -18,15 +17,21 @@ interface DownloadResult {
   filename: string
 }
 
-import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { prisma } from '@/lib/prisma'
-import { logError, ErrorType } from '@/lib/error-logging'
-
 const DownloadRequestSchema = z.object({
   token: z.string(),
   format: z.enum(['zip', 'tar']).optional().default('zip'),
 })
+
+type ValidatedCustomer = TemplateSaleCustomerModel & {
+  sale: {
+    id: string
+    status: string
+  }
+}
+
+type TokenValidationResult =
+  | { valid: true; customer: ValidatedCustomer }
+  | { valid: false; error: string; status: number }
 
 // GET /template-download?token=...&format=zip
 export async function GET(request: NextRequest) {
@@ -37,36 +42,27 @@ export async function GET(request: NextRequest) {
 
     const validatedData = DownloadRequestSchema.parse({ token, format })
 
-    // Validate the download token
     const tokenValidation = await validateDownloadToken(validatedData.token)
-
     if (!tokenValidation.valid) {
       return NextResponse.json({ error: tokenValidation.error }, { status: tokenValidation.status })
     }
 
-    // Get the customer and sale information
-    const customer = await prisma.templateSaleCustomer.findUnique({
-      where: { downloadToken: validatedData.token },
-      include: { sale: true },
-    })
+    const { customer } = tokenValidation
 
-    if (!customer) {
-      return NextResponse.json({ error: 'Invalid download token' }, { status: 404 })
-    }
-
-    // Check access expiration
     if (customer.accessExpiresAt && customer.accessExpiresAt < new Date()) {
       return NextResponse.json({ error: 'Download access has expired' }, { status: 403 })
     }
 
-    // Generate the appropriate download based on package tier
+    if (customer.sale.status !== 'COMPLETED') {
+      return NextResponse.json({ error: 'Sale not completed' }, { status: 403 })
+    }
+
     const downloadResult = await generateTemplateDownload({
       packageType: customer.package,
       format: validatedData.format,
       customer,
     })
 
-    // Log the download for analytics and security
     await logDownload({
       customerId: customer.id,
       saleId: customer.saleId,
@@ -76,8 +72,9 @@ export async function GET(request: NextRequest) {
       userAgent: request.headers.get('user-agent') || '',
     })
 
-    // Return the file download
-    return new NextResponse(downloadResult.fileBuffer, {
+    const body = new Uint8Array(downloadResult.fileBuffer)
+
+    return new NextResponse(body, {
       status: 200,
       headers: {
         'Content-Type': downloadResult.contentType,
@@ -101,99 +98,54 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function validateDownloadToken(token: string) {
-  try {
-    // Verify JWT signature with secret
-    const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET
-    if (!secret) {
-      throw new Error('JWT secret not configured')
-    }
+async function validateDownloadToken(token: string): Promise<TokenValidationResult> {
+  const customer = await prisma.templateSaleCustomer.findUnique({
+    where: { downloadToken: token },
+    include: {
+      sale: {
+        select: {
+          id: true,
+          status: true,
+        },
+      },
+    },
+  })
 
-    // For production, use proper JWT library. For now, implement basic HMAC verification
-    const [headerB64, payloadB64, signatureB64] = token.split('.')
-    if (!headerB64 || !payloadB64 || !signatureB64) {
-      throw new Error('Invalid token format')
-    }
-
-    // Verify signature
-    const crypto = await import('crypto')
-    const expectedSignature = crypto
-      .createHmac('sha256', secret)
-      .update(`${headerB64}.${payloadB64}`)
-      .digest('base64url')
-
-    if (signatureB64 !== expectedSignature) {
-      return {
-        valid: false,
-        error: 'Invalid token signature',
-        status: 401,
-      }
-    }
-
-    // Decode payload
-    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString())
-
-    // Check expiration
-    if (payload.exp && payload.exp < Date.now() / 1000) {
-      return {
-        valid: false,
-        error: 'Download token has expired',
-        status: 403,
-      }
-    }
-
-    // Check token type
-    if (payload.type !== 'template_download') {
-      return {
-        valid: false,
-        error: 'Invalid token type',
-        status: 400,
-      }
-    }
-
-    // Verify the sale exists and is completed
-    const sale = await prisma.templateSale.findUnique({
-      where: { id: payload.saleId },
-    })
-
-    if (!sale || sale.status !== 'COMPLETED') {
-      return {
-        valid: false,
-        error: 'Sale not found or not completed',
-        status: 404,
-      }
-    }
-
-    return { valid: true, saleId: payload.saleId }
-  } catch (error) {
+  if (!customer) {
     return {
       valid: false,
-      error: 'Invalid token format or signature',
-      status: 401,
+      error: 'Invalid download token',
+      status: 404,
     }
   }
+
+  if (!customer.sale || customer.sale.status !== 'COMPLETED') {
+    return {
+      valid: false,
+      error: 'Sale not found or not completed',
+      status: 404,
+    }
+  }
+
+  return { valid: true, customer }
 }
 
 async function generateTemplateDownload(params: {
   packageType: string
   format: string
-  customer: TemplateSaleCustomer
+  customer: ValidatedCustomer
 }): Promise<DownloadResult> {
   const { packageType, format } = params
 
-  // Get the appropriate template files based on package tier
   const templateFiles = getTemplateFiles(packageType)
 
-  // Check if template files are configured for production
   if (process.env.NODE_ENV === 'production' && !process.env.TEMPLATE_FILES_PATH) {
-    // Return 501 Not Implemented with helpful message
     throw new Error(
       'Template downloads not configured. Set TEMPLATE_FILES_PATH environment variable.'
     )
   }
 
   if (process.env.NODE_ENV === 'development') {
-    // In development, return a mock zip file
     const mockContent = createMockTemplateZip(packageType, templateFiles)
 
     return {
@@ -203,7 +155,6 @@ async function generateTemplateDownload(params: {
     }
   }
 
-  // Production implementation with proper error handling
   try {
     const fs = await import('fs/promises')
     const path = await import('path')
@@ -212,16 +163,12 @@ async function generateTemplateDownload(params: {
 
     const templateBasePath = process.env.TEMPLATE_FILES_PATH || './template-files'
     const archive = archiver.default(format as 'zip' | 'tar')
+    const passThrough = new PassThrough()
     const chunks: Buffer[] = []
 
-    // Create PassThrough stream to collect archive data
-    const passThrough = new PassThrough()
     passThrough.on('data', (chunk: Buffer) => chunks.push(chunk))
-
-    // Pipe archive to PassThrough stream
     archive.pipe(passThrough)
 
-    // Add template files based on tier
     for (const file of templateFiles) {
       if (
         file.tier === 'all' ||
@@ -235,32 +182,32 @@ async function generateTemplateDownload(params: {
           archive.file(filePath, { name: file.name })
         } catch {
           console.warn(`Template file not found: ${filePath}`)
-          // Continue without this file rather than failing completely
         }
       }
     }
 
-    // Finalize the archive
-    archive.finalize()
-
-    // Wait for archive to complete and all data to be written
-    await new Promise((resolve, reject) => {
+    const completion = new Promise<void>((resolve, reject) => {
       archive.on('error', reject)
       passThrough.on('end', resolve)
       passThrough.on('error', reject)
     })
+
+    await archive.finalize()
+    await completion
 
     const buffer = Buffer.concat(chunks)
 
     return {
       fileBuffer: buffer,
       contentType: format === 'zip' ? 'application/zip' : 'application/x-tar',
-      filename: `saas-starter-${packageType}-v${_getTemplateVersion()}.${format}`,
+      filename: `saas-starter-${packageType}-v${getTemplateVersion()}.${format}`,
     }
   } catch (error) {
     console.error('Template file generation failed:', error)
     throw new Error(
-      `Template download temporarily unavailable: ${error instanceof Error ? error.message : 'Unknown error'}`
+      `Template download temporarily unavailable: ${
+        error instanceof Error ? error.message : 'Unknown error'
+      }`
     )
   }
 }
@@ -268,21 +215,15 @@ async function generateTemplateDownload(params: {
 function getTemplateFiles(
   packageType: string
 ): Array<{ path: string; name: string; tier: string }> {
-  // Define which files are included in each package tier
   const allFiles = [
-    // Core files (all tiers)
     { path: 'src/', name: 'src/', tier: 'all' },
     { path: 'package.json', name: 'package.json', tier: 'all' },
     { path: 'README.md', name: 'README.md', tier: 'all' },
     { path: 'docs/', name: 'docs/', tier: 'all' },
     { path: '.env.example', name: '.env.example', tier: 'all' },
-
-    // Pro+ features
     { path: 'src/lib/white-label/', name: 'src/lib/white-label/', tier: 'pro+' },
     { path: 'scripts/deploy/', name: 'scripts/deploy/', tier: 'pro+' },
     { path: 'docs/video-tutorials/', name: 'docs/video-tutorials/', tier: 'pro+' },
-
-    // Enterprise only
     { path: 'enterprise/', name: 'enterprise/', tier: 'enterprise' },
     { path: 'scripts/enterprise-setup/', name: 'scripts/enterprise-setup/', tier: 'enterprise' },
     { path: 'docs/custom-integrations/', name: 'docs/custom-integrations/', tier: 'enterprise' },
@@ -300,7 +241,6 @@ function createMockTemplateZip(
   packageType: string,
   templateFiles: Array<{ name: string }>
 ): string {
-  // Create a mock ZIP file content for development
   const fileList = templateFiles.map((f) => f.name).join('\n')
 
   return `
@@ -336,26 +276,10 @@ async function logDownload(params: {
   ipAddress: string
   userAgent: string
 }): Promise<void> {
-  // Log download for analytics and security monitoring
   console.log('Template download:', {
     ...params,
     timestamp: new Date().toISOString(),
   })
-
-  // In production, save to analytics/audit database:
-  /*
-  await prisma.templateDownloadLog.create({
-    data: {
-      customerId: params.customerId,
-      saleId: params.saleId,
-      packageType: params.packageType,
-      format: params.format,
-      ipAddress: params.ipAddress,
-      userAgent: params.userAgent,
-      downloadedAt: new Date(),
-    },
-  })
-  */
 }
 
 function getClientIP(request: NextRequest): string {
@@ -366,20 +290,6 @@ function getClientIP(request: NextRequest): string {
   )
 }
 
-function _getTemplateVersion(): string {
-  // Return current template version (prefixed with _ to indicate intentionally unused)
+function getTemplateVersion(): string {
   return process.env.TEMPLATE_VERSION || '1.0.0'
 }
-
-/**
- * Usage Examples:
- *
- * // Download ZIP (default)
- * GET /template-download?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
- *
- * // Download TAR
- * GET /template-download?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...&format=tar
- *
- * // Client-side download trigger:
- * window.location.href = `/template-download?token=${downloadToken}`
- */

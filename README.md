@@ -21,6 +21,7 @@ A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma
 ## Quick Start
 
 1. **Clone & Install**
+
    ```bash
    git clone https://github.com/yourusername/saas-starter-template.git
    cd saas-starter-template
@@ -28,12 +29,14 @@ A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma
    ```
 
 2. **Configure environment**
+
    ```bash
    cp .env.example .env.local
    # Fill in database, NextAuth, Stripe, and Sentry values
    ```
 
 3. **Database bootstrap**
+
    ```bash
    npm run db:push        # Apply Prisma schema
    npm run db:seed        # (Optional) Seed plans & demo data
@@ -51,6 +54,7 @@ A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma
 
 - **NextAuth** – `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, provider IDs/secrets.
 - **Stripe** – `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` identifiers for each active plan.
+- **Template sales (optional)** – `STRIPE_TEMPLATE_*` price IDs, `TEMPLATE_FULFILLMENT_SECRET`, `TEMPLATE_FILES_PATH` (points to packaged assets).
 - **Sentry (optional)** – `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`.
 - **App metadata** – `NEXT_PUBLIC_APP_VERSION`, `NEXT_PUBLIC_APP_URL`.
 
@@ -77,20 +81,31 @@ Refer to `.env.example` for the full list and descriptions.
 
 ## Development Workflow
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Start the Next.js dev server with hot reload |
-| `npm run lint` | ESLint (including security and React hooks rules) |
-| `npm run typecheck` | TypeScript project validation (`tsc --noEmit`) |
-| `npm test` / `npm run test:watch` | Jest + Testing Library (JS DOM environment) |
-| `npm run test:coverage` | Enforce 80% global coverage threshold |
-| `npm run format` / `npm run format:check` | Prettier and Stylelint |
-| `npm run db:push` / `npm run db:generate` | Prisma schema application & client generation |
-| `npm run db:seed` | Populate core Plan data and sample content |
-| `npm run security:audit` | `npm audit` high severity gate |
-| `npm run security:secrets` | Detect hardcoded secrets in repository |
+| Command                                   | Purpose                                           |
+| ----------------------------------------- | ------------------------------------------------- |
+| `npm run dev`                             | Start the Next.js dev server with hot reload      |
+| `npm run lint`                            | ESLint (including security and React hooks rules) |
+| `npm run typecheck`                       | TypeScript project validation (`tsc --noEmit`)    |
+| `npm test` / `npm run test:watch`         | Jest + Testing Library (JS DOM environment)       |
+| `npm run test:coverage`                   | Enforce 80% global coverage threshold             |
+| `npm run format` / `npm run format:check` | Prettier and Stylelint                            |
+| `npm run db:push` / `npm run db:generate` | Prisma schema application & client generation     |
+| `npm run db:seed`                         | Populate core Plan data and sample content        |
+| `npm run security:audit`                  | `npm audit` high severity gate                    |
+| `npm run security:secrets`                | Detect hardcoded secrets in repository            |
 
 Husky hooks run lint-staged tasks on staged files; ensure you install dependencies before committing.
+
+## Optional: Selling the Template
+
+The repo includes APIs for monetising the starter itself. To enable them:
+
+1. Configure Stripe template products/prices (`STRIPE_TEMPLATE_*`).
+2. Set `TEMPLATE_FULFILLMENT_SECRET` and point `TEMPLATE_FILES_PATH` to the packaged assets.
+3. Wire an email provider in `src/lib/email/template-delivery.ts` (the default logs a warning instead of sending).
+4. Provide a GitHub access token if you want automated repo access for Pro/Enterprise buyers.
+
+Without these values the template-sales endpoints return informative errors and skip fulfillment.
 
 ## Testing & Quality Gates
 
@@ -101,6 +116,7 @@ Husky hooks run lint-staged tasks on staged files; ensure you install dependenci
 - Stylelint enforces consistency for Tailwind and utility CSS.
 
 Run the full suite before opening a PR:
+
 ```bash
 npm run lint
 npm run typecheck
@@ -122,10 +138,10 @@ See [DEPLOYMENT.md](./DEPLOYMENT.md) for step-by-step instructions on deploying 
 
 This open-source template is free to use under MIT license. We also offer **premium packages** with advanced features:
 
-| Package | Price | Features |
-|---------|-------|----------|
-| **Basic** | $299 | Complete template + docs + email support |
-| **Pro** | $599 | Basic + white-label + videos + GitHub access + consultation |
+| Package        | Price  | Features                                                       |
+| -------------- | ------ | -------------------------------------------------------------- |
+| **Basic**      | $299   | Complete template + docs + email support                       |
+| **Pro**        | $599   | Basic + white-label + videos + GitHub access + consultation    |
 | **Enterprise** | $1,499 | Pro + deployment + training + extended support + customization |
 
 **[🚀 Purchase Premium Packages](https://your-domain.com/template-purchase)**
@@ -133,6 +149,7 @@ This open-source template is free to use under MIT license. We also offer **prem
 ## License
 
 **Dual Licensed:**
+
 - **Open Source**: MIT License (see [LICENSE](./LICENSE)) - Free for personal and commercial use
 - **Commercial**: Premium packages include additional rights and restrictions (see [COMMERCIAL_LICENSE.md](./COMMERCIAL_LICENSE.md))
 

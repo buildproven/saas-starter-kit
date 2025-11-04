@@ -11,6 +11,7 @@ import Stripe from 'stripe'
 import { prisma } from '@/lib/prisma'
 import { getStripeClient } from '@/lib/stripe'
 import { logError, ErrorType } from '@/lib/error-logging'
+import { fulfillTemplateSale } from '@/lib/template-sales/fulfillment'
 
 // Helper function to check if template sales are configured
 function isTemplateSalesConfigured(): boolean {
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Template sales not configured',
-          details: 'Please configure Stripe template pricing environment variables'
+          details: 'Please configure Stripe template pricing environment variables',
         },
         { status: 501 }
       )
@@ -93,10 +94,7 @@ export async function POST(request: NextRequest) {
 
     const selectedPackage = TEMPLATE_PACKAGES[validatedData.package]
     if (!selectedPackage) {
-      return NextResponse.json(
-        { error: 'Invalid package selected' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid package selected' }, { status: 400 })
     }
 
     // Create Stripe checkout session
@@ -117,8 +115,11 @@ export async function POST(request: NextRequest) {
         useCase: validatedData.useCase || '',
         templateSale: 'true',
       },
-      success_url: validatedData.successUrl || `${process.env.NEXT_PUBLIC_APP_URL}/template-purchase/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: validatedData.cancelUrl || `${process.env.NEXT_PUBLIC_APP_URL}/template-purchase/cancel`,
+      success_url:
+        validatedData.successUrl ||
+        `${process.env.NEXT_PUBLIC_APP_URL}/template-purchase/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url:
+        validatedData.cancelUrl || `${process.env.NEXT_PUBLIC_APP_URL}/template-purchase/cancel`,
       allow_promotion_codes: true,
       tax_id_collection: {
         enabled: true,
@@ -157,7 +158,6 @@ export async function POST(request: NextRequest) {
       url: session.url,
       package: selectedPackage,
     })
-
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -174,11 +174,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    logError(error as Error, ErrorType.SYSTEM)
-    return NextResponse.json(
-      { error: 'Failed to create checkout session' },
-      { status: 500 }
-    )
+    const unknownError = error instanceof Error ? error : new Error(String(error))
+    logError(unknownError, ErrorType.SYSTEM)
+    return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 })
   }
 }
 
@@ -190,7 +188,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Template sales not configured',
-          details: 'Please configure Stripe template pricing environment variables'
+          details: 'Please configure Stripe template pricing environment variables',
         },
         { status: 501 }
       )
@@ -200,10 +198,7 @@ export async function GET(request: NextRequest) {
     const sessionId = url.searchParams.get('session_id')
 
     if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Session ID required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Session ID required' }, { status: 400 })
     }
 
     // Retrieve the checkout session from Stripe
@@ -213,10 +208,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (session.payment_status !== 'paid') {
-      return NextResponse.json(
-        { error: 'Payment not completed' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Payment not completed' }, { status: 400 })
     }
 
     // Update our record
@@ -225,10 +217,7 @@ export async function GET(request: NextRequest) {
     })
 
     if (!templateSale) {
-      return NextResponse.json(
-        { error: 'Sale record not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Sale record not found' }, { status: 404 })
     }
 
     // Update status and add payment details
@@ -241,76 +230,50 @@ export async function GET(request: NextRequest) {
         customerDetails: {
           email: session.customer_details?.email,
           name: session.customer_details?.name,
-          address: session.customer_details?.address ? {
-            line1: session.customer_details.address.line1,
-            line2: session.customer_details.address.line2,
-            city: session.customer_details.address.city,
-            state: session.customer_details.address.state,
-            postal_code: session.customer_details.address.postal_code,
-            country: session.customer_details.address.country,
-          } : null,
+          address: session.customer_details?.address
+            ? {
+                line1: session.customer_details.address.line1,
+                line2: session.customer_details.address.line2,
+                city: session.customer_details.address.city,
+                state: session.customer_details.address.state,
+                postal_code: session.customer_details.address.postal_code,
+                country: session.customer_details.address.country,
+              }
+            : null,
           phone: session.customer_details?.phone,
         },
       },
     })
 
-    // Automatically fulfill the template delivery
-    try {
-      const fulfillmentResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/template-sales/fulfill`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          customerEmail: session.customer_details?.email || updatedSale.email,
-          package: updatedSale.package,
-        }),
-      })
+    let fulfillmentSummary: Awaited<ReturnType<typeof fulfillTemplateSale>> | null = null
 
-      if (!fulfillmentResponse.ok) {
-        console.error('Fulfillment failed:', await fulfillmentResponse.text())
-        // Continue anyway - fulfillment can be done manually if needed
-      }
+    try {
+      fulfillmentSummary = await fulfillTemplateSale({
+        sessionId,
+        customerEmail: session.customer_details?.email || updatedSale.email,
+        package: updatedSale.package as 'basic' | 'pro' | 'enterprise',
+        customerName: session.customer_details?.name,
+        companyName: session.customer_details?.name || updatedSale.companyName || undefined,
+      })
     } catch (fulfillmentError) {
-      console.error('Fulfillment error:', fulfillmentError)
-      // Continue anyway - fulfillment can be done manually if needed
+      logError(fulfillmentError as Error, ErrorType.SYSTEM)
     }
 
     return NextResponse.json({
       sale: updatedSale,
       package: TEMPLATE_PACKAGES[updatedSale.package as keyof typeof TEMPLATE_PACKAGES],
-      nextSteps: {
-        downloadUrl: `${process.env.NEXT_PUBLIC_APP_URL}/template-download?token=${generateDownloadToken(updatedSale.id)}`,
-        documentationUrl: `${process.env.NEXT_PUBLIC_APP_URL}/docs`,
-        supportEmail: 'support@your-domain.com',
-      },
+      fulfillment: fulfillmentSummary,
     })
-
   } catch (error) {
     if (error instanceof Stripe.errors.StripeError) {
       logError(error, ErrorType.PAYMENT)
-      return NextResponse.json(
-        { error: 'Failed to verify payment with Stripe' },
-        { status: 402 }
-      )
+      return NextResponse.json({ error: 'Failed to verify payment with Stripe' }, { status: 402 })
     }
 
-    logError(error as Error, ErrorType.SYSTEM)
-    return NextResponse.json(
-      { error: 'Failed to verify purchase' },
-      { status: 500 }
-    )
+    const unknownError = error instanceof Error ? error : new Error(String(error))
+    logError(unknownError, ErrorType.SYSTEM)
+    return NextResponse.json({ error: 'Failed to verify purchase' }, { status: 500 })
   }
-}
-
-// Helper function to generate secure download tokens
-function generateDownloadToken(saleId: string): string {
-  // In production, use a more sophisticated token generation
-  // Consider using JWT with expiration or secure random tokens
-  const payload = {
-    saleId,
-    exp: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
-  }
-  return Buffer.from(JSON.stringify(payload)).toString('base64url')
 }
 
 /**

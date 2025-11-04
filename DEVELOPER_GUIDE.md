@@ -17,6 +17,7 @@ A comprehensive guide for developers working with the SaaS Starter Template. Thi
 ### Prerequisites Setup
 
 1. **Node.js & Package Manager**
+
    ```bash
    # Install Node.js 20+ (recommended via Volta)
    volta install node@20
@@ -28,6 +29,7 @@ A comprehensive guide for developers working with the SaaS Starter Template. Thi
    ```
 
 2. **Database Setup**
+
    ```bash
    # Option 1: Local PostgreSQL with Docker
    docker run --name saas-postgres \
@@ -40,6 +42,7 @@ A comprehensive guide for developers working with the SaaS Starter Template. Thi
    ```
 
 3. **Environment Configuration**
+
    ```bash
    # Copy and configure environment
    cp .env.example .env.local
@@ -196,10 +199,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ examples })
   } catch (error) {
     console.error('Error fetching examples:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -225,17 +225,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ example }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: error.issues },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
     console.error('Error creating example:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 ```
@@ -258,6 +252,7 @@ model Example {
 ```
 
 After adding models:
+
 ```bash
 npm run db:push      # Apply schema changes
 npm run db:generate  # Update Prisma client
@@ -376,7 +371,7 @@ export function useExamples() {
       }
 
       const result = await response.json()
-      setExamples(prev => [result.example, ...prev])
+      setExamples((prev) => [result.example, ...prev])
 
       addNotification({
         type: 'success',
@@ -640,6 +635,7 @@ npm run db:seed           # Seed initial data (first time only)
 ### Common Issues
 
 #### 1. Database Connection Issues
+
 ```bash
 # Check database is running
 docker ps | grep postgres
@@ -653,6 +649,7 @@ npm run db:seed
 ```
 
 #### 2. Authentication Problems
+
 ```bash
 # Clear browser cookies
 # Check NEXTAUTH_URL matches your domain
@@ -663,6 +660,7 @@ NEXTAUTH_DEBUG=true npm run dev
 ```
 
 #### 3. Build Failures
+
 ```bash
 # Clear caches
 rm -rf .next node_modules
@@ -677,6 +675,7 @@ npm run lint
 ```
 
 #### 4. Test Failures
+
 ```bash
 # Run tests in watch mode
 npm run test:watch
@@ -715,3 +714,14 @@ npm test -- --clearCache
 ---
 
 This guide covers the essentials of developing with the SaaS Starter Template. For more specific topics, refer to the other documentation files or reach out to the development team.
+
+## Template Sales Notes
+
+The optional template-sales APIs (see `src/app/api/template-sales/*` and `src/lib/template-sales`) require:
+
+- Stripe template product/price IDs (`STRIPE_TEMPLATE_*`).
+- `TEMPLATE_FULFILLMENT_SECRET` for internal fulfillment calls.
+- Packaged assets stored at `TEMPLATE_FILES_PATH` so download requests succeed.
+- An email provider configured in `src/lib/email/template-delivery.ts` if you want automated delivery messages.
+
+Without these values the routes short-circuit with informative errors and no assets are released.

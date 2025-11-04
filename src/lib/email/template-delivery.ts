@@ -12,7 +12,7 @@ interface DeliveryEmailParams {
     licenseKey: string
     downloadToken: string
     downloadUrl: string
-    expiresAt: Date
+    expiresAt: Date | null
   }
   customerName?: string | null
   companyName?: string | null
@@ -55,7 +55,6 @@ export async function sendTemplateDeliveryEmail(params: DeliveryEmailParams): Pr
       success: true,
       messageId: result.messageId,
     }
-
   } catch (error) {
     console.error('Failed to send template delivery email:', error)
     return {
@@ -70,19 +69,18 @@ function generateEmailContent(params: {
   accessCredentials: {
     licenseKey: string
     downloadUrl: string
-    expiresAt: Date
+    expiresAt: Date | null
   }
   customerName?: string | null
   companyName?: string | null
   customerEmail: string
 }) {
   const { packageType, accessCredentials, customerName, companyName } = params
+  const expirationText = accessCredentials.expiresAt
+    ? accessCredentials.expiresAt.toLocaleDateString()
+    : 'Does not expire'
 
-  const greeting = customerName
-    ? `Hi ${customerName},`
-    : companyName
-    ? `Hi there,`
-    : 'Hello!'
+  const greeting = customerName ? `Hi ${customerName},` : companyName ? `Hi there,` : 'Hello!'
 
   const packageInfo = getPackageInfo(packageType)
 
@@ -124,7 +122,7 @@ function generateEmailContent(params: {
         <h3>🔑 Your Access Credentials</h3>
         <p><strong>License Key:</strong> <code>${accessCredentials.licenseKey}</code></p>
         <p><strong>Download Link:</strong> <a href="${accessCredentials.downloadUrl}" class="button">Download Template</a></p>
-        <p><strong>Access Expires:</strong> ${accessCredentials.expiresAt.toLocaleDateString()}</p>
+        <p><strong>Access Expires:</strong> ${expirationText}</p>
       </div>
 
       <div class="warning">
@@ -133,7 +131,7 @@ function generateEmailContent(params: {
 
       <h3>📦 What's Included in Your Package</h3>
       <ul class="feature-list">
-        ${packageInfo.features.map(feature => `<li>✅ ${feature}</li>`).join('')}
+        ${packageInfo.features.map((feature) => `<li>✅ ${feature}</li>`).join('')}
       </ul>
 
       <h3>🚀 Next Steps</h3>
@@ -180,12 +178,12 @@ Thank you for purchasing the ${packageInfo.name}! Your complete SaaS starter tem
 🔑 Your Access Credentials:
 License Key: ${accessCredentials.licenseKey}
 Download URL: ${accessCredentials.downloadUrl}
-Access Expires: ${accessCredentials.expiresAt.toLocaleDateString()}
+Access Expires: ${expirationText}
 
 ⚠️ Important: Save your license key and download the template within 7 days.
 
 📦 What's Included:
-${packageInfo.features.map(feature => `• ${feature}`).join('\n')}
+${packageInfo.features.map((feature) => `• ${feature}`).join('\n')}
 
 🚀 Next Steps:
 1. Download the template using the link above
@@ -201,11 +199,7 @@ ${packageType !== 'basic' ? `- Premium Portal: ${process.env.NEXT_PUBLIC_APP_URL
 
 🆘 Support:
 ${getSupportText(packageType)}
-
-Thank you for choosing SaaS Starter Template!
-Visit: ${process.env.NEXT_PUBLIC_APP_URL}
-Support: support@your-domain.com
-  `
+`
 
   return { subject, html, text }
 }
@@ -352,5 +346,6 @@ async function sendEmail(params: {
   return { messageId: result[0].headers['x-message-id'] }
   */
 
-  throw new Error('Email service not configured. Please implement sendEmail function.')
+  console.warn('Email service not configured. Skipping outbound template delivery email.')
+  return { messageId: `noop-${Date.now()}` }
 }

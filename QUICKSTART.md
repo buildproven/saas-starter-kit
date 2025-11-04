@@ -3,6 +3,7 @@
 Get your SaaS application running in under 10 minutes.
 
 ## Prerequisites Check
+
 - [ ] Node.js ≥ 20 installed
 - [ ] PostgreSQL running (local or remote)
 - [ ] npm ≥ 10
@@ -44,6 +45,23 @@ GOOGLE_CLIENT_ID="your-google-oauth-id"
 GOOGLE_CLIENT_SECRET="your-google-oauth-secret"
 ```
 
+### Optional: Template Sales Setup
+
+If you plan to sell this template itself, configure these additional variables:
+
+```env
+# Stripe price IDs for each package tier
+STRIPE_TEMPLATE_BASIC_PRICE_ID="price_..."
+STRIPE_TEMPLATE_PRO_PRICE_ID="price_..."
+STRIPE_TEMPLATE_ENTERPRISE_PRICE_ID="price_..."
+
+# Internal secrets and asset configuration
+TEMPLATE_FULFILLMENT_SECRET="super-long-random-string"
+TEMPLATE_FILES_PATH="./template-files" # absolute path recommended in production
+```
+
+Create the packaging files under `TEMPLATE_FILES_PATH` before fulfilling real orders.
+
 ## Quick Test Checklist
 
 - [ ] App loads at `http://localhost:3000`
@@ -62,13 +80,13 @@ GOOGLE_CLIENT_SECRET="your-google-oauth-secret"
 
 ## Development Commands
 
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | Start dev server with hot reload |
-| `npm run build` | Build for production |
-| `npm test` | Run all tests |
-| `npm run lint` | Check code quality |
-| `npm run db:studio` | Open Prisma Studio |
+| Command             | Purpose                          |
+| ------------------- | -------------------------------- |
+| `npm run dev`       | Start dev server with hot reload |
+| `npm run build`     | Build for production             |
+| `npm test`          | Run all tests                    |
+| `npm run lint`      | Check code quality               |
+| `npm run db:studio` | Open Prisma Studio               |
 
 ## Next Steps
 
@@ -80,16 +98,19 @@ GOOGLE_CLIENT_SECRET="your-google-oauth-secret"
 ## Troubleshooting
 
 **Database connection fails?**
+
 - Ensure PostgreSQL is running
 - Check `DATABASE_URL` format
 - Verify user permissions
 
 **OAuth not working?**
+
 - Confirm callback URLs in provider settings
 - Check client ID/secret pairs
 - Ensure `NEXTAUTH_URL` matches your domain
 
 **Build errors?**
+
 ```bash
 npm run lint        # Fix code issues
 npm run typecheck   # Fix TypeScript errors

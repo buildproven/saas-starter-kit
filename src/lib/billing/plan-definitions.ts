@@ -54,12 +54,10 @@ export const PLAN_VARIANTS: ReadonlyArray<PlanVariantDefinition> = [
 ]
 
 export function getPlanLabel(tier: PlanTier): string {
-  // eslint-disable-next-line security/detect-object-injection
   return PLAN_LABELS[tier]
 }
 
 export function getPriceIdFromEnv(priceEnv: string): string | null {
-  // eslint-disable-next-line security/detect-object-injection
   const value = process.env[priceEnv]?.trim()
   return value && value.length > 0 ? value : null
 }

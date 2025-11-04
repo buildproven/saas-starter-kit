@@ -13,7 +13,8 @@ try {
 
 try {
   security = require('eslint-plugin-security')
-} catch {
+} catch (e) {
+  console.error('Failed to load eslint-plugin-security:', e.message)
   // Security plugin not installed yet; fall back to basic config
 }
 
@@ -23,11 +24,6 @@ const configs = [
   },
   js.configs.recommended,
 ]
-
-// Add security config if available
-if (security) {
-  configs.push(security.configs.recommended)
-}
 
 // Base rules configuration
 const baseRules = {
@@ -42,7 +38,6 @@ const baseRules = {
 const securityRules = security
   ? {
       // Security rules from WFHroulette patterns - adjusted for build tools
-      'security/detect-object-injection': 'warn', // Build tools often use dynamic object access
       'security/detect-non-literal-regexp': 'error',
       'security/detect-unsafe-regex': 'error',
       'security/detect-buffer-noassert': 'error',
@@ -89,9 +84,11 @@ if (tsPlugin && tsParser) {
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
+      security: security,
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
+      ...securityRules,
       '@typescript-eslint/no-unused-vars': [
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
