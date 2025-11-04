@@ -84,7 +84,7 @@ if (tsPlugin && tsParser) {
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
-      security: security,
+      ...(security ? { security } : {}),
     },
     rules: {
       ...tsPlugin.configs.recommended.rules,
