@@ -186,13 +186,17 @@ async function generateTemplateDownload(params: {
       }
     }
 
+    // Set up completion promise before finalization
     const completion = new Promise<void>((resolve, reject) => {
       archive.on('error', reject)
       passThrough.on('end', resolve)
       passThrough.on('error', reject)
     })
 
-    await archive.finalize()
+    // Finalize the archive (this triggers the data flow)
+    archive.finalize()
+
+    // Wait for all data to be collected
     await completion
 
     const buffer = Buffer.concat(chunks)
