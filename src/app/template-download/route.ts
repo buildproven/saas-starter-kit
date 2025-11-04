@@ -41,10 +41,7 @@ export async function GET(request: NextRequest) {
     const tokenValidation = await validateDownloadToken(validatedData.token)
 
     if (!tokenValidation.valid) {
-      return NextResponse.json(
-        { error: tokenValidation.error },
-        { status: tokenValidation.status }
-      )
+      return NextResponse.json({ error: tokenValidation.error }, { status: tokenValidation.status })
     }
 
     // Get the customer and sale information
@@ -54,18 +51,12 @@ export async function GET(request: NextRequest) {
     })
 
     if (!customer) {
-      return NextResponse.json(
-        { error: 'Invalid download token' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Invalid download token' }, { status: 404 })
     }
 
     // Check access expiration
     if (customer.accessExpiresAt && customer.accessExpiresAt < new Date()) {
-      return NextResponse.json(
-        { error: 'Download access has expired' },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: 'Download access has expired' }, { status: 403 })
     }
 
     // Generate the appropriate download based on package tier
@@ -93,11 +84,10 @@ export async function GET(request: NextRequest) {
         'Content-Disposition': `attachment; filename="${downloadResult.filename}"`,
         'Content-Length': downloadResult.fileBuffer.length.toString(),
         'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
+        Pragma: 'no-cache',
+        Expires: '0',
       },
     })
-
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -107,20 +97,44 @@ export async function GET(request: NextRequest) {
     }
 
     logError(error as Error, ErrorType.SYSTEM)
-    return NextResponse.json(
-      { error: 'Failed to process download request' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to process download request' }, { status: 500 })
   }
 }
 
 async function validateDownloadToken(token: string) {
   try {
-    // Decode the token (in production, use proper JWT verification)
-    const payload = JSON.parse(Buffer.from(token, 'base64url').toString())
+    // Verify JWT signature with secret
+    const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET
+    if (!secret) {
+      throw new Error('JWT secret not configured')
+    }
+
+    // For production, use proper JWT library. For now, implement basic HMAC verification
+    const [headerB64, payloadB64, signatureB64] = token.split('.')
+    if (!headerB64 || !payloadB64 || !signatureB64) {
+      throw new Error('Invalid token format')
+    }
+
+    // Verify signature
+    const crypto = await import('crypto')
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(`${headerB64}.${payloadB64}`)
+      .digest('base64url')
+
+    if (signatureB64 !== expectedSignature) {
+      return {
+        valid: false,
+        error: 'Invalid token signature',
+        status: 401,
+      }
+    }
+
+    // Decode payload
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString())
 
     // Check expiration
-    if (payload.exp && payload.exp < Date.now()) {
+    if (payload.exp && payload.exp < Date.now() / 1000) {
       return {
         valid: false,
         error: 'Download token has expired',
@@ -150,13 +164,12 @@ async function validateDownloadToken(token: string) {
       }
     }
 
-    return { valid: true }
-
+    return { valid: true, saleId: payload.saleId }
   } catch (error) {
     return {
       valid: false,
-      error: 'Invalid token format',
-      status: 400,
+      error: 'Invalid token format or signature',
+      status: 401,
     }
   }
 }
@@ -174,7 +187,9 @@ async function generateTemplateDownload(params: {
   // Check if template files are configured for production
   if (process.env.NODE_ENV === 'production' && !process.env.TEMPLATE_FILES_PATH) {
     // Return 501 Not Implemented with helpful message
-    throw new Error('Template downloads not configured. Set TEMPLATE_FILES_PATH environment variable.')
+    throw new Error(
+      'Template downloads not configured. Set TEMPLATE_FILES_PATH environment variable.'
+    )
   }
 
   if (process.env.NODE_ENV === 'development') {
@@ -193,19 +208,26 @@ async function generateTemplateDownload(params: {
     const fs = await import('fs/promises')
     const path = await import('path')
     const archiver = await import('archiver')
+    const { PassThrough } = await import('stream')
 
     const templateBasePath = process.env.TEMPLATE_FILES_PATH || './template-files'
     const archive = archiver.default(format as 'zip' | 'tar')
     const chunks: Buffer[] = []
 
-    // Collect archive data
-    archive.on('data', (chunk: Buffer) => chunks.push(chunk))
+    // Create PassThrough stream to collect archive data
+    const passThrough = new PassThrough()
+    passThrough.on('data', (chunk: Buffer) => chunks.push(chunk))
+
+    // Pipe archive to PassThrough stream
+    archive.pipe(passThrough)
 
     // Add template files based on tier
     for (const file of templateFiles) {
-      if (file.tier === 'all' || file.tier === packageType ||
-          (file.tier === 'pro+' && ['pro', 'enterprise'].includes(packageType))) {
-
+      if (
+        file.tier === 'all' ||
+        file.tier === packageType ||
+        (file.tier === 'pro+' && ['pro', 'enterprise'].includes(packageType))
+      ) {
         const filePath = path.join(templateBasePath, file.path)
 
         try {
@@ -218,12 +240,14 @@ async function generateTemplateDownload(params: {
       }
     }
 
+    // Finalize the archive
     archive.finalize()
 
-    // Wait for archive to complete
+    // Wait for archive to complete and all data to be written
     await new Promise((resolve, reject) => {
-      archive.on('end', resolve)
       archive.on('error', reject)
+      passThrough.on('end', resolve)
+      passThrough.on('error', reject)
     })
 
     const buffer = Buffer.concat(chunks)
@@ -233,14 +257,17 @@ async function generateTemplateDownload(params: {
       contentType: format === 'zip' ? 'application/zip' : 'application/x-tar',
       filename: `saas-starter-${packageType}-v${_getTemplateVersion()}.${format}`,
     }
-
   } catch (error) {
     console.error('Template file generation failed:', error)
-    throw new Error(`Template download temporarily unavailable: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    throw new Error(
+      `Template download temporarily unavailable: ${error instanceof Error ? error.message : 'Unknown error'}`
+    )
   }
 }
 
-function getTemplateFiles(packageType: string): Array<{ path: string; name: string; tier: string }> {
+function getTemplateFiles(
+  packageType: string
+): Array<{ path: string; name: string; tier: string }> {
   // Define which files are included in each package tier
   const allFiles = [
     // Core files (all tiers)
@@ -261,7 +288,7 @@ function getTemplateFiles(packageType: string): Array<{ path: string; name: stri
     { path: 'docs/custom-integrations/', name: 'docs/custom-integrations/', tier: 'enterprise' },
   ]
 
-  return allFiles.filter(file => {
+  return allFiles.filter((file) => {
     if (file.tier === 'all') return true
     if (file.tier === packageType) return true
     if (file.tier === 'pro+' && ['pro', 'enterprise'].includes(packageType)) return true
@@ -269,9 +296,12 @@ function getTemplateFiles(packageType: string): Array<{ path: string; name: stri
   })
 }
 
-function createMockTemplateZip(packageType: string, templateFiles: Array<{ name: string }>): string {
+function createMockTemplateZip(
+  packageType: string,
+  templateFiles: Array<{ name: string }>
+): string {
   // Create a mock ZIP file content for development
-  const fileList = templateFiles.map(f => f.name).join('\n')
+  const fileList = templateFiles.map((f) => f.name).join('\n')
 
   return `
 SaaS Starter Template - ${packageType.toUpperCase()} Package

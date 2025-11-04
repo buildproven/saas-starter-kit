@@ -47,31 +47,22 @@ export async function POST(request: NextRequest) {
     })
 
     if (!templateSale) {
-      return NextResponse.json(
-        { error: 'Sale record not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Sale record not found' }, { status: 404 })
     }
 
     if (templateSale.status !== 'COMPLETED') {
-      return NextResponse.json(
-        { error: 'Sale not completed yet' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Sale not completed yet' }, { status: 400 })
     }
 
     // Check if already fulfilled
     if (templateSale.metadata && (templateSale.metadata as Record<string, unknown>)?.fulfilled) {
-      return NextResponse.json(
-        { error: 'Template already delivered' },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: 'Template already delivered' }, { status: 409 })
     }
 
     // Generate access credentials
     const accessCredentials = await generateAccessCredentials({
       id: templateSale.id,
-      package: templateSale.package
+      package: templateSale.package,
     })
 
     // Send delivery email based on package tier
@@ -103,7 +94,7 @@ export async function POST(request: NextRequest) {
       where: { sessionId: validatedData.sessionId },
       data: {
         metadata: {
-          ...(templateSale.metadata as Record<string, unknown> || {}),
+          ...((templateSale.metadata as Record<string, unknown>) || {}),
           fulfilled: true,
           fulfilledAt: new Date().toISOString(),
           emailSent: emailResult.success,
@@ -144,7 +135,6 @@ export async function POST(request: NextRequest) {
       },
       nextSteps: getNextSteps(validatedData.package),
     })
-
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -154,17 +144,16 @@ export async function POST(request: NextRequest) {
     }
 
     logError(error as Error, ErrorType.SYSTEM)
-    return NextResponse.json(
-      { error: 'Failed to fulfill template delivery' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to fulfill template delivery' }, { status: 500 })
   }
 }
 
 // Helper function to generate access credentials
-async function generateAccessCredentials(templateSale: TemplateSaleData): Promise<AccessCredentials> {
+async function generateAccessCredentials(
+  templateSale: TemplateSaleData
+): Promise<AccessCredentials> {
   const licenseKey = generateLicenseKey(templateSale.id, templateSale.package)
-  const downloadToken = generateSecureDownloadToken(templateSale.id)
+  const downloadToken = await generateSecureDownloadToken(templateSale.id)
 
   return {
     licenseKey,
@@ -184,17 +173,36 @@ function generateLicenseKey(saleId: string, packageType: string): string {
   return `${prefix}-${timestamp}-${random}-${checksum}`
 }
 
-// Generate secure download token with expiration
-function generateSecureDownloadToken(saleId: string): string {
-  const payload = {
-    saleId,
-    exp: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days
-    iat: Date.now(),
-    type: 'template_download'
+// Generate secure download token with HMAC signature
+async function generateSecureDownloadToken(saleId: string): Promise<string> {
+  const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET
+  if (!secret) {
+    throw new Error('JWT secret not configured')
   }
 
-  // In production, use proper JWT signing
-  return Buffer.from(JSON.stringify(payload)).toString('base64url')
+  const header = {
+    alg: 'HS256',
+    typ: 'JWT',
+  }
+
+  const payload = {
+    saleId,
+    exp: Math.floor((Date.now() + 7 * 24 * 60 * 60 * 1000) / 1000), // 7 days (Unix timestamp in seconds)
+    iat: Math.floor(Date.now() / 1000), // Unix timestamp in seconds
+    type: 'template_download',
+  }
+
+  // Create JWT manually with HMAC-SHA256 signature
+  const headerB64 = Buffer.from(JSON.stringify(header)).toString('base64url')
+  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url')
+
+  const crypto = await import('crypto')
+  const signature = crypto
+    .createHmac('sha256', secret)
+    .update(`${headerB64}.${payloadB64}`)
+    .digest('base64url')
+
+  return `${headerB64}.${payloadB64}.${signature}`
 }
 
 // Generate checksum for license validation
@@ -203,7 +211,7 @@ function generateChecksum(data: string): string {
   let hash = 0
   for (let i = 0; i < data.length; i++) {
     const char = data.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
+    hash = (hash << 5) - hash + char
     hash = hash & hash // Convert to 32-bit integer
   }
   return Math.abs(hash).toString(36).substr(0, 4).toUpperCase()
@@ -212,20 +220,28 @@ function generateChecksum(data: string): string {
 // Get support tier based on package
 function getSupportTier(packageType: string): string {
   switch (packageType) {
-    case 'basic': return 'email'
-    case 'pro': return 'priority_email'
-    case 'enterprise': return 'phone_email_dedicated'
-    default: return 'email'
+    case 'basic':
+      return 'email'
+    case 'pro':
+      return 'priority_email'
+    case 'enterprise':
+      return 'phone_email_dedicated'
+    default:
+      return 'email'
   }
 }
 
 // Get access expiration based on package
 function getAccessExpiration(packageType: string): Date | null {
   switch (packageType) {
-    case 'basic': return new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
-    case 'pro': return new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000) // 2 years
-    case 'enterprise': return null // Lifetime access
-    default: return new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    case 'basic':
+      return new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year
+    case 'pro':
+      return new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000) // 2 years
+    case 'enterprise':
+      return null // Lifetime access
+    default:
+      return new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
   }
 }
 
@@ -258,10 +274,7 @@ function getNextSteps(packageType: string) {
     ],
   }
 
-  return [
-    ...baseSteps,
-    ...(tierSpecificSteps[packageType as keyof typeof tierSpecificSteps] || []),
-  ]
+  return [...baseSteps, ...(tierSpecificSteps[packageType as keyof typeof tierSpecificSteps] || [])]
 }
 
 /**
