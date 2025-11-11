@@ -112,6 +112,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         name: true,
+        scopes: true,
         // Don't include the actual key hash for security
         lastUsedAt: true,
         createdAt: true,
@@ -192,12 +193,14 @@ export async function POST(request: NextRequest) {
       data: {
         name: validatedData.name,
         keyHash: hashedKey,
+        scopes: validatedData.scopes,
         organizationId: validatedData.organizationId,
         expiresAt: validatedData.expiresAt ? new Date(validatedData.expiresAt) : null,
       },
       select: {
         id: true,
         name: true,
+        scopes: true,
         createdAt: true,
         expiresAt: true,
         organization: {

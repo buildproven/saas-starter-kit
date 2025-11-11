@@ -19,6 +19,8 @@ export function getStripeClient(): Stripe {
 
   stripeClient = new Stripe(secretKey, {
     apiVersion: STRIPE_API_VERSION,
+    timeout: 30000, // 30 second timeout
+    maxNetworkRetries: 2, // Stripe's built-in retry
   })
 
   return stripeClient

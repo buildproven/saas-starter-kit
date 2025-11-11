@@ -10,6 +10,9 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { logError, ErrorType } from '@/lib/error-logging'
 import { rateLimit } from '@/lib/auth/api-protection'
+import { sanitizeFilePath } from '@/lib/path-security'
+import { events, security } from '@/lib/logger'
+import { templateDownloads, templateDownloadDuration } from '@/lib/metrics'
 import type { TemplateSaleCustomer as TemplateSaleCustomerModel } from '@prisma/client'
 import { DownloadStatus } from '@prisma/client'
 
@@ -37,6 +40,7 @@ type TokenValidationResult =
 
 // GET /template-download?token=...&format=zip
 export async function GET(request: NextRequest) {
+  const startTime = Date.now()
   const ipAddress = getClientIP(request)
   const userAgent = request.headers.get('user-agent') || ''
   let parsedRequest: { token: string; format: 'zip' | 'tar' } | null = null
@@ -111,6 +115,7 @@ export async function GET(request: NextRequest) {
       packageType: customer.package,
       format: validatedData.format,
       customer,
+      ipAddress,
     })
 
     await recordDownloadAudit({
@@ -121,6 +126,19 @@ export async function GET(request: NextRequest) {
       format: validatedData.format,
       customer,
     })
+
+    // Log and track metrics
+    const duration = (Date.now() - startTime) / 1000
+    events.templateDownloaded(validatedData.token, customer.package, 'success')
+    templateDownloads.inc({
+      package: customer.package,
+      status: 'success',
+      format: validatedData.format,
+    })
+    templateDownloadDuration.observe(
+      { package: customer.package, format: validatedData.format },
+      duration
+    )
 
     const body = new Uint8Array(downloadResult.fileBuffer)
 
@@ -194,8 +212,9 @@ async function generateTemplateDownload(params: {
   packageType: string
   format: string
   customer: ValidatedCustomer
+  ipAddress: string
 }): Promise<DownloadResult> {
-  const { packageType, format } = params
+  const { packageType, format, ipAddress } = params
 
   const templateFiles = getTemplateFiles(packageType)
 
@@ -217,7 +236,6 @@ async function generateTemplateDownload(params: {
 
   try {
     const fs = await import('fs/promises')
-    const path = await import('path')
     const archiver = await import('archiver')
     const { PassThrough } = await import('stream')
 
@@ -235,13 +253,24 @@ async function generateTemplateDownload(params: {
         file.tier === packageType ||
         (file.tier === 'pro+' && ['pro', 'enterprise'].includes(packageType))
       ) {
-        const filePath = path.join(templateBasePath, file.path)
-
         try {
-          await fs.access(filePath)
-          archive.file(filePath, { name: file.name })
-        } catch {
-          console.warn(`Template file not found: ${filePath}`)
+          // Sanitize path to prevent traversal attacks
+          const filePath = sanitizeFilePath(templateBasePath, file.path)
+          const stats = await fs.stat(filePath)
+
+          if (stats.isDirectory()) {
+            // Use archive.directory() for directories
+            archive.directory(filePath, file.name)
+          } else {
+            // Use archive.file() for files
+            archive.file(filePath, { name: file.name })
+          }
+        } catch (error) {
+          if (error instanceof Error && error.message.includes('Path traversal')) {
+            security.pathTraversal(file.path, ipAddress)
+          } else {
+            logError(error as Error, { filePath: file.path, context: 'template_archiving' })
+          }
         }
       }
     }
@@ -326,7 +355,7 @@ Next Steps:
 5. Run 'npm run dev' to start development
 
 Support:
-- Documentation: ${process.env.NEXT_PUBLIC_APP_URL}/docs
+- Documentation: ${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/docs
 - Email: support@your-domain.com
 - Package: ${packageType}
   `

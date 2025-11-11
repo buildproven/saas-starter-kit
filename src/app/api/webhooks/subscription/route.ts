@@ -4,6 +4,8 @@ import { getStripeClient } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionStatus } from '@prisma/client'
 import { SubscriptionService } from '@/lib/subscription'
+import { logger } from '@/lib/logger'
+import { webhookEvents, webhookProcessingDuration } from '@/lib/metrics'
 
 function mapSubscriptionStatus(stripeStatus: string): SubscriptionStatus {
   switch (stripeStatus.toLowerCase()) {
@@ -53,13 +55,19 @@ async function upsertSubscription(subscription: Stripe.Subscription) {
     typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id
 
   if (!priceId) {
-    console.warn('Stripe webhook: subscription missing price ID', subscription.id)
+    logger.warn(
+      { subscriptionId: subscription.id, type: 'webhook.subscription.missing_price' },
+      'Subscription missing price ID'
+    )
     return
   }
 
   const existingPlan = await prisma.plan.findUnique({ where: { priceId } })
   if (!existingPlan) {
-    console.warn('Stripe webhook: price not found in plan table', priceId)
+    logger.warn(
+      { priceId, type: 'webhook.subscription.price_not_found' },
+      'Price not found in plan table'
+    )
   }
 
   let organizationId = subscription.metadata?.organizationId
@@ -82,9 +90,13 @@ async function upsertSubscription(subscription: Stripe.Subscription) {
   }
 
   if (!organizationId) {
-    console.error(
-      'Stripe webhook: unable to resolve organization for subscription',
-      subscription.id
+    logger.error(
+      {
+        subscriptionId: subscription.id,
+        customerId,
+        type: 'webhook.subscription.org_not_found',
+      },
+      'Unable to resolve organization for subscription'
     )
     return
   }
@@ -119,16 +131,25 @@ async function cancelSubscription(subscription: Stripe.Subscription) {
       },
     })
   } catch (error) {
-    console.warn('Stripe webhook: cancel update skipped', subscription.id, error)
+    logger.warn(
+      {
+        subscriptionId: subscription.id,
+        type: 'webhook.subscription.cancel_failed',
+        error: error instanceof Error ? error.message : String(error),
+      },
+      'Cancel update skipped'
+    )
   }
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now()
   const rawBody = await request.text()
   const signature = request.headers.get('stripe-signature')
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
   if (!signature || !webhookSecret) {
+    webhookEvents.inc({ event_type: 'unknown', status: 'rejected' })
     return NextResponse.json({ error: 'Missing Stripe signature or secret' }, { status: 400 })
   }
 
@@ -138,15 +159,32 @@ export async function POST(request: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
   } catch (error) {
-    console.error('Stripe webhook signature verification failed', error)
+    logger.error(
+      {
+        type: 'webhook.signature_verification_failed',
+        error: error instanceof Error ? error.message : String(error),
+      },
+      'Stripe webhook signature verification failed'
+    )
+    webhookEvents.inc({ event_type: 'unknown', status: 'invalid_signature' })
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
   try {
     const shouldProcess = await recordEvent(event.id)
     if (!shouldProcess) {
-      return NextResponse.json({ received: true })
+      logger.info(
+        { eventId: event.id, eventType: event.type, type: 'webhook.duplicate' },
+        'Webhook event already processed, skipping'
+      )
+      webhookEvents.inc({ event_type: event.type, status: 'duplicate' })
+      return NextResponse.json({ received: true, cached: true })
     }
+
+    logger.info(
+      { eventId: event.id, eventType: event.type, type: 'webhook.processing' },
+      'Processing webhook event'
+    )
 
     switch (event.type) {
       case 'customer.subscription.created':
@@ -170,10 +208,14 @@ export async function POST(request: NextRequest) {
               status: 'ACTIVE',
             })
           } catch (err) {
-            console.warn(
-              'Stripe webhook: unable to mark subscription active',
-              invoice.subscription,
-              err
+            logger.warn(
+              {
+                subscriptionId: invoice.subscription,
+                invoiceId: invoice.id,
+                type: 'webhook.invoice.payment_succeeded.update_failed',
+                error: err instanceof Error ? err.message : String(err),
+              },
+              'Unable to mark subscription active'
             )
           }
         }
@@ -188,10 +230,14 @@ export async function POST(request: NextRequest) {
               status: 'PAST_DUE',
             })
           } catch (err) {
-            console.warn(
-              'Stripe webhook: unable to mark subscription past due',
-              invoice.subscription,
-              err
+            logger.warn(
+              {
+                subscriptionId: invoice.subscription,
+                invoiceId: invoice.id,
+                type: 'webhook.invoice.payment_failed.update_failed',
+                error: err instanceof Error ? err.message : String(err),
+              },
+              'Unable to mark subscription past due'
             )
           }
         }
@@ -200,12 +246,36 @@ export async function POST(request: NextRequest) {
 
       default:
         // Unhandled event types can be logged for visibility
-        console.info(`Stripe webhook received unhandled event: ${event.type}`)
+        logger.info(
+          { eventType: event.type, eventId: event.id, type: 'webhook.unhandled' },
+          'Received unhandled webhook event type'
+        )
     }
+
+    const duration = (Date.now() - startTime) / 1000
+    webhookEvents.inc({ event_type: event.type, status: 'success' })
+    webhookProcessingDuration.observe({ event_type: event.type }, duration)
+
+    logger.info(
+      { eventId: event.id, eventType: event.type, duration, type: 'webhook.completed' },
+      'Webhook event processed successfully'
+    )
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    console.error('Stripe webhook processing error', error)
+    const duration = (Date.now() - startTime) / 1000
+    logger.error(
+      {
+        eventId: event?.id,
+        eventType: event?.type,
+        duration,
+        type: 'webhook.processing_error',
+        error: error instanceof Error ? error.message : String(error),
+      },
+      'Stripe webhook processing error'
+    )
+    webhookEvents.inc({ event_type: event?.type || 'unknown', status: 'error' })
+    webhookProcessingDuration.observe({ event_type: event?.type || 'unknown' }, duration)
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }
 }

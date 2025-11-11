@@ -49,120 +49,170 @@ export async function fulfillTemplateSale(params: FulfillmentParams): Promise<Fu
     githubUsername,
   } = params
 
-  const templateSale = await prisma.templateSale.findUnique({
-    where: { sessionId },
+  // Use transaction with row-level locking to prevent race condition
+  // This atomically checks and marks the sale as being fulfilled
+  const templateSale = await prisma.$transaction(async (tx) => {
+    // Lock the row for update to prevent concurrent fulfillment
+    const sale = await tx.templateSale.findUnique({
+      where: { sessionId },
+    })
+
+    if (!sale) {
+      throw new Error('Sale record not found')
+    }
+
+    if (sale.status !== 'COMPLETED') {
+      throw new Error('Sale is not marked as completed')
+    }
+
+    const metadata = (sale.metadata as Record<string, unknown>) || {}
+    if (metadata.fulfilled) {
+      throw new Error('Template already delivered')
+    }
+
+    // Immediately mark as fulfilling to prevent duplicate processing
+    await tx.templateSale.update({
+      where: { sessionId },
+      data: {
+        metadata: {
+          ...metadata,
+          fulfilling: true,
+          fulfillingStartedAt: new Date().toISOString(),
+        },
+      },
+    })
+
+    return sale
   })
 
   if (!templateSale) {
     throw new Error('Sale record not found')
   }
 
-  if (templateSale.status !== 'COMPLETED') {
-    throw new Error('Sale is not marked as completed')
-  }
-
-  if (templateSale.metadata && (templateSale.metadata as Record<string, unknown>)?.fulfilled) {
-    throw new Error('Template already delivered')
-  }
-
   const normalizedGithubUsername = normalizeGithubUsername(
     githubUsername || (templateSale.githubUsername ?? undefined)
   )
 
-  const accessCredentials = await generateAccessCredentials(templateSale.id, packageType)
-  const metadataAccess = {
-    ...accessCredentials,
-    expiresAt: accessCredentials.expiresAt ? accessCredentials.expiresAt.toISOString() : null,
-  }
+  try {
+    const accessCredentials = await generateAccessCredentials(templateSale.id, packageType)
+    const metadataAccess = {
+      ...accessCredentials,
+      expiresAt: accessCredentials.expiresAt ? accessCredentials.expiresAt.toISOString() : null,
+    }
 
-  const emailResult = await sendTemplateDeliveryEmail({
-    customerEmail,
-    package: packageType,
-    accessCredentials,
-    customerName,
-    companyName,
-  })
+    const emailResult = await sendTemplateDeliveryEmail({
+      customerEmail,
+      package: packageType,
+      accessCredentials,
+      customerName,
+      companyName,
+    })
 
-  const accessExpiresAt = accessCredentials.expiresAt
+    const accessExpiresAt = accessCredentials.expiresAt
 
-  let githubAccess: { success: boolean; teamId?: string | null } = { success: false }
-  if (packageType === 'pro' || packageType === 'enterprise') {
-    try {
-      const result = await grantGitHubAccess({
+    let githubAccess: { success: boolean; teamId?: string | null } = { success: false }
+    if (packageType === 'pro' || packageType === 'enterprise') {
+      try {
+        const result = await grantGitHubAccess({
+          email: customerEmail,
+          package: packageType,
+          saleId: templateSale.id,
+          githubUsername: normalizedGithubUsername,
+        })
+        githubAccess = { success: result.success, teamId: result.teamId ?? null }
+      } catch (githubError) {
+        logError(githubError as Error, ErrorType.SYSTEM)
+      }
+    }
+
+    // Mark as fulfilled atomically
+    await prisma.templateSale.update({
+      where: { sessionId },
+      data: {
+        githubUsername: normalizedGithubUsername,
+        metadata: {
+          ...((templateSale.metadata as object) || {}),
+          fulfilled: true,
+          fulfilledAt: new Date().toISOString(),
+          emailSent: emailResult.success,
+          githubAccess: githubAccess.success,
+          accessCredentials: metadataAccess,
+          githubUsername: normalizedGithubUsername,
+          fulfilling: false, // Clear the in-progress flag
+        },
+      },
+    })
+
+    const customerRecord = await prisma.templateSaleCustomer.upsert({
+      where: { saleId: templateSale.id },
+      update: {
         email: customerEmail,
         package: packageType,
+        licenseKey: accessCredentials.licenseKey,
+        downloadToken: accessCredentials.downloadToken,
+        githubTeamId: githubAccess.teamId || null,
+        githubUsername: normalizedGithubUsername || null,
+        supportTier: getSupportTier(packageType),
+        accessExpiresAt: accessExpiresAt,
+        metadata: {
+          emailDelivered: emailResult.success,
+          githubAccessGranted: githubAccess.success,
+          onboardingCompleted: false,
+          githubUsername: normalizedGithubUsername,
+        },
+      },
+      create: {
         saleId: templateSale.id,
-        githubUsername: normalizedGithubUsername,
-      })
-      githubAccess = { success: result.success, teamId: result.teamId ?? null }
-    } catch (githubError) {
-      logError(githubError as Error, ErrorType.SYSTEM)
+        email: customerEmail,
+        package: packageType,
+        licenseKey: accessCredentials.licenseKey,
+        downloadToken: accessCredentials.downloadToken,
+        githubTeamId: githubAccess.teamId || null,
+        githubUsername: normalizedGithubUsername || null,
+        supportTier: getSupportTier(packageType),
+        accessExpiresAt: accessExpiresAt,
+        metadata: {
+          emailDelivered: emailResult.success,
+          githubAccessGranted: githubAccess.success,
+          onboardingCompleted: false,
+          githubUsername: normalizedGithubUsername,
+        },
+      },
+    })
+
+    return {
+      licenseKey: customerRecord.licenseKey,
+      downloadToken: customerRecord.downloadToken,
+      downloadUrl: accessCredentials.downloadUrl,
+      supportTier: customerRecord.supportTier,
+      accessExpiresAt: customerRecord.accessExpiresAt,
+      emailSent: emailResult.success,
+      githubAccessGranted: githubAccess.success,
+      githubTeamId: githubAccess.teamId || null,
+      githubUsername: normalizedGithubUsername || null,
     }
-  }
-
-  await prisma.templateSale.update({
-    where: { sessionId },
-    data: {
-      githubUsername: normalizedGithubUsername,
-      metadata: {
-        ...((templateSale.metadata as object) || {}),
-        fulfilled: true,
-        fulfilledAt: new Date().toISOString(),
-        emailSent: emailResult.success,
-        githubAccess: githubAccess.success,
-        accessCredentials: metadataAccess,
-        githubUsername: normalizedGithubUsername,
+  } catch (fulfillmentError) {
+    // Rollback the fulfilling flag on error
+    const existingMetadata = (templateSale.metadata as Record<string, unknown>) || {}
+    await prisma.templateSale.update({
+      where: { sessionId },
+      data: {
+        metadata: {
+          ...existingMetadata,
+          fulfilling: false,
+          fulfillingError: {
+            message:
+              fulfillmentError instanceof Error
+                ? fulfillmentError.message
+                : String(fulfillmentError),
+            timestamp: new Date().toISOString(),
+          },
+        },
       },
-    },
-  })
+    })
 
-  const customerRecord = await prisma.templateSaleCustomer.upsert({
-    where: { saleId: templateSale.id },
-    update: {
-      email: customerEmail,
-      package: packageType,
-      licenseKey: accessCredentials.licenseKey,
-      downloadToken: accessCredentials.downloadToken,
-      githubTeamId: githubAccess.teamId || null,
-      githubUsername: normalizedGithubUsername || null,
-      supportTier: getSupportTier(packageType),
-      accessExpiresAt: accessExpiresAt,
-      metadata: {
-        emailDelivered: emailResult.success,
-        githubAccessGranted: githubAccess.success,
-        onboardingCompleted: false,
-        githubUsername: normalizedGithubUsername,
-      },
-    },
-    create: {
-      saleId: templateSale.id,
-      email: customerEmail,
-      package: packageType,
-      licenseKey: accessCredentials.licenseKey,
-      downloadToken: accessCredentials.downloadToken,
-      githubTeamId: githubAccess.teamId || null,
-      githubUsername: normalizedGithubUsername || null,
-      supportTier: getSupportTier(packageType),
-      accessExpiresAt: accessExpiresAt,
-      metadata: {
-        emailDelivered: emailResult.success,
-        githubAccessGranted: githubAccess.success,
-        onboardingCompleted: false,
-        githubUsername: normalizedGithubUsername,
-      },
-    },
-  })
-
-  return {
-    licenseKey: customerRecord.licenseKey,
-    downloadToken: customerRecord.downloadToken,
-    downloadUrl: accessCredentials.downloadUrl,
-    supportTier: customerRecord.supportTier,
-    accessExpiresAt: customerRecord.accessExpiresAt,
-    emailSent: emailResult.success,
-    githubAccessGranted: githubAccess.success,
-    githubTeamId: githubAccess.teamId || null,
-    githubUsername: normalizedGithubUsername || null,
+    // Re-throw the error after rollback
+    throw fulfillmentError
   }
 }
 

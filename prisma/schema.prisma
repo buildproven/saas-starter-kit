@@ -177,6 +177,7 @@ model ApiKey {
   id         String    @id @default(cuid())
   name       String
   keyHash    String    @unique
+  scopes     String[]  @default(["read"])
   lastUsedAt DateTime?
   expiresAt  DateTime?
   isActive   Boolean   @default(true)

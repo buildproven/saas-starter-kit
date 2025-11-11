@@ -70,11 +70,11 @@ const githubUsernameRegex = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i
 
 const CheckoutRequestSchema = z.object({
   package: z.enum(['basic', 'pro', 'enterprise']),
-  email: z.string().email(),
-  companyName: z.string().optional(),
-  useCase: z.string().optional(),
-  successUrl: z.string().url().optional(),
-  cancelUrl: z.string().url().optional(),
+  email: z.string().email().max(254), // RFC 5321 max email length
+  companyName: z.string().max(200).optional(),
+  useCase: z.string().max(2000).optional(),
+  successUrl: z.string().url().max(2048).optional(), // Common URL length limit
+  cancelUrl: z.string().url().max(2048).optional(),
   githubUsername: z
     .string()
     .min(1)
@@ -128,9 +128,10 @@ export async function POST(request: NextRequest) {
       },
       success_url:
         validatedData.successUrl ||
-        `${process.env.NEXT_PUBLIC_APP_URL}/template-purchase/success?session_id={CHECKOUT_SESSION_ID}`,
+        `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/template-purchase/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:
-        validatedData.cancelUrl || `${process.env.NEXT_PUBLIC_APP_URL}/template-purchase/cancel`,
+        validatedData.cancelUrl ||
+        `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/template-purchase/cancel`,
       allow_promotion_codes: true,
       tax_id_collection: {
         enabled: true,
