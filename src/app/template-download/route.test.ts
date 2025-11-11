@@ -214,10 +214,10 @@ describe('Production archiver flow', () => {
   it('blocks path traversal attempts in production', async () => {
     rateLimit.mockReturnValue(true)
 
-    // Mock getTemplateFiles to return malicious path
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // Mock getTemplateFiles to return malicious path using dynamic import
+    const routeModule = await import('./route')
     jest
-      .spyOn(require('./route'), 'getTemplateFiles')
+      .spyOn(routeModule, 'getTemplateFiles')
       .mockReturnValue([{ path: '../../../etc/passwd', name: 'malicious', tier: 'all' }])
 
     prisma.templateSaleCustomer.findUnique.mockResolvedValue({

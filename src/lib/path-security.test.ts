@@ -27,18 +27,24 @@ describe('path-security', () => {
       }).toThrow('Path traversal detected')
     })
 
-    it('blocks path traversal with mixed separators', () => {
-      // Skip on Unix systems where backslashes are not path separators
-      if (process.platform === 'win32') {
-        expect(() => {
-          sanitizeFilePath(basePath, '..\\..\\..\\windows\\system32')
-        }).toThrow('Path traversal detected')
-      } else {
-        // On Unix, test with forward slashes instead
-        expect(() => {
-          sanitizeFilePath(basePath, '../../../etc/passwd')
-        }).toThrow('Path traversal detected')
+    it('blocks path traversal with mixed separators on Windows', () => {
+      if (process.platform !== 'win32') {
+        // Skip this test on non-Windows platforms
+        return
       }
+      expect(() => {
+        sanitizeFilePath(basePath, '..\\..\\..\\windows\\system32')
+      }).toThrow('Path traversal detected')
+    })
+
+    it('blocks path traversal with forward slashes on Unix', () => {
+      if (process.platform === 'win32') {
+        // Skip this test on Windows
+        return
+      }
+      expect(() => {
+        sanitizeFilePath(basePath, '../../../etc/passwd')
+      }).toThrow('Path traversal detected')
     })
 
     it('allows base path itself', () => {

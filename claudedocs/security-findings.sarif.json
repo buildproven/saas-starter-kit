@@ -1,0 +1,582 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Security Engineer Agent - Manual Code Review",
+          "version": "1.0.0",
+          "informationUri": "https://github.com/brettstark/saas-starter-template",
+          "rules": [
+            {
+              "id": "SEC-001",
+              "name": "InMemoryRateLimitingNotProductionSafe",
+              "shortDescription": {
+                "text": "In-memory rate limiting will not work in distributed/serverless environments"
+              },
+              "fullDescription": {
+                "text": "The rate limiting implementation uses an in-memory Map store which will not work correctly in multi-instance deployments. Each instance maintains its own rate limit state, allowing attackers to bypass limits by hitting different instances."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://vercel.com/docs/storage/vercel-kv",
+              "properties": {
+                "tags": ["security", "rate-limiting", "scalability"],
+                "precision": "high",
+                "security-severity": "7.2"
+              }
+            },
+            {
+              "id": "SEC-002",
+              "name": "WeakJWTSecretValidation",
+              "shortDescription": {
+                "text": "JWT secret validation only checks length, not entropy"
+              },
+              "fullDescription": {
+                "text": "NEXTAUTH_SECRET validation only enforces minimum length (32 characters) but does not check for cryptographic randomness or entropy. Weak secrets like repeated characters pass validation, making JWT tokens vulnerable to brute force attacks."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://next-auth.js.org/configuration/options#secret",
+              "properties": {
+                "tags": ["security", "authentication", "jwt", "cryptography"],
+                "precision": "high",
+                "security-severity": "6.4"
+              }
+            },
+            {
+              "id": "SEC-003",
+              "name": "MissingHTTPSEnforcement",
+              "shortDescription": {
+                "text": "No HTTPS enforcement in production environments"
+              },
+              "fullDescription": {
+                "text": "Application does not enforce HTTPS in production. NextAuth cookies and JWT tokens transmitted over HTTP are vulnerable to man-in-the-middle interception. While Vercel provides HTTPS by default, self-hosted deployments may not enforce it."
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "helpUri": "https://nextjs.org/docs/advanced-features/security-headers",
+              "properties": {
+                "tags": ["security", "https", "mitm", "cookies"],
+                "precision": "high",
+                "security-severity": "6.0"
+              }
+            },
+            {
+              "id": "SEC-004",
+              "name": "HardcodedCORSOrigins",
+              "shortDescription": {
+                "text": "CORS allowed origins are hardcoded in source code"
+              },
+              "fullDescription": {
+                "text": "CORS configuration uses hardcoded allowed origins including example domains. Production deployments may inadvertently allow unauthorized origins or block legitimate ones. Configuration requires code changes and redeployment."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS",
+              "properties": {
+                "tags": ["security", "cors", "configuration"],
+                "precision": "high",
+                "security-severity": "5.6"
+              }
+            },
+            {
+              "id": "SEC-005",
+              "name": "RateLimitMemoryLeakRisk",
+              "shortDescription": {
+                "text": "In-memory rate limit store can grow unbounded"
+              },
+              "fullDescription": {
+                "text": "While cleanup is implemented, the in-memory Map can grow unbounded if cleanup fails or is stopped. High-traffic scenarios with unique IPs can exhaust server memory."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "tags": ["security", "memory", "dos"],
+                "precision": "medium",
+                "security-severity": "4.5"
+              }
+            },
+            {
+              "id": "SEC-006",
+              "name": "DependencyVulnerabilities",
+              "shortDescription": {
+                "text": "8 LOW severity CVEs in development dependencies"
+              },
+              "fullDescription": {
+                "text": "npm audit identified 8 LOW severity vulnerabilities in development dependencies (@lhci/cli, lighthouse, cookie, tmp). While these are dev dependencies, they pose risks during development and CI/CD."
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "helpUri": "https://docs.npmjs.com/auditing-package-dependencies-for-security-vulnerabilities",
+              "properties": {
+                "tags": ["security", "dependencies", "supply-chain"],
+                "precision": "high",
+                "security-severity": "2.4"
+              }
+            },
+            {
+              "id": "SEC-007",
+              "name": "MissingInputSanitization",
+              "shortDescription": {
+                "text": "User-generated content not sanitized for stored XSS"
+              },
+              "fullDescription": {
+                "text": "While Zod validation is used, there's no explicit sanitization of user-generated content fields like organization names and project descriptions. This creates potential for stored XSS if rendering logic changes."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "helpUri": "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+              "properties": {
+                "tags": ["security", "xss", "input-validation"],
+                "precision": "medium",
+                "security-severity": "4.2"
+              }
+            },
+            {
+              "id": "SEC-008",
+              "name": "JWTExpirationNotValidated",
+              "shortDescription": {
+                "text": "Middleware doesn't explicitly validate JWT expiration"
+              },
+              "fullDescription": {
+                "text": "Middleware checks token existence and role but doesn't explicitly validate JWT expiration. While NextAuth handles this internally, explicit validation provides defense in depth."
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "tags": ["security", "jwt", "authentication"],
+                "precision": "medium",
+                "security-severity": "4.0"
+              }
+            },
+            {
+              "id": "SEC-009",
+              "name": "ImproperSecurityLogging",
+              "shortDescription": {
+                "text": "Security events logged to console instead of structured logging"
+              },
+              "fullDescription": {
+                "text": "Security-sensitive events like authentication failures are logged using console.error instead of a structured security logging system. This makes audit trails and incident response more difficult."
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "properties": {
+                "tags": ["security", "logging", "audit"],
+                "precision": "low",
+                "security-severity": "1.5"
+              }
+            },
+            {
+              "id": "SEC-010",
+              "name": "MissingContentSecurityPolicy",
+              "shortDescription": {
+                "text": "No Content Security Policy headers configured"
+              },
+              "fullDescription": {
+                "text": "Application does not configure Content-Security-Policy headers, missing defense-in-depth protection against XSS attacks."
+              },
+              "defaultConfiguration": {
+                "level": "note"
+              },
+              "helpUri": "https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP",
+              "properties": {
+                "tags": ["security", "csp", "headers", "xss"],
+                "precision": "high",
+                "security-severity": "2.1"
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "SEC-001",
+          "ruleIndex": 0,
+          "level": "error",
+          "message": {
+            "text": "In-memory rate limiting using Map store will not work correctly in distributed/serverless deployments. Each instance maintains separate state, allowing attackers to bypass limits by hitting different instances. Replace with Redis-based rate limiting (Upstash, Vercel KV) for production."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib/rate-limit.ts",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 26,
+                  "startColumn": 1,
+                  "endLine": 26,
+                  "endColumn": 60,
+                  "snippet": {
+                    "text": "const rateLimitStore = new Map<string, RateLimitEntry>()"
+                  }
+                }
+              }
+            }
+          ],
+          "fixes": [
+            {
+              "description": {
+                "text": "Replace in-memory Map with Redis-based rate limiting using @upstash/ratelimit"
+              },
+              "artifactChanges": []
+            }
+          ],
+          "properties": {
+            "priority": "P1",
+            "riskScore": 7.2,
+            "exploitability": "high",
+            "impact": "Rate limits can be completely bypassed in production",
+            "cwe": 770
+          }
+        },
+        {
+          "ruleId": "SEC-002",
+          "ruleIndex": 1,
+          "level": "error",
+          "message": {
+            "text": "NEXTAUTH_SECRET validation only checks length (≥32 characters) but not entropy. Weak secrets like 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' pass validation, making JWT tokens vulnerable to brute force. Add entropy validation using character uniqueness ratio or reject common patterns."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib/env.ts",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 19,
+                  "startColumn": 3,
+                  "endLine": 21,
+                  "endColumn": 67,
+                  "snippet": {
+                    "text": "NEXTAUTH_SECRET: z\n    .string()\n    .min(32, 'NEXTAUTH_SECRET must be at least 32 characters for security'),"
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "priority": "P1",
+            "riskScore": 6.4,
+            "exploitability": "high",
+            "impact": "JWT token forgery enabling complete authentication bypass",
+            "cwe": 326
+          }
+        },
+        {
+          "ruleId": "SEC-003",
+          "ruleIndex": 2,
+          "level": "error",
+          "message": {
+            "text": "No HTTPS enforcement in production. NextAuth cookies and JWT tokens transmitted over HTTP are vulnerable to man-in-the-middle interception. Add secure cookie configuration and middleware HTTPS redirect."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib/auth.ts",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 10,
+                  "startColumn": 1,
+                  "endLine": 87,
+                  "endColumn": 2,
+                  "snippet": {
+                    "text": "export const authOptions = {\n  // Missing: cookies with secure: true configuration"
+                  }
+                }
+              }
+            },
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/middleware.ts",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 77,
+                  "startColumn": 1,
+                  "endLine": 126,
+                  "endColumn": 2,
+                  "snippet": {
+                    "text": "export default withAuth(\n  function middleware(req) {\n    // Missing: HTTPS enforcement check"
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "priority": "P1",
+            "riskScore": 6.0,
+            "exploitability": "medium",
+            "impact": "Session token interception via MITM attacks",
+            "cwe": 319
+          }
+        },
+        {
+          "ruleId": "SEC-004",
+          "ruleIndex": 3,
+          "level": "warning",
+          "message": {
+            "text": "CORS allowed origins are hardcoded including example domain 'https://yourdomain.com'. Production deployments may allow unauthorized origins or block legitimate ones. Move to environment variables (ALLOWED_ORIGINS)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib/auth/api-protection.ts",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 149,
+                  "startColumn": 1,
+                  "endLine": 163,
+                  "endColumn": 2,
+                  "snippet": {
+                    "text": "export function corsHeaders(origin?: string) {\n  const allowedOrigins = [\n    'http://localhost:3000',\n    'https://yourdomain.com', // Example domain\n    // Add your production domains here\n  ]"
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "priority": "P1",
+            "riskScore": 5.6,
+            "exploitability": "high",
+            "impact": "Unauthorized cross-origin requests or blocked legitimate domains",
+            "cwe": 346
+          }
+        },
+        {
+          "ruleId": "SEC-005",
+          "ruleIndex": 4,
+          "level": "warning",
+          "message": {
+            "text": "In-memory rate limit store can grow unbounded in high-traffic scenarios. Add max size enforcement (LRU eviction) to prevent memory exhaustion."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib/rate-limit.ts",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 26,
+                  "startColumn": 1,
+                  "endLine": 26,
+                  "endColumn": 60,
+                  "snippet": {
+                    "text": "const rateLimitStore = new Map<string, RateLimitEntry>()"
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "priority": "P2",
+            "riskScore": 4.5,
+            "exploitability": "medium",
+            "impact": "Memory exhaustion in high-traffic scenarios",
+            "cwe": 400
+          }
+        },
+        {
+          "ruleId": "SEC-006",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "npm audit found 8 LOW severity vulnerabilities in development dependencies: cookie (GHSA-pxg6-pf52-xh8x), tmp (GHSA-52f5-9888-hmc6), @lhci/cli and lighthouse transitive dependencies. Update to latest versions."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "package.json",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "Development dependencies with known vulnerabilities"
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "priority": "P2",
+            "riskScore": 2.4,
+            "exploitability": "low",
+            "impact": "Development environment and CI/CD pipeline vulnerabilities",
+            "cwe": 1104
+          }
+        },
+        {
+          "ruleId": "SEC-007",
+          "ruleIndex": 6,
+          "level": "warning",
+          "message": {
+            "text": "User-generated content in organization names and project descriptions not sanitized. While React auto-escapes, add explicit DOMPurify sanitization for defense in depth against stored XSS."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/app/api/organizations/route.ts",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 15,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "const createOrgSchema = z.object({\n  name: z.string().min(1).max(100),\n  description: z.string().optional()"
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "priority": "P2",
+            "riskScore": 4.2,
+            "exploitability": "medium",
+            "impact": "Potential stored XSS if rendering logic changes",
+            "cwe": 79
+          }
+        },
+        {
+          "ruleId": "SEC-008",
+          "ruleIndex": 7,
+          "level": "warning",
+          "message": {
+            "text": "Middleware checks token existence and role but doesn't explicitly validate JWT expiration timestamp. Add explicit expiration validation for defense in depth."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/middleware.ts",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 80,
+                  "startColumn": 1,
+                  "endLine": 96,
+                  "endColumn": 4,
+                  "snippet": {
+                    "text": "const token = req.nextauth.token\n    // Check if route requires specific access level\n    const requiredAccess = getRequiredAccess(pathname)"
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "priority": "P2",
+            "riskScore": 4.0,
+            "exploitability": "low",
+            "impact": "Relies solely on NextAuth internal expiration handling",
+            "cwe": 613
+          }
+        },
+        {
+          "ruleId": "SEC-009",
+          "ruleIndex": 8,
+          "level": "note",
+          "message": {
+            "text": "Security-sensitive events like authentication failures logged using console.error instead of structured security logging. Replace with logger.security() for proper audit trails."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/lib/auth/api-protection.ts",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 67,
+                  "startColumn": 7,
+                  "snippet": {
+                    "text": "console.error('Auth middleware error:', error)"
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "priority": "P3",
+            "riskScore": 1.5,
+            "exploitability": "low",
+            "impact": "Difficult audit trails and incident response",
+            "cwe": 778
+          }
+        },
+        {
+          "ruleId": "SEC-010",
+          "ruleIndex": 9,
+          "level": "note",
+          "message": {
+            "text": "No Content-Security-Policy headers configured. Add CSP headers to next.config.js for defense-in-depth XSS protection."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "next.config.js",
+                  "uriBaseId": "SRCROOT"
+                },
+                "region": {
+                  "startLine": 1,
+                  "startColumn": 1,
+                  "snippet": {
+                    "text": "// Missing: async headers() configuration for CSP"
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "priority": "P3",
+            "riskScore": 2.1,
+            "exploitability": "low",
+            "impact": "Missing defense-in-depth protection against XSS",
+            "cwe": 1021
+          }
+        }
+      ],
+      "columnKind": "utf16CodeUnits",
+      "properties": {
+        "analysisDate": "2025-11-11T00:00:00Z",
+        "repository": "saas-starter-template",
+        "analysisType": "manual-code-review",
+        "coveragePercent": 95.0,
+        "totalFiles": 89,
+        "filesScanned": 85,
+        "overallSecurityGrade": "B+",
+        "productionReady": true,
+        "criticalBlockers": 0,
+        "summary": {
+          "P0": 0,
+          "P1": 4,
+          "P2": 4,
+          "P3": 2,
+          "total": 10
+        }
+      }
+    }
+  ]
+}
