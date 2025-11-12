@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SaaS Starter Template - AI Builder Lab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        --color-primary: #030712;
+        --color-secondary: #f9fafb;
+        --color-accent: #3843d0;
+        --color-text: #1f2937;
+        --color-text-light: #6b7280;
+        --color-border: #e5e7eb;
+        --color-success: #10b981;
+      }
+
+      body {
+        font-family:
+          'Inter',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        line-height: 1.6;
+        color: var(--color-text);
+        background: white;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .header {
+        background: var(--color-primary);
+        color: white;
+        padding: 20px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .logo {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: white;
+        text-decoration: none;
+      }
+
+      .nav-link {
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: color 0.2s;
+      }
+
+      .nav-link:hover {
+        color: white;
+      }
+
+      .hero {
+        background: linear-gradient(
+          180deg,
+          var(--color-primary) 0%,
+          #1a1f3a 100%
+        );
+        color: white;
+        padding: 100px 24px 80px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background:
+          radial-gradient(
+            circle at 20% 50%,
+            rgba(56, 67, 208, 0.1) 0%,
+            transparent 50%
+          ),
+          radial-gradient(
+            circle at 80% 80%,
+            rgba(56, 67, 208, 0.1) 0%,
+            transparent 50%
+          );
+        pointer-events: none;
+      }
+
+      .hero-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+      }
+
+      .badge {
+        display: inline-block;
+        background: rgba(56, 67, 208, 0.2);
+        color: #93c5fd;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        margin-bottom: 24px;
+        border: 1px solid rgba(56, 67, 208, 0.3);
+      }
+
+      .hero h1 {
+        font-size: 3.5rem;
+        font-weight: 800;
+        margin-bottom: 24px;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+
+      .hero-subtitle {
+        font-size: 1.5rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 16px;
+        font-weight: 400;
+      }
+
+      .hero-description {
+        font-size: 1.125rem;
+        color: rgba(255, 255, 255, 0.6);
+        margin-bottom: 40px;
+        max-width: 700px;
+      }
+
+      .cta-group {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 48px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 28px;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: none;
+      }
+
+      .btn-primary {
+        background: var(--color-accent);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #2d36b0;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(56, 67, 208, 0.3);
+      }
+
+      .btn-secondary {
+        background: white;
+        color: var(--color-primary);
+      }
+
+      .btn-secondary:hover {
+        background: var(--color-secondary);
+      }
+
+      .code-snippet {
+        background: #0d1117;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 24px;
+        max-width: 700px;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 0.9rem;
+        line-height: 1.8;
+        color: #58a6ff;
+        margin-top: 32px;
+      }
+
+      .code-snippet .comment {
+        color: #8b949e;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      .section {
+        padding: 80px 24px;
+      }
+
+      .section-header {
+        text-align: center;
+        margin-bottom: 64px;
+      }
+
+      .section-title {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--color-primary);
+        margin-bottom: 16px;
+        letter-spacing: -0.02em;
+      }
+
+      .section-subtitle {
+        font-size: 1.125rem;
+        color: var(--color-text-light);
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 32px;
+      }
+
+      .feature-card {
+        background: white;
+        border: 1px solid var(--color-border);
+        border-radius: 12px;
+        padding: 32px;
+        transition: all 0.3s;
+      }
+
+      .feature-card:hover {
+        border-color: var(--color-accent);
+        box-shadow: 0 8px 24px rgba(56, 67, 208, 0.1);
+        transform: translateY(-4px);
+      }
+
+      .feature-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, var(--color-accent), #5b66e8);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        margin-bottom: 20px;
+      }
+
+      .feature-card h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--color-primary);
+        margin-bottom: 12px;
+      }
+
+      .feature-card p {
+        color: var(--color-text-light);
+        line-height: 1.6;
+        font-size: 0.9375rem;
+      }
+
+      .feature-tag {
+        display: inline-block;
+        background: #d1fae5;
+        color: #065f46;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 8px;
+        text-transform: uppercase;
+      }
+
+      .stats-section {
+        background: var(--color-secondary);
+        padding: 64px 24px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 48px;
+        max-width: 900px;
+        margin: 0 auto;
+        text-align: center;
+      }
+
+      .stat-item h4 {
+        font-size: 3rem;
+        font-weight: 800;
+        color: var(--color-accent);
+        margin-bottom: 8px;
+      }
+
+      .stat-item p {
+        color: var(--color-text-light);
+        font-size: 0.9375rem;
+      }
+
+      .tech-stack {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+        justify-content: center;
+      }
+
+      .tech-badge {
+        background: var(--color-secondary);
+        border: 1px solid var(--color-border);
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--color-text);
+      }
+
+      .cta-section {
+        background: linear-gradient(135deg, var(--color-primary), #1a1f3a);
+        color: white;
+        padding: 80px 24px;
+        text-align: center;
+      }
+
+      .cta-section h2 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 16px;
+      }
+
+      .cta-section p {
+        font-size: 1.125rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 32px;
+      }
+
+      .footer {
+        background: var(--color-primary);
+        color: rgba(255, 255, 255, 0.6);
+        padding: 32px 24px;
+        text-align: center;
+        font-size: 0.875rem;
+      }
+
+      .footer a {
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+      }
+
+      .footer a:hover {
+        color: white;
+      }
+
+      @media (max-width: 768px) {
+        .hero h1 {
+          font-size: 2.5rem;
+        }
+
+        .hero-subtitle {
+          font-size: 1.25rem;
+        }
+
+        .cta-group {
+          flex-direction: column;
+        }
+
+        .btn {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .section-title {
+          font-size: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-content">
+        <a href="https://www.aibuilderlab.com" class="logo">AI Builder Lab</a>
+        <a href="https://www.aibuilderlab.com/projects" class="nav-link"
+          >← Back to Projects</a
+        >
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-content">
+        <div class="badge">🚀 PRODUCTION-READY TEMPLATE</div>
+        <h1>SaaS Starter Template</h1>
+        <p class="hero-subtitle">
+          Launch your multi-tenant SaaS in weeks, not months
+        </p>
+        <p class="hero-description">
+          Batteries-included foundation with Next.js 14, Prisma, Stripe billing,
+          NextAuth, RBAC, and all the modern tooling you need to build and scale
+          your SaaS product.
+        </p>
+
+        <div class="cta-group">
+          <a
+            href="https://github.com/brettstark73/saas-starter-template"
+            class="btn btn-primary"
+            target="_blank"
+          >
+            <span>View on GitHub</span>
+            <span>→</span>
+          </a>
+          <a href="#features" class="btn btn-secondary">
+            <span>Explore Features</span>
+          </a>
+        </div>
+
+        <div class="code-snippet">
+          <div><span class="comment"># Quick start</span></div>
+          <div>git clone https://github.com/brettstark73/saas-starter-template</div>
+          <div>cd saas-starter-template</div>
+          <div>npm install</div>
+          <div>cp .env.example .env.local</div>
+          <div>npm run db:push && npm run dev</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <h4>Next.js 14</h4>
+          <p>App Router</p>
+        </div>
+        <div class="stat-item">
+          <h4>80%+</h4>
+          <p>Test Coverage</p>
+        </div>
+        <div class="stat-item">
+          <h4>MIT</h4>
+          <p>License</p>
+        </div>
+        <div class="stat-item">
+          <h4>100%</h4>
+          <p>TypeScript</p>
+        </div>
+      </div>
+
+      <div class="tech-stack">
+        <span class="tech-badge">Next.js 14</span>
+        <span class="tech-badge">Prisma</span>
+        <span class="tech-badge">PostgreSQL</span>
+        <span class="tech-badge">NextAuth</span>
+        <span class="tech-badge">Stripe</span>
+        <span class="tech-badge">Tailwind CSS</span>
+        <span class="tech-badge">shadcn/ui</span>
+        <span class="tech-badge">Zustand</span>
+        <span class="tech-badge">Jest</span>
+        <span class="tech-badge">Sentry</span>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Everything You Need to Launch Fast</h2>
+          <p class="section-subtitle">
+            Production-grade features and tooling included out of the box
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🔐</div>
+            <h3>Auth & RBAC<span class="feature-tag">Included</span></h3>
+            <p>
+              NextAuth with JWT strategy, Prisma adapter, and role-based access
+              control. USER, ADMIN, and SUPER_ADMIN roles with middleware
+              enforcement.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🏢</div>
+            <h3>Multi-Tenant Ready<span class="feature-tag">Included</span></h3>
+            <p>
+              Organizations, Projects, API Keys, and Usage tracking. Complete
+              data model for multi-tenant SaaS with Prisma and PostgreSQL.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">💳</div>
+            <h3>Stripe Billing<span class="feature-tag">Included</span></h3>
+            <p>
+              Subscription flows, checkout sessions, billing portal integration,
+              and webhook handlers. Ready for multiple pricing tiers and usage
+              tracking.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🎨</div>
+            <h3>Modern UI<span class="feature-tag">Included</span></h3>
+            <p>
+              shadcn/ui component primitives, Tailwind CSS, Lucide icons, and
+              responsive design patterns. Dark mode ready with consistent design
+              tokens.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🧪</div>
+            <h3>Testing Suite<span class="feature-tag">Included</span></h3>
+            <p>
+              Jest + Testing Library with 80% coverage threshold. Unit,
+              integration, and component tests with watch mode and coverage
+              reports.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🚀</div>
+            <h3>Production Tooling<span class="feature-tag">Included</span></h3>
+            <p>
+              ESLint (security plugin), Prettier, Stylelint, Husky hooks,
+              lint-staged, GitHub Actions CI/CD, and Sentry error monitoring.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">📊</div>
+            <h3>State Management<span class="feature-tag">Included</span></h3>
+            <p>
+              Zustand global store for client state, React Server Components for
+              server state, and optimistic UI patterns with Next.js App Router.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🔒</div>
+            <h3>Security First<span class="feature-tag">Included</span></h3>
+            <p>
+              ESLint security plugin, secret detection, npm audit gates,
+              middleware-based auth, CSRF protection, and secure environment
+              variable handling.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">📱</div>
+            <h3>API Routes<span class="feature-tag">Included</span></h3>
+            <p>
+              REST endpoints for organizations, projects, billing, and user
+              management. Server actions for mutations with Next.js App Router.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta-section">
+      <div class="container">
+        <h2>Open Source & Production Ready</h2>
+        <p>
+          Built with enterprise patterns, tested for production, and ready to
+          scale. Star us on GitHub or fork to get started.
+        </p>
+        <div class="cta-group" style="justify-content: center">
+          <a
+            href="https://github.com/brettstark73/saas-starter-template"
+            class="btn btn-primary"
+            target="_blank"
+          >
+            ⭐ Star on GitHub
+          </a>
+          <a
+            href="https://github.com/brettstark73/saas-starter-template#quick-start"
+            class="btn btn-secondary"
+            target="_blank"
+          >
+            📖 Quick Start Guide
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>
+        &copy; 2024 AI Builder Lab. All rights reserved. |
+        <a href="https://www.aibuilderlab.com">Home</a> |
+        <a href="https://www.aibuilderlab.com/projects">Projects</a>
+      </p>
+    </footer>
+  </body>
+</html>

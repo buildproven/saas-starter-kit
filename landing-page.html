@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SaaS Starter Template - Launch Your Multi-Tenant SaaS Fast</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: #fff;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      .hero {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 80px 20px;
+        text-align: center;
+      }
+
+      .hero h1 {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        line-height: 1.2;
+      }
+
+      .hero p {
+        font-size: 1.5rem;
+        margin-bottom: 30px;
+        opacity: 0.95;
+      }
+
+      .hero .tagline {
+        font-size: 1.1rem;
+        margin-bottom: 40px;
+        opacity: 0.9;
+      }
+
+      .code-block {
+        background: #2d3748;
+        color: #48bb78;
+        padding: 20px 30px;
+        border-radius: 8px;
+        font-family: 'Monaco', 'Menlo', monospace;
+        font-size: 1rem;
+        margin: 20px auto;
+        max-width: 700px;
+        text-align: left;
+        overflow-x: auto;
+      }
+
+      .code-block .comment {
+        color: #cbd5e0;
+      }
+
+      .cta-buttons {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 30px;
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 15px 40px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        background: white;
+        color: #667eea;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        color: white;
+        border: 2px solid white;
+      }
+
+      .btn-secondary:hover {
+        background: white;
+        color: #667eea;
+      }
+
+      .stats {
+        background: #f8f9fa;
+        padding: 60px 20px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 40px;
+        max-width: 900px;
+        margin: 0 auto 40px;
+        text-align: center;
+      }
+
+      .stat-item h3 {
+        font-size: 2.5rem;
+        color: #667eea;
+        margin-bottom: 10px;
+      }
+
+      .stat-item p {
+        color: #666;
+      }
+
+      .tech-stack {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: center;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .tech-badge {
+        background: white;
+        border: 2px solid #e2e8f0;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #4a5568;
+      }
+
+      .features {
+        padding: 80px 20px;
+      }
+
+      .section-title {
+        text-align: center;
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+        color: #2d3748;
+      }
+
+      .section-subtitle {
+        text-align: center;
+        font-size: 1.2rem;
+        color: #666;
+        margin-bottom: 50px;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 30px;
+        margin-top: 40px;
+      }
+
+      .feature-card {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+      }
+
+      .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+      }
+
+      .feature-card h3 {
+        font-size: 1.5rem;
+        margin-bottom: 15px;
+        color: #2d3748;
+      }
+
+      .feature-card p {
+        color: #666;
+        line-height: 1.6;
+      }
+
+      .feature-badge {
+        display: inline-block;
+        background: #48bb78;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-left: 10px;
+      }
+
+      .github-cta {
+        background: #2d3748;
+        color: white;
+        padding: 60px 20px;
+        text-align: center;
+      }
+
+      .github-cta h2 {
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+      }
+
+      .github-cta p {
+        font-size: 1.2rem;
+        margin-bottom: 30px;
+        opacity: 0.9;
+      }
+
+      @media (max-width: 768px) {
+        .hero h1 {
+          font-size: 2rem;
+        }
+
+        .hero p {
+          font-size: 1.2rem;
+        }
+
+        .cta-buttons {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .btn {
+          width: 100%;
+          max-width: 300px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="hero">
+      <div class="container">
+        <h1>🚀 SaaS Starter Template</h1>
+        <p>Launch your multi-tenant SaaS in weeks, not months</p>
+        <p class="tagline">
+          Batteries-included foundation with Next.js 14, Prisma, Stripe, NextAuth,
+          and all the modern tooling you need
+        </p>
+
+        <div class="code-block">
+          <div><span class="comment"># Quick start</span></div>
+          <div>git clone https://github.com/brettstark73/saas-starter-template</div>
+          <div>cd saas-starter-template</div>
+          <div>npm install && npm run db:push && npm run dev</div>
+        </div>
+
+        <div class="cta-buttons">
+          <a
+            href="https://github.com/brettstark73/saas-starter-template"
+            class="btn btn-primary"
+            target="_blank"
+            >View on GitHub</a
+          >
+          <a href="#features" class="btn btn-secondary">Explore Features</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <h3>Next.js 14</h3>
+          <p>App Router</p>
+        </div>
+        <div class="stat-item">
+          <h3>80%+</h3>
+          <p>Test Coverage</p>
+        </div>
+        <div class="stat-item">
+          <h3>MIT</h3>
+          <p>License</p>
+        </div>
+        <div class="stat-item">
+          <h3>100%</h3>
+          <p>TypeScript</p>
+        </div>
+      </div>
+
+      <div class="tech-stack">
+        <span class="tech-badge">Next.js 14</span>
+        <span class="tech-badge">Prisma</span>
+        <span class="tech-badge">PostgreSQL</span>
+        <span class="tech-badge">NextAuth</span>
+        <span class="tech-badge">Stripe</span>
+        <span class="tech-badge">Tailwind CSS</span>
+        <span class="tech-badge">shadcn/ui</span>
+        <span class="tech-badge">Zustand</span>
+        <span class="tech-badge">Jest</span>
+        <span class="tech-badge">Sentry</span>
+      </div>
+    </section>
+
+    <section class="features" id="features">
+      <div class="container">
+        <h2 class="section-title">Everything You Need to Launch Fast</h2>
+        <p class="section-subtitle">
+          Production-grade features and tooling included out of the box
+        </p>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">🔐</div>
+            <h3>Auth & RBAC <span class="feature-badge">INCLUDED</span></h3>
+            <p>
+              NextAuth with JWT strategy, Prisma adapter, and role-based access
+              control. USER, ADMIN, and SUPER_ADMIN roles.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🏢</div>
+            <h3>Multi-Tenant <span class="feature-badge">INCLUDED</span></h3>
+            <p>
+              Organizations, Projects, API Keys, and Usage tracking. Complete
+              data model for multi-tenant SaaS.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">💳</div>
+            <h3>Stripe Billing <span class="feature-badge">INCLUDED</span></h3>
+            <p>
+              Subscription flows, checkout sessions, billing portal, and webhook
+              handlers for multiple pricing tiers.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🎨</div>
+            <h3>Modern UI <span class="feature-badge">INCLUDED</span></h3>
+            <p>
+              shadcn/ui components, Tailwind CSS, Lucide icons, and responsive
+              design. Dark mode ready.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🧪</div>
+            <h3>Testing Suite <span class="feature-badge">INCLUDED</span></h3>
+            <p>
+              Jest + Testing Library with 80% coverage threshold. Unit,
+              integration, and component tests.
+            </p>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon">🚀</div>
+            <h3>Prod Tooling <span class="feature-badge">INCLUDED</span></h3>
+            <p>
+              ESLint, Prettier, Husky hooks, GitHub Actions CI/CD, and Sentry
+              error monitoring.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="github-cta">
+      <div class="container">
+        <h2>Open Source & Production Ready</h2>
+        <p>
+          Built with enterprise patterns, tested for production, ready to scale.
+          Star us on GitHub or fork to get started!
+        </p>
+        <div class="cta-buttons">
+          <a
+            href="https://github.com/brettstark73/saas-starter-template"
+            class="btn btn-primary"
+            target="_blank"
+          >
+            ⭐ Star on GitHub
+          </a>
+          <a
+            href="https://github.com/brettstark73/saas-starter-template#quick-start"
+            class="btn btn-secondary"
+            target="_blank"
+          >
+            📖 Quick Start
+          </a>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>
