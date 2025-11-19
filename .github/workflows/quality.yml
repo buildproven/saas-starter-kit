@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, master, develop]
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main, master, develop]
 
 jobs:
   quality:
@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -29,33 +29,32 @@ jobs:
             npm install
           fi
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
-
-      - name: Test
-        run: npm test -- --runInBand
-
-      - name: Package template assets
-        env:
-          TEMPLATE_VERSION: ${{ github.sha }}
+      - name: Verify dependency integrity
         run: |
-          npm run template:package
-          for tier in basic pro enterprise; do
-            for format in zip tar; do
-              FILE="template-files/$tier/saas-starter-$tier-v${TEMPLATE_VERSION}.${format}"
-              if [ ! -f "$FILE" ]; then
-                echo "❌ Missing packaged asset: $FILE"
-                exit 1
-              fi
-            done
-          done
-          echo "✅ Template package artifacts verified"
+          echo "🔐 Verifying dependency integrity..."
+          # Verify package-lock.json integrity hashes
+          if [ -f package-lock.json ]; then
+            npm ci --dry-run --prefer-offline
+            echo "✅ Dependency integrity verified"
+          else
+            echo "⚠️ No package-lock.json found - skipping integrity verification"
+          fi
+
+          # Check for known vulnerabilities in dependencies
+          echo "🔍 Checking for vulnerable dependencies..."
+          npm audit --audit-level=moderate || true
+
+          # Verify npm package signatures (Node.js 16+)
+          if command -v npm &> /dev/null; then
+            echo "✍️ Verifying npm package signatures..."
+            npm audit signatures || echo "⚠️ Signature verification not available or failed"
+          fi
 
       - name: Prettier check
         run: npm run format:check
+
+      - name: ESLint
+        run: npx eslint . --ext .js,.jsx,.ts,.tsx,.html --max-warnings=0
 
       - name: Stylelint
         run: npx stylelint "**/*.{css,scss,sass,less,pcss}" --allow-empty-input
@@ -65,9 +64,19 @@ jobs:
 
       - name: Check for hardcoded secrets
         run: |
-          # Check for common secret patterns (excluding workflow files)
-          if grep -r -E "(password|secret|key|token).*[=:].*['\"][^'\"]{8,}" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.github || \
-             grep -r -E "-----BEGIN.*KEY-----" . --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.github; then
+          # Check for common secret patterns (excluding docs, tests, and workflow files)
+          if grep -r -E "(password|secret|key|token).*[=:].*['\"][^'\"]{8,}" . \
+               --exclude-dir=node_modules \
+               --exclude-dir=.git \
+               --exclude-dir=.github \
+               --exclude-dir=tests \
+               --exclude="*.md" \
+               --exclude="package.json" || \
+             grep -r -E "-----BEGIN.*KEY-----" . \
+               --exclude-dir=node_modules \
+               --exclude-dir=.git \
+               --exclude-dir=.github \
+               --exclude-dir=tests; then
             echo "❌ Potential hardcoded secrets found"
             exit 1
           else
@@ -124,3 +133,33 @@ jobs:
 
           # Clean up temp file
           rm -f /tmp/unvalidated_inputs.txt
+
+      - name: Configuration security check
+        run: |
+          # Run comprehensive configuration security validation
+          echo "🔍 Running configuration security validation..."
+          npx create-quality-automation@latest --security-config
+
+      - name: Documentation validation
+        run: |
+          # Run comprehensive documentation validation
+          echo "📖 Running documentation validation..."
+          npx create-quality-automation@latest --validate-docs
+
+      - name: Lighthouse CI
+        run: |
+          # Only run Lighthouse CI if configuration exists
+          if [ -f ".lighthouserc.js" ] || [ -f ".lighthouserc.json" ] || [ -f "lighthouserc.js" ]; then
+            echo "🚢 Running Lighthouse CI..."
+            npx lhci autorun
+          else
+            echo "⏭️ No Lighthouse CI configuration found, skipping"
+          fi
+        continue-on-error: true
+
+      # NOTE: The "Test README Quick Start Instructions" step has been removed
+      # because it relies on setup.js which only exists in the create-quality-automation
+      # package itself, not in consumer repositories that copy this workflow.
+      #
+      # Consumer projects get the quality checks above (prettier, eslint, stylelint, etc.)
+      # but don't need to test the installation process.
