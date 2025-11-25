@@ -16,6 +16,8 @@ const BASE_FILES = [
   'README.md',
   'docs',
   '.env.example',
+  '.husky',
+  'scripts',
   'prisma',
   'next.config.js',
   'tsconfig.json',
