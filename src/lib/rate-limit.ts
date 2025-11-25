@@ -232,7 +232,7 @@ export function getClientIp(request: Request): string {
   const headers = new Headers(request.headers)
   const forwarded = headers.get('x-forwarded-for')
   if (forwarded) {
-    return forwarded.split(',')[0].trim()
+    return forwarded.split(',')[0]?.trim() || 'unknown'
   }
 
   const realIp = headers.get('x-real-ip')
@@ -243,7 +243,7 @@ export function getClientIp(request: Request): string {
   // For Vercel
   const vercelIp = headers.get('x-vercel-forwarded-for')
   if (vercelIp) {
-    return vercelIp.split(',')[0].trim()
+    return vercelIp.split(',')[0]?.trim() || 'unknown'
   }
 
   return 'unknown'

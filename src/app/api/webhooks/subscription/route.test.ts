@@ -159,7 +159,7 @@ describe('POST /api/webhooks/subscription', () => {
     const json = await response.json()
 
     expect(response.status).toBe(200)
-    expect(json).toEqual({ received: true })
+    expect(json).toEqual({ received: true, cached: true })
     expect(__prismaMock.subscription.upsert).not.toHaveBeenCalled()
   })
 

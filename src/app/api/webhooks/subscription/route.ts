@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
   if (!signature || !webhookSecret) {
-    webhookEvents.inc({ event_type: 'unknown', status: 'rejected' })
+    webhookEvents.inc({ event_type: 'unknown', result: 'rejected' })
     return NextResponse.json({ error: 'Missing Stripe signature or secret' }, { status: 400 })
   }
 
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
       },
       'Stripe webhook signature verification failed'
     )
-    webhookEvents.inc({ event_type: 'unknown', status: 'invalid_signature' })
+    webhookEvents.inc({ event_type: 'unknown', result: 'invalid_signature' })
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
         { eventId: event.id, eventType: event.type, type: 'webhook.duplicate' },
         'Webhook event already processed, skipping'
       )
-      webhookEvents.inc({ event_type: event.type, status: 'duplicate' })
+      webhookEvents.inc({ event_type: event.type, result: 'duplicate' })
       return NextResponse.json({ received: true, cached: true })
     }
 
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
     }
 
     const duration = (Date.now() - startTime) / 1000
-    webhookEvents.inc({ event_type: event.type, status: 'success' })
+    webhookEvents.inc({ event_type: event.type, result: 'success' })
     webhookProcessingDuration.observe({ event_type: event.type }, duration)
 
     logger.info(
@@ -274,7 +274,7 @@ export async function POST(request: NextRequest) {
       },
       'Stripe webhook processing error'
     )
-    webhookEvents.inc({ event_type: event?.type || 'unknown', status: 'error' })
+    webhookEvents.inc({ event_type: event?.type || 'unknown', result: 'error' })
     webhookProcessingDuration.observe({ event_type: event?.type || 'unknown' }, duration)
     return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
   }

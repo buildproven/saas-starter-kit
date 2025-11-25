@@ -245,14 +245,14 @@ export function increment(
   labels?: Record<string, string | number>,
   value = 1
 ) {
-  counter.inc(labels, value)
+  counter.inc(labels ?? {}, value)
 }
 
 /**
  * Set gauge helper
  */
 export function set(gauge: Gauge<string>, value: number, labels?: Record<string, string | number>) {
-  gauge.set(labels, value)
+  gauge.set(labels ?? {}, value)
 }
 
 /**

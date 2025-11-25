@@ -3,6 +3,20 @@ import type { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import type { Session } from 'next-auth'
 
+jest.mock('next/server', () => {
+  const actual = jest.requireActual('next/server')
+  return {
+    ...actual,
+    NextResponse: {
+      json: (data: unknown, init: { status?: number } = {}) => ({
+        status: init.status ?? 200,
+        headers: new Map<string, string>(),
+        json: async () => data,
+      }),
+    },
+  }
+})
+
 // Mock dependencies
 jest.mock('next-auth/next', () => ({
   getServerSession: jest.fn(),

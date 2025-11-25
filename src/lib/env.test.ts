@@ -1,12 +1,13 @@
+/* eslint-disable no-undef */
 import { validateEnv, isFeatureEnabled, clearEnvCache } from './env'
 
 describe('env validation', () => {
-  const originalEnv = process.env
+  const originalEnv = { ...process.env } as NodeJS.ProcessEnv
   const originalExit = process.exit
 
   beforeEach(() => {
     // Reset environment before each test
-    process.env = { ...originalEnv }
+    process.env = { ...originalEnv } as NodeJS.ProcessEnv
 
     // Mock process.exit to prevent tests from exiting
     process.exit = jest.fn() as never
@@ -15,14 +16,16 @@ describe('env validation', () => {
     clearEnvCache()
 
     // Set minimum required variables
-    process.env.NODE_ENV = 'test'
-    process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/test'
-    process.env.NEXTAUTH_URL = 'http://localhost:3000'
-    process.env.NEXTAUTH_SECRET = 'this-is-a-very-long-secret-at-least-32-characters-long'
+    Object.assign(process.env, {
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://user:pass@localhost:5432/test',
+      NEXTAUTH_URL: 'http://localhost:3000',
+      NEXTAUTH_SECRET: 'this-is-a-very-long-secret-at-least-32-characters-long',
+    })
   })
 
   afterEach(() => {
-    process.env = originalEnv
+    process.env = { ...originalEnv } as NodeJS.ProcessEnv
     process.exit = originalExit
     clearEnvCache()
   })
