@@ -97,7 +97,62 @@ Refer to `.env.example` for the full list and descriptions.
 
 Husky hooks run lint-staged tasks on staged files; ensure you install dependencies before committing.
 
-> **Note:** In restricted environments (CI or read-only worktrees) run `HUSKY=0 npm install` to skip Husky’s `prepare` hook when it cannot update `.git/config`.
+> **Note:** In restricted environments (CI or read-only worktrees) run `HUSKY=0 npm install` to skip Husky's `prepare` hook when it cannot update `.git/config`.
+
+## Smart Test Strategy
+
+This template includes intelligent risk-based test selection to optimize developer workflow while maintaining quality:
+
+### How It Works
+
+The pre-push hook (`scripts/smart-test-strategy.sh`) analyzes your changes and selects appropriate validation:
+
+**Risk Scoring (0-10):**
+
+- High-risk files (auth, payment, billing, stripe, prisma): +4
+- API files: +2
+- Config files: +2
+- Large changes (>10 files, >200 lines): +2-3
+- Critical branches (main/master, hotfix/\*): +3-4
+- Time of day (work hours favor speed)
+
+**Test Tiers:**
+
+- **Risk 0-1:** Minimal (lint + format only) - 2-5s
+- **Risk 2-3:** Fast (lint + format + typecheck) - 30s
+- **Risk 4-6:** Medium (+ tests) - 1-2min
+- **Risk ≥7:** Comprehensive (+ security audit) - 2-5min
+
+### Examples
+
+```bash
+# Documentation-only change
+git add README.md
+git commit -m "docs: update setup instructions"
+git push  # Runs: lint + format (2-5s)
+
+# Small code change
+git add src/components/Button.tsx
+git commit -m "feat: add button variant"
+git push  # Runs: lint + format + typecheck (~30s)
+
+# Auth/payment change on main branch
+git checkout main
+git add src/lib/auth.ts
+git commit -m "fix: auth session handling"
+git push  # Runs: full validation + security audit (2-5min)
+```
+
+### Philosophy
+
+Pre-push validation should provide **fast feedback** without blocking workflow. Comprehensive testing happens in CI/CD where it can run in parallel. This approach:
+
+- Reduces friction for small changes (docs, styling)
+- Maintains quality gates for critical code (auth, billing)
+- Adapts to context (branch, time, change size)
+- Enables developer flow state
+
+The smart strategy eliminates the "run all tests on every push" bottleneck while ensuring critical changes get thorough validation.
 
 ## Optional: Selling the Template
 
