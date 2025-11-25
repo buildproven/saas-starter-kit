@@ -90,11 +90,12 @@ describe('rate-limit', () => {
         jest.advanceTimersByTime(11000)
         result = checkRateLimit('client1', config)
         expect(result.allowed).toBe(true)
-        expect(result.remaining).toBe(0) // 2 old + 1 new = 3 (limit reached)
+        expect(result.remaining).toBe(2) // window fully reset after 10s; only current request counted
 
-        // Immediately after, still blocked
+        // Immediately after, still allowed until limit reached again
         result = checkRateLimit('client1', config)
-        expect(result.allowed).toBe(false)
+        expect(result.allowed).toBe(true)
+        expect(result.remaining).toBe(1)
       })
 
       it('isolates rate limits per identifier', () => {

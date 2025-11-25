@@ -1,3 +1,4 @@
+/* eslint-disable jest/valid-expect */
 import { withRetry, makeRetryable, withTimeout, withRetryAndTimeout } from './retry'
 import { logger } from './logger'
 
@@ -64,9 +65,6 @@ describe('retry', () => {
           throw new Error('ECONNRESET')
         })
 
-        const startTime = Date.now()
-        let _lastAttemptTime = startTime
-
         // Spy on setTimeout to capture actual delays
         const originalSetTimeout = global.setTimeout
         global.setTimeout = jest.fn((callback, delay) => {
@@ -74,7 +72,7 @@ describe('retry', () => {
             delays.push(delay)
           }
           return originalSetTimeout(callback as () => void, delay)
-        }) as typeof setTimeout
+        }) as unknown as typeof setTimeout
 
         try {
           await withRetry(fn, {
@@ -241,9 +239,10 @@ describe('retry', () => {
 
         const promise = withRetry(fn, { maxRetries: 3, baseDelay: 100 })
 
-        await jest.advanceTimersByTimeAsync(0)
 
-        await expect(promise).rejects.toThrow('Invalid email format')
+        const expectation = expect(promise).rejects.toThrow('Invalid email format')
+        await jest.runAllTimersAsync()
+        await expectation
         expect(fn).toHaveBeenCalledTimes(1) // No retries
         expect(logger.warn).toHaveBeenCalledWith(
           expect.objectContaining({ type: 'retry.non_retryable' }),
@@ -260,9 +259,10 @@ describe('retry', () => {
 
         const promise = withRetry(fn, { maxRetries: 3, baseDelay: 100 })
 
-        await jest.advanceTimersByTimeAsync(0)
 
-        await expect(promise).rejects.toThrow('Bad Request')
+        const expectation = expect(promise).rejects.toThrow('Bad Request')
+        await jest.runAllTimersAsync()
+        await expectation
         expect(fn).toHaveBeenCalledTimes(1)
       })
 
@@ -306,12 +306,14 @@ describe('retry', () => {
           operationName: 'test_exhaustion',
         })
 
+
+        const expectation = expect(promise).rejects.toThrow('ECONNRESET')
         await jest.advanceTimersByTimeAsync(0)
         await jest.advanceTimersByTimeAsync(100)
         await jest.advanceTimersByTimeAsync(200)
         await jest.advanceTimersByTimeAsync(400)
 
-        await expect(promise).rejects.toThrow('ECONNRESET')
+        await expectation
         expect(fn).toHaveBeenCalledTimes(4) // 1 initial + 3 retries
         expect(logger.error).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -478,9 +480,11 @@ describe('retry', () => {
 
         const promise = withTimeout(fn, 1000, 'test_timeout')
 
+
+        const expectation = expect(promise).rejects.toThrow('test_timeout timed out after 1000ms')
         await jest.advanceTimersByTimeAsync(1000)
 
-        await expect(promise).rejects.toThrow('test_timeout timed out after 1000ms')
+        await expectation
 
         expect(logger.error).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -502,15 +506,13 @@ describe('retry', () => {
 
         const promise = withTimeout(fn, 1000, 'test')
 
+
+        const expectation = expect(promise).rejects.toMatchObject({
+          name: 'TimeoutError',
+        })
         await jest.advanceTimersByTimeAsync(1000)
 
-        await expect(promise).rejects.toThrow()
-
-        try {
-          await promise
-        } catch (error) {
-          expect((error as Error).name).toBe('TimeoutError')
-        }
+        await expectation
       })
 
       it('clears timeout on successful completion', async () => {
@@ -613,6 +615,8 @@ describe('retry', () => {
           operationName: 'all_timeout',
         })
 
+
+        const expectation = expect(promise).rejects.toThrow('all_timeout timed out after 1000ms')
         // First attempt timeout
         await jest.advanceTimersByTimeAsync(1000)
         // First retry delay
@@ -624,7 +628,7 @@ describe('retry', () => {
         // Third attempt timeout
         await jest.advanceTimersByTimeAsync(1000)
 
-        await expect(promise).rejects.toThrow('all_timeout timed out after 1000ms')
+        await expectation
         expect(fn).toHaveBeenCalledTimes(3)
       })
 
@@ -640,11 +644,13 @@ describe('retry', () => {
           operationName: 'custom_op_name',
         })
 
+
+        const expectation = expect(promise).rejects.toThrow('custom_op_name timed out after 1000ms')
         await jest.advanceTimersByTimeAsync(1000)
         await jest.advanceTimersByTimeAsync(100)
         await jest.advanceTimersByTimeAsync(1000)
 
-        await expect(promise).rejects.toThrow('custom_op_name timed out after 1000ms')
+        await expectation
       })
     })
   })

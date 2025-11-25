@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { logError, ErrorType } from '@/lib/error-logging'
+import { logError, ErrorType, ErrorSeverity } from '@/lib/error-logging'
 import { rateLimit } from '@/lib/auth/api-protection'
 import { sanitizeFilePath } from '@/lib/path-security'
 import { events, security } from '@/lib/logger'
@@ -269,7 +269,10 @@ async function generateTemplateDownload(params: {
           if (error instanceof Error && error.message.includes('Path traversal')) {
             security.pathTraversal(file.path, ipAddress)
           } else {
-            logError(error as Error, { filePath: file.path, context: 'template_archiving' })
+            logError(error as Error, ErrorType.SYSTEM, ErrorSeverity.MEDIUM, {
+              filePath: file.path,
+              context: 'template_archiving',
+            })
           }
         }
       }
@@ -305,7 +308,7 @@ async function generateTemplateDownload(params: {
   }
 }
 
-function getTemplateFiles(
+function getTemplateFilesDefault(
   packageType: string
 ): Array<{ path: string; name: string; tier: string }> {
   const allFiles = [
@@ -328,6 +331,18 @@ function getTemplateFiles(
     if (file.tier === 'pro+' && ['pro', 'enterprise'].includes(packageType)) return true
     return false
   })
+}
+
+let templateFilesProvider = getTemplateFilesDefault
+
+export function getTemplateFiles(packageType: string) {
+  return templateFilesProvider(packageType)
+}
+
+export function __setTemplateFilesProviderForTesting(
+  provider?: (pkg: string) => Array<{ path: string; name: string; tier: string }>
+) {
+  templateFilesProvider = provider ?? getTemplateFilesDefault
 }
 
 function createMockTemplateZip(

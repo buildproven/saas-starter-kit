@@ -4,6 +4,7 @@ import { grantGitHubAccess } from '@/lib/github/access-management'
 
 jest.mock('@/lib/prisma', () => ({
   prisma: {
+    $transaction: jest.fn(),
     templateSale: {
       findUnique: jest.fn(),
       update: jest.fn(),
@@ -27,6 +28,7 @@ jest.mock('@/lib/github/access-management', () => {
 })
 
 type PrismaMockShape = {
+  $transaction: jest.Mock
   templateSale: {
     findUnique: jest.Mock
     update: jest.Mock
@@ -37,6 +39,9 @@ type PrismaMockShape = {
 }
 
 const { prisma: prismaMock } = jest.requireMock('@/lib/prisma') as { prisma: PrismaMockShape }
+prismaMock.$transaction = jest.fn(
+  async (cb: (ctx: PrismaMockShape) => Promise<unknown> | unknown) => cb(prismaMock)
+)
 const sendEmailMock = sendTemplateDeliveryEmail as jest.MockedFunction<
   typeof sendTemplateDeliveryEmail
 >
@@ -131,7 +136,7 @@ describe('fulfillTemplateSale', () => {
     expect(result.downloadUrl).toContain('/template-download')
     expect(result.githubAccessGranted).toBe(true)
 
-    const updateArgs = prismaMock.templateSale.update.mock.calls[0][0]
+    const updateArgs = prismaMock.templateSale.update.mock.calls.at(-1)?.[0]
     expect(updateArgs.data.githubUsername).toBe('buyerdev')
     expect(updateArgs.data.metadata.githubUsername).toBe('buyerdev')
 
@@ -198,7 +203,7 @@ describe('fulfillTemplateSale', () => {
     expect(grantGitHubAccessMock).toHaveBeenCalledWith(
       expect.objectContaining({ githubUsername: 'storeduser' })
     )
-    const updateArgs = prismaMock.templateSale.update.mock.calls[0][0]
+    const updateArgs = prismaMock.templateSale.update.mock.calls.at(-1)?.[0]
     expect(updateArgs.data.githubUsername).toBe('storeduser')
   })
 })

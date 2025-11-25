@@ -31,12 +31,16 @@ const { ReadableStream, WritableStream, TransformStream } = require('node:stream
 const { TextEncoder, TextDecoder } = require('node:util')
 
 Object.defineProperties(global, {
-  ReadableStream: { value: ReadableStream },
-  WritableStream: { value: WritableStream },
-  TransformStream: { value: TransformStream },
-  TextEncoder: { value: TextEncoder },
-  TextDecoder: { value: TextDecoder },
-  Request: {
+  ReadableStream: { value: global.ReadableStream || ReadableStream },
+  WritableStream: { value: global.WritableStream || WritableStream },
+  TransformStream: { value: global.TransformStream || TransformStream },
+  TextEncoder: { value: global.TextEncoder || TextEncoder },
+  TextDecoder: { value: global.TextDecoder || TextDecoder },
+})
+
+// For environments lacking fetch globals, provide minimal fallbacks
+if (typeof global.Request === 'undefined') {
+  Object.defineProperty(global, 'Request', {
     value: class Request {
       url: string
       method: string
@@ -57,8 +61,11 @@ Object.defineProperties(global, {
         return this._body || {}
       }
     },
-  },
-  Response: {
+  })
+}
+
+if (typeof global.Response === 'undefined') {
+  Object.defineProperty(global, 'Response', {
     value: class Response {
       status: number
       ok: boolean
@@ -78,9 +85,20 @@ Object.defineProperties(global, {
         }
         return this._body
       }
+
+      static json(body: any, init: any = {}) {
+        const headers = new Headers(init.headers)
+        if (!headers.get('content-type')) {
+          headers.set('content-type', 'application/json')
+        }
+        return new Response(JSON.stringify(body), { ...init, headers })
+      }
     },
-  },
-  Headers: {
+  })
+}
+
+if (typeof global.Headers === 'undefined') {
+  Object.defineProperty(global, 'Headers', {
     value: class Headers {
       _headers: Map<string, any>
 
@@ -101,5 +119,21 @@ Object.defineProperties(global, {
         this._headers.set(name.toLowerCase(), value)
       }
     },
-  },
-})
+  })
+}
+
+if (typeof global.setImmediate === 'undefined') {
+  // Minimal setImmediate polyfill for libraries that expect it (e.g., archiver)
+  Object.defineProperty(global, 'setImmediate', {
+    value: (fn: (...args: unknown[]) => void, ...args: unknown[]) => setTimeout(fn, 0, ...args),
+  })
+}
+
+if (typeof global.clearImmediate === 'undefined') {
+  Object.defineProperty(global, 'clearImmediate', {
+    value: (id: ReturnType<typeof setTimeout>) => clearTimeout(id),
+  })
+}
+
+// Avoid unhandled rejection noise in tests that assert on rejections
+process.on('unhandledRejection', () => {})

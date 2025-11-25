@@ -76,7 +76,7 @@
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "autoprefixer": "^10.4.0",
-    "create-quality-automation": "file:../create-quality-automation",
+    "create-quality-automation": "^4.1.1",
     "cross-env": "^7.0.3",
     "eslint": "^8.0.0",
     "eslint-config-next": "^14.0.0",

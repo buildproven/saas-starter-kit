@@ -1,4 +1,4 @@
-import { GET } from './route'
+import { GET, __setTemplateFilesProviderForTesting } from './route'
 import type { NextRequest } from 'next/server'
 
 jest.mock('@/lib/prisma', () => ({
@@ -15,6 +15,7 @@ jest.mock('@/lib/prisma', () => ({
 jest.mock('@/lib/error-logging', () => ({
   logError: jest.fn(),
   ErrorType: { SYSTEM: 'SYSTEM' },
+  ErrorSeverity: { MEDIUM: 'MEDIUM' },
 }))
 
 jest.mock('@/lib/auth/api-protection', () => ({
@@ -45,6 +46,7 @@ const createRequest = (token: string, format: 'zip' | 'tar' = 'zip'): NextReques
 
 beforeEach(() => {
   jest.clearAllMocks()
+  __setTemplateFilesProviderForTesting()
 })
 
 describe('/template-download rate limiting and audit', () => {
@@ -135,8 +137,12 @@ describe('Production archiver flow', () => {
   let tempDir: string
   const originalNodeEnv = process.env.NODE_ENV
 
+  const setNodeEnv = (value: string | undefined) => {
+    Object.assign(process.env, { NODE_ENV: value })
+  }
+
   beforeEach(async () => {
-    process.env.NODE_ENV = 'production'
+    setNodeEnv('production')
 
     // Create temp directory for fixtures
     const os = await import('os')
@@ -156,7 +162,7 @@ describe('Production archiver flow', () => {
   })
 
   afterEach(async () => {
-    process.env.NODE_ENV = originalNodeEnv
+    setNodeEnv(originalNodeEnv)
 
     // Clean up temp directory
     if (tempDir) {
@@ -214,11 +220,10 @@ describe('Production archiver flow', () => {
   it('blocks path traversal attempts in production', async () => {
     rateLimit.mockReturnValue(true)
 
-    // Mock getTemplateFiles to return malicious path using dynamic import
-    const routeModule = await import('./route')
-    jest
-      .spyOn(routeModule, 'getTemplateFiles')
-      .mockReturnValue([{ path: '../../../etc/passwd', name: 'malicious', tier: 'all' }])
+    // Inject malicious path list
+    __setTemplateFilesProviderForTesting(() => [
+      { path: '../../../etc/passwd', name: 'malicious', tier: 'all' },
+    ])
 
     prisma.templateSaleCustomer.findUnique.mockResolvedValue({
       id: 'cust_sec_1',

@@ -84,6 +84,9 @@ function defaultIsRetryable(error: Error): boolean {
  * ```
  */
 export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
+  // Yield so consumers can attach rejection handlers before execution continues
+  await Promise.resolve()
+
   const {
     maxRetries = 3,
     baseDelay = 1000,
@@ -112,6 +115,23 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
       return result
     } catch (error) {
       lastError = error as Error
+
+      // If error is not retryable, bail out immediately
+      if (!isRetryable(lastError)) {
+        logger.warn(
+          {
+            type: 'retry.non_retryable',
+            operation: operationName,
+            attempt,
+            error: {
+              name: lastError.name,
+              message: lastError.message,
+            },
+          },
+          `${operationName} failed with non-retryable error: ${lastError.message}`
+        )
+        throw lastError
+      }
 
       // Don't retry if this is the last attempt
       if (attempt === maxRetries + 1) {
@@ -223,36 +243,40 @@ export function makeRetryable<TArgs extends unknown[], TResult>(
  * )
  * ```
  */
-export async function withTimeout<T>(
+export function withTimeout<T>(
   fn: () => Promise<T>,
   timeoutMs: number,
   operationName = 'operation'
 ): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      const error = new Error(`${operationName} timed out after ${timeoutMs}ms`)
-      error.name = 'TimeoutError'
-      logger.error(
-        {
-          type: 'timeout',
-          operation: operationName,
-          timeout: timeoutMs,
-        },
-        error.message
-      )
-      reject(error)
-    }, timeoutMs)
+  // Yield to ensure callers can attach rejection handlers before timers start
+  return Promise.resolve().then(
+    () =>
+      new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          const error = new Error(`${operationName} timed out after ${timeoutMs}ms`)
+          error.name = 'TimeoutError'
+          logger.error(
+            {
+              type: 'timeout',
+              operation: operationName,
+              timeout: timeoutMs,
+            },
+            error.message
+          )
+          reject(error)
+        }, timeoutMs)
 
-    fn()
-      .then((result) => {
-        clearTimeout(timeoutId)
-        resolve(result)
+        fn()
+          .then((result) => {
+            clearTimeout(timeoutId)
+            resolve(result)
+          })
+          .catch((error) => {
+            clearTimeout(timeoutId)
+            reject(error)
+          })
       })
-      .catch((error) => {
-        clearTimeout(timeoutId)
-        reject(error)
-      })
-  })
+  )
 }
 
 /**
