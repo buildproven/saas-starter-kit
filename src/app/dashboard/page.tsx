@@ -64,7 +64,7 @@ export default function DashboardPage() {
       {organization && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle aria-level={2} className="flex items-center gap-2">
               <Users className="h-5 w-5" />
               {organization.name}
             </CardTitle>
@@ -112,7 +112,7 @@ export default function DashboardPage() {
         {/* Recent Activity */}
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle aria-level={2} className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
               Recent Activity
             </CardTitle>
@@ -145,7 +145,7 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle aria-level={2}>Quick Actions</CardTitle>
             <CardDescription>Common tasks and shortcuts</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -172,7 +172,7 @@ export default function DashboardPage() {
       {/* Usage Stats */}
       <Card>
         <CardHeader>
-          <CardTitle>Usage Overview</CardTitle>
+          <CardTitle aria-level={2}>Usage Overview</CardTitle>
           <CardDescription>Monitor your plan usage and limits</CardDescription>
         </CardHeader>
         <CardContent>
@@ -218,7 +218,9 @@ function StatsCard({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <CardTitle aria-level={2} className="text-sm font-medium">
+          {title}
+        </CardTitle>
         <Icon className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>

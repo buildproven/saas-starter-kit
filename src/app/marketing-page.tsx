@@ -434,14 +434,14 @@ export default function MarketingPage() {
                 The fastest way to build and launch your SaaS application.
               </p>
               <div className="flex gap-4">
-                <a href="#" className="text-gray-400 hover:text-white">
-                  <Twitter className="w-5 h-5" />
+                <a href="#" aria-label="Twitter" className="text-gray-400 hover:text-white">
+                  <Twitter className="w-5 h-5" aria-hidden="true" />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-white">
-                  <Github className="w-5 h-5" />
+                <a href="#" aria-label="GitHub" className="text-gray-400 hover:text-white">
+                  <Github className="w-5 h-5" aria-hidden="true" />
                 </a>
-                <a href="#" className="text-gray-400 hover:text-white">
-                  <Linkedin className="w-5 h-5" />
+                <a href="#" aria-label="LinkedIn" className="text-gray-400 hover:text-white">
+                  <Linkedin className="w-5 h-5" aria-hidden="true" />
                 </a>
               </div>
             </div>

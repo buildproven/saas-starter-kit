@@ -1,5 +1,12 @@
 # Repository Guidelines
 
+## Pre-Action Checklist
+
+Before suggesting ANY infrastructure, CI/CD, or tooling changes:
+1. Run `ls .github/workflows/` to see existing workflows
+2. Run `cat package.json | grep scripts -A 50` to see available commands
+3. Check for `.qualityrc.json`, `CLAUDE.md`, or similar config files
+
 ## Project Structure & Module Organization
 
 - `src/app` contains Next.js route groups and API handlers; treat each route as the source of truth for UX flows.
@@ -45,3 +52,30 @@
 - Copy `.env.example` to `.env.local` and rotate credentials before sharing logs; never commit secrets.
 - Run `npm run security:audit` and `npm run security:secrets` before release or deployment branches.
 - Enable Sentry DSNs locally via `sentry.client.config.ts`/`sentry.server.config.ts` only when needed; guard feature flags in `src/lib`.
+
+## Quality Automation (create-quality-automation)
+
+**IMPORTANT**: This project uses `create-quality-automation` for CI/CD quality gates. Before suggesting or creating ANY new GitHub Actions workflows for lint/test/security/formatting, you MUST first check:
+
+1. `.github/workflows/quality.yml` — already exists and handles all quality checks
+2. `.qualityrc.json` — CQA configuration file
+
+**DO NOT** create duplicate workflows. The existing workflow already handles:
+- ESLint with security rules
+- Prettier formatting checks
+- Stylelint for CSS
+- Type checking (`tsc --noEmit`)
+- Test execution
+- Security audit (`npm audit`)
+- Secret detection
+
+**Available Commands** (use these instead of suggesting new workflows):
+- `npm run quality:ci` — Full CI quality pipeline
+- `npm run validate:all` — Comprehensive validation
+- `npm run validate:comprehensive` — Extended validation
+- `npm run lint` / `npm run lint:fix` — Linting
+- `npm run format:check` / `npm run format` — Formatting
+- `npm run typecheck` — TypeScript type checking
+- `npm run security:audit` — Dependency security check
+
+**Before proposing CI/CD changes**: Run `ls .github/workflows/` and `cat .github/workflows/quality.yml` to understand what already exists.
