@@ -8,20 +8,21 @@ NextAuth handles OAuth flows under `/api/auth/*` and sets an HTTP-only session c
 
 ## Health & Utility
 
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/api/health` | Public | Returns API uptime, DB connectivity check, environment, and app version. |
-| `GET` | `/api/hello` | Public | Sample endpoint responding with `{ message: "Hello from the API!" }`. |
-| `POST` | `/api/hello` | Public | Echoes posted JSON; returns `400` if body is not valid JSON. |
+| Method | Path          | Auth   | Description                                                              |
+| ------ | ------------- | ------ | ------------------------------------------------------------------------ |
+| `GET`  | `/api/health` | Public | Returns API uptime, DB connectivity check, environment, and app version. |
+| `GET`  | `/api/hello`  | Public | Sample endpoint responding with `{ message: "Hello from the API!" }`.    |
+| `POST` | `/api/hello`  | Public | Echoes posted JSON; returns `400` if body is not valid JSON.             |
 
 ## Organizations
 
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/api/organizations` | User | Lists organizations where the caller is owner or active member. Includes subscription summary, member counts, and caller role. |
+| Method | Path                 | Auth | Description                                                                                                                                           |
+| ------ | -------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/organizations` | User | Lists organizations where the caller is owner or active member. Includes subscription summary, member counts, and caller role.                        |
 | `POST` | `/api/organizations` | User | Creates a new organization and assigns caller as `OWNER`. Body requires `name`, `slug`, optional `description`. Returns `409` if slug already exists. |
 
 Responses include derived fields:
+
 ```json
 {
   "organizations": [
@@ -42,34 +43,35 @@ Responses include derived fields:
 
 ## Projects
 
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/api/projects` | User | Lists projects accessible to the caller. Supports `organizationId`, `status`, `page`, and `limit` query params. |
+| Method | Path            | Auth | Description                                                                                                                                                                                            |
+| ------ | --------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/projects` | User | Lists projects accessible to the caller. Supports `organizationId`, `status`, `page`, and `limit` query params.                                                                                        |
 | `POST` | `/api/projects` | User | Creates a project in an organization. Caller must be `MEMBER` or higher and within subscription limits. Body: `{ name, organizationId, description?, status? }`. Returns `402` if plan limit exceeded. |
 
 ## API Keys
 
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/api/api-keys` | User | Lists API keys for organizations the caller can access. Optional `organizationId` filter. Keys are returned hashed with `status` metadata. |
+| Method | Path            | Auth          | Description                                                                                                                                                                                    |
+| ------ | --------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/api-keys` | User          | Lists API keys for organizations the caller can access. Optional `organizationId` filter. Keys are returned hashed with `status` metadata.                                                     |
 | `POST` | `/api/api-keys` | User (Admin+) | Creates an API key for an organization. Caller must be `ADMIN`/`OWNER`. Body: `{ name, organizationId, expiresAt?, scopes? }`. Response returns the plaintext key **once**; store it securely. |
 
 ## Plans
 
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/api/plans` | User | Returns active subscription plans plus the default free tier. Each item includes pricing display metadata and feature limits. |
-| `POST` | `/api/plans` | Super Admin | Creates a custom plan with feature definitions. Body validates via Zod; returns `409` if `priceId` already exists. |
+| Method | Path         | Auth        | Description                                                                                                                   |
+| ------ | ------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/plans` | User        | Returns active subscription plans plus the default free tier. Each item includes pricing display metadata and feature limits. |
+| `POST` | `/api/plans` | Super Admin | Creates a custom plan with feature definitions. Body validates via Zod; returns `409` if `priceId` already exists.            |
 
 ## Subscriptions
 
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/api/subscriptions` | User | Without params, returns all subscriptions for caller's organizations plus current usage & limit checks. With `organizationId`, narrows to a single org. |
-| `POST` | `/api/subscriptions` | User (Owner/Admin) | Creates a subscription record after successful checkout/webhook. Body requires Stripe identifiers (`priceId`, `customerId`, `subscriptionId`, period timestamps). |
-| `PUT` | `/api/subscriptions?subscriptionId=...` | User (Owner/Admin) | Updates subscription status/period metadata (e.g., cancel at period end). |
+| Method | Path                                    | Auth               | Description                                                                                                                                                       |
+| ------ | --------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/subscriptions`                    | User               | Without params, returns all subscriptions for caller's organizations plus current usage & limit checks. With `organizationId`, narrows to a single org.           |
+| `POST` | `/api/subscriptions`                    | User (Owner/Admin) | Creates a subscription record after successful checkout/webhook. Body requires Stripe identifiers (`priceId`, `customerId`, `subscriptionId`, period timestamps). |
+| `PUT`  | `/api/subscriptions?subscriptionId=...` | User (Owner/Admin) | Updates subscription status/period metadata (e.g., cancel at period end).                                                                                         |
 
 Responses follow:
+
 ```json
 {
   "subscription": {
@@ -84,31 +86,31 @@ Responses follow:
 
 ## Billing (Stripe Helpers)
 
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
+| Method | Path                    | Auth               | Description                                                                                                                |
+| ------ | ----------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | `POST` | `/api/billing/checkout` | User (Owner/Admin) | Creates a checkout session for the selected `priceId`. Returns session URL. Guards against duplicate active subscriptions. |
-| `GET` | `/api/billing/checkout` | User (Owner/Admin) | Validates a checkout completion by `session_id` and `organizationId`. Currently returns mock success. |
-| `POST` | `/api/billing/portal` | User (Owner/Admin) | Creates a Stripe customer portal session. Requires `organizationId`, optional `returnUrl`. Returns portal URL. |
-| `GET` | `/api/billing/portal` | User (Owner/Admin) | Shortcut redirect that creates a portal session and issues an HTTP redirect. |
+| `GET`  | `/api/billing/checkout` | User (Owner/Admin) | Validates a checkout completion by `session_id` and `organizationId`. Currently returns mock success.                      |
+| `POST` | `/api/billing/portal`   | User (Owner/Admin) | Creates a Stripe customer portal session. Requires `organizationId`, optional `returnUrl`. Returns portal URL.             |
+| `GET`  | `/api/billing/portal`   | User (Owner/Admin) | Shortcut redirect that creates a portal session and issues an HTTP redirect.                                               |
 
 > **Note:** `BillingService` ships with live Stripe SDK integrations. Ensure your environment variables include valid Stripe API keys and price identifiers before using the billing APIs.
 
 ## User Profile
 
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/api/user/profile` | User | Returns profile metadata, organization summary, and stats. |
-| `PUT` | `/api/user/profile` | User | Updates profile fields (`name`, `email`, `image`, etc.). Email changes reset verification. |
+| Method   | Path                | Auth | Description                                                                                                          |
+| -------- | ------------------- | ---- | -------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/user/profile` | User | Returns profile metadata, organization summary, and stats.                                                           |
+| `PUT`    | `/api/user/profile` | User | Updates profile fields (`name`, `email`, `image`, etc.). Email changes reset verification.                           |
 | `DELETE` | `/api/user/profile` | User | Deletes account after confirming `{"confirmDelete": true}` and verifying the user does not own active organizations. |
 
 ## Protected Utilities
 
-| Method | Path | Auth | Description |
-| --- | --- | --- | --- |
-| `GET` | `/api/protected/user` | User | Returns the authenticated user's basic profile as proof of auth. |
-| `PUT` | `/api/protected/user` | User | Updates the user's `name`; sample for protected mutations. |
-| `GET` | `/api/admin/users` | Admin | Paginates user accounts (mock data by default). |
-| `POST` | `/api/admin/users` | Super Admin | Creates a new user record (mock). Only `SUPER_ADMIN` can create admin/super-admin accounts. |
+| Method | Path                  | Auth        | Description                                                                                 |
+| ------ | --------------------- | ----------- | ------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/protected/user` | User        | Returns the authenticated user's basic profile as proof of auth.                            |
+| `PUT`  | `/api/protected/user` | User        | Updates the user's `name`; sample for protected mutations.                                  |
+| `GET`  | `/api/admin/users`    | Admin       | Paginates user accounts (mock data by default).                                             |
+| `POST` | `/api/admin/users`    | Super Admin | Creates a new user record (mock). Only `SUPER_ADMIN` can create admin/super-admin accounts. |
 
 These endpoints rely on middleware (`src/middleware.ts`) and helpers (`src/lib/auth/api-protection.ts`) to enforce role hierarchy:
 
@@ -135,6 +137,7 @@ These endpoints rely on middleware (`src/middleware.ts`) and helpers (`src/lib/a
 ### Organization Management Flow
 
 #### Creating an Organization
+
 ```bash
 # Create new organization
 curl -X POST http://localhost:3000/api/organizations \
@@ -166,6 +169,7 @@ curl -X POST http://localhost:3000/api/organizations \
 ```
 
 #### Adding Team Members
+
 ```bash
 # Add member to organization
 curl -X POST http://localhost:3000/api/organizations/org_123/members \
@@ -194,6 +198,7 @@ curl -X POST http://localhost:3000/api/organizations/org_123/members \
 ### API Key Management
 
 #### Creating API Keys
+
 ```bash
 # Create API key for organization
 curl -X POST http://localhost:3000/api/api-keys \
@@ -227,6 +232,7 @@ curl -X POST http://localhost:3000/api/api-keys \
 ### Subscription & Billing
 
 #### Upgrading Plan
+
 ```bash
 # Upgrade to Pro plan
 curl -X POST http://localhost:3000/api/subscriptions/upgrade \
@@ -256,6 +262,7 @@ curl -X POST http://localhost:3000/api/subscriptions/upgrade \
 ```
 
 #### Checking Usage Limits
+
 ```bash
 # Get current usage and limits
 curl http://localhost:3000/api/subscriptions/usage \
@@ -288,6 +295,7 @@ curl http://localhost:3000/api/subscriptions/usage \
 ### Common Error Responses
 
 #### Validation Error (400 Bad Request)
+
 ```json
 {
   "error": "Invalid input",
@@ -306,6 +314,7 @@ curl http://localhost:3000/api/subscriptions/usage \
 ```
 
 #### Authorization Error (403 Forbidden)
+
 ```json
 {
   "error": "Insufficient permissions",
@@ -317,6 +326,7 @@ curl http://localhost:3000/api/subscriptions/usage \
 ```
 
 #### Subscription Limit Error (402 Payment Required)
+
 ```json
 {
   "error": "Subscription limit exceeded",
@@ -330,6 +340,7 @@ curl http://localhost:3000/api/subscriptions/usage \
 ```
 
 #### Resource Not Found (404 Not Found)
+
 ```json
 {
   "error": "Organization not found"
@@ -337,6 +348,7 @@ curl http://localhost:3000/api/subscriptions/usage \
 ```
 
 #### Resource Conflict (409 Conflict)
+
 ```json
 {
   "error": "Organization slug already exists",
@@ -350,6 +362,7 @@ curl http://localhost:3000/api/subscriptions/usage \
 ## Advanced Usage Patterns
 
 ### Webhook Integration
+
 ```bash
 # Handle Stripe webhook
 curl -X POST http://localhost:3000/api/webhooks/subscription \
@@ -372,6 +385,7 @@ curl -X POST http://localhost:3000/api/webhooks/subscription \
 ```
 
 ### Bulk Operations
+
 ```bash
 # Bulk invite members
 curl -X POST http://localhost:3000/api/organizations/org_123/members/bulk \
@@ -387,6 +401,7 @@ curl -X POST http://localhost:3000/api/organizations/org_123/members/bulk \
 ```
 
 ### Pagination & Filtering
+
 ```bash
 # Get paginated projects with filters
 curl "http://localhost:3000/api/projects?organizationId=org_123&status=active&page=2&limit=10" \
@@ -416,19 +431,20 @@ curl "http://localhost:3000/api/projects?organizationId=org_123&status=active&pa
 ## SDK & Client Libraries
 
 ### JavaScript/TypeScript SDK
+
 ```typescript
 import { SaasClient } from '@acme/saas-sdk'
 
 const client = new SaasClient({
   apiKey: 'sk_1234567890abcdef...',
-  baseUrl: 'https://api.acme.com'
+  baseUrl: 'https://api.acme.com',
 })
 
 // Type-safe API calls
 const organizations = await client.organizations.list()
 const project = await client.projects.create({
   name: 'New Project',
-  organizationId: 'org_123'
+  organizationId: 'org_123',
 })
 ```
 

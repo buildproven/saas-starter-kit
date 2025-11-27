@@ -44,7 +44,11 @@ describe('Button Component', () => {
 
   it('does not handle clicks when disabled', async () => {
     const handleClick = jest.fn()
-    render(<Button onClick={handleClick} disabled>Disabled</Button>)
+    render(
+      <Button onClick={handleClick} disabled>
+        Disabled
+      </Button>
+    )
 
     const button = screen.getByRole('button', { name: /disabled/i })
     expect(button).toBeDisabled()
@@ -61,7 +65,11 @@ describe('Button Component', () => {
   })
 
   it('passes through other HTML attributes', () => {
-    render(<Button data-testid="custom-button" aria-label="Custom button">Test</Button>)
+    render(
+      <Button data-testid="custom-button" aria-label="Custom button">
+        Test
+      </Button>
+    )
 
     const button = screen.getByTestId('custom-button')
     expect(button).toHaveAttribute('aria-label', 'Custom button')

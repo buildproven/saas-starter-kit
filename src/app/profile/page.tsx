@@ -13,17 +13,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  User,
-  Shield,
-  Key,
-  Bell,
-  Trash2,
-  Save,
-  Upload,
-  Eye,
-  EyeOff,
-} from 'lucide-react'
+import { User, Shield, Key, Bell, Trash2, Save, Upload, Eye, EyeOff } from 'lucide-react'
 
 export default function ProfilePage() {
   const { user, isLoading: authLoading } = useAuth()
@@ -152,9 +142,7 @@ export default function ProfilePage() {
         </Avatar>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Profile Settings</h1>
-          <p className="text-muted-foreground">
-            Manage your account settings and preferences
-          </p>
+          <p className="text-muted-foreground">Manage your account settings and preferences</p>
           <div className="flex items-center space-x-2 mt-2">
             <Badge variant="outline">{user.role}</Badge>
             <Badge variant="secondary">ID: {user.id}</Badge>
@@ -202,9 +190,7 @@ export default function ProfilePage() {
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Photo
                   </Button>
-                  <p className="text-xs text-muted-foreground">
-                    JPG, PNG or GIF (max. 2MB)
-                  </p>
+                  <p className="text-xs text-muted-foreground">JPG, PNG or GIF (max. 2MB)</p>
                 </div>
               </div>
 
@@ -254,34 +240,20 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Password & Security</CardTitle>
-              <CardDescription>
-                Manage your password and security settings
-              </CardDescription>
+              <CardDescription>Manage your password and security settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="current-password">Current Password</Label>
-                <Input
-                  id="current-password"
-                  type="password"
-                  placeholder="Enter current password"
-                />
+                <Input id="current-password" type="password" placeholder="Enter current password" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="new-password">New Password</Label>
-                <Input
-                  id="new-password"
-                  type="password"
-                  placeholder="Enter new password"
-                />
+                <Input id="new-password" type="password" placeholder="Enter new password" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">Confirm New Password</Label>
-                <Input
-                  id="confirm-password"
-                  type="password"
-                  placeholder="Confirm new password"
-                />
+                <Input id="confirm-password" type="password" placeholder="Confirm new password" />
               </div>
               <Button variant="destructive">
                 <Shield className="h-4 w-4 mr-2" />
@@ -293,9 +265,7 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Two-Factor Authentication</CardTitle>
-              <CardDescription>
-                Add an extra layer of security to your account
-              </CardDescription>
+              <CardDescription>Add an extra layer of security to your account</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
@@ -318,9 +288,7 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>API Keys</CardTitle>
-                  <CardDescription>
-                    Manage your API keys for programmatic access
-                  </CardDescription>
+                  <CardDescription>Manage your API keys for programmatic access</CardDescription>
                 </div>
                 <Button onClick={handleCreateApiKey} disabled={isLoading}>
                   <Key className="h-4 w-4 mr-2" />
@@ -331,16 +299,8 @@ export default function ProfilePage() {
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Show API Keys</Label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowApiKeys(!showApiKeys)}
-                >
-                  {showApiKeys ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                <Button variant="ghost" size="sm" onClick={() => setShowApiKeys(!showApiKeys)}>
+                  {showApiKeys ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </Button>
               </div>
 
@@ -380,18 +340,14 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>
-                Choose what notifications you want to receive
-              </CardDescription>
+              <CardDescription>Choose what notifications you want to receive</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">Email Notifications</p>
-                    <p className="text-sm text-muted-foreground">
-                      Receive notifications via email
-                    </p>
+                    <p className="text-sm text-muted-foreground">Receive notifications via email</p>
                   </div>
                   <Switch
                     checked={preferences.emailNotifications}

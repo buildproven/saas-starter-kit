@@ -46,12 +46,8 @@ export default function SignOutPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Sign out of your account
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Are you sure you want to sign out?
-          </p>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Sign out of your account</h2>
+          <p className="mt-2 text-sm text-gray-600">Are you sure you want to sign out?</p>
         </div>
 
         <div className="mt-8 space-y-4">
@@ -66,29 +62,16 @@ export default function SignOutPage() {
                   className="w-16 h-16 rounded-full mx-auto mb-2"
                 />
               )}
-              <p className="font-medium text-gray-900">
-                {session.user.name || session.user.email}
-              </p>
-              {session.user.name && (
-                <p className="text-sm text-gray-600">{session.user.email}</p>
-              )}
+              <p className="font-medium text-gray-900">{session.user.name || session.user.email}</p>
+              {session.user.name && <p className="text-sm text-gray-600">{session.user.email}</p>}
             </div>
           )}
 
           <div className="flex space-x-4">
-            <Button
-              onClick={handleSignOut}
-              disabled={loading}
-              className="flex-1"
-              variant="default"
-            >
+            <Button onClick={handleSignOut} disabled={loading} className="flex-1" variant="default">
               {loading ? 'Signing out...' : 'Sign Out'}
             </Button>
-            <Button
-              onClick={() => router.push('/')}
-              className="flex-1"
-              variant="outline"
-            >
+            <Button onClick={() => router.push('/')} className="flex-1" variant="outline">
               Cancel
             </Button>
           </div>

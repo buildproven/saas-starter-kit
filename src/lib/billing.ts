@@ -65,7 +65,9 @@ export class BillingService {
     return {
       id: subscription.id,
       customerId:
-        typeof subscription.customer === 'string' ? subscription.customer : subscription.customer.id,
+        typeof subscription.customer === 'string'
+          ? subscription.customer
+          : subscription.customer.id,
       priceId: price?.id ?? '',
       status: subscription.status,
       currentPeriodStart: new Date(subscription.current_period_start * 1000),
@@ -195,7 +197,8 @@ export class BillingService {
       status: session.status,
       paymentStatus: session.payment_status,
       customerEmail: session.customer_details?.email ?? session.customer_email,
-      subscriptionId: typeof session.subscription === 'string' ? session.subscription : session.subscription?.id,
+      subscriptionId:
+        typeof session.subscription === 'string' ? session.subscription : session.subscription?.id,
       priceId,
     }
   }
@@ -326,7 +329,9 @@ export class BillingService {
     const primaryItem = subscription.items.data[0]
 
     if (!primaryItem) {
-      throw new Error(`Subscription ${params.currentSubscriptionId} does not contain billable items`)
+      throw new Error(
+        `Subscription ${params.currentSubscriptionId} does not contain billable items`
+      )
     }
 
     const upcoming = await stripe.invoices.retrieveUpcoming({

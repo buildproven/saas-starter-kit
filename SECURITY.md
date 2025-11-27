@@ -5,6 +5,7 @@
 This project uses multiple layers of automated security scanning:
 
 ### Secret Detection
+
 - **Tool**: Gitleaks
 - **Configuration**: `.gitleaks.toml`
 - **Coverage**: API keys, passwords, tokens, certificates
@@ -12,18 +13,21 @@ This project uses multiple layers of automated security scanning:
 - **CI/CD**: Scans all pull requests
 
 ### Dependency Scanning
+
 - **Tool**: npm audit
 - **Level**: High and critical vulnerabilities only
 - **Auto-fix**: Enabled for compatible updates
 - **CI/CD**: Fails builds on high/critical vulnerabilities
 
 ### Code Security Scanning
+
 - **Tool**: ESLint security plugin
 - **Configuration**: `eslint-security.config.js`
 - **Coverage**: Injection attacks, unsafe patterns, crypto issues
 - **Pre-commit**: Blocks commits with security violations
 
 ### Workflow Security
+
 - **Tool**: actionlint
 - **Coverage**: GitHub Actions workflow security issues
 - **CI/CD**: Validates workflow syntax and security
@@ -62,6 +66,7 @@ If you discover a security vulnerability:
 ## Security Best Practices
 
 ### For Developers
+
 - Never commit secrets, API keys, or passwords
 - Use environment variables for sensitive configuration
 - Run `npm run security:check` before pushing
@@ -69,6 +74,7 @@ If you discover a security vulnerability:
 - Review security scanner output carefully
 
 ### For CI/CD
+
 - All security checks must pass before merge
 - Dependency updates require security review
 - Secrets stored in secure environment variables

@@ -6,7 +6,10 @@ import DashboardPage from './page'
 
 jest.mock('next-auth/react', () => ({
   __esModule: true,
-  useSession: () => ({ data: { user: { name: 'Test User', email: 'test@example.com' } }, status: 'authenticated' }),
+  useSession: () => ({
+    data: { user: { name: 'Test User', email: 'test@example.com' } },
+    status: 'authenticated',
+  }),
   SessionProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   signIn: jest.fn(),
   signOut: jest.fn(),

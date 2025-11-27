@@ -16,15 +16,19 @@ Sentry.init({
   beforeSend(event) {
     // Filter out database connection errors during development
     if (process.env.NODE_ENV === 'development') {
-      if (event.exception?.values?.[0]?.value?.includes('ECONNREFUSED') ||
-          event.exception?.values?.[0]?.value?.includes('database')) {
+      if (
+        event.exception?.values?.[0]?.value?.includes('ECONNREFUSED') ||
+        event.exception?.values?.[0]?.value?.includes('database')
+      ) {
         return null
       }
     }
 
     // Filter out NextAuth internal errors that are handled
-    if (event.exception?.values?.[0]?.value?.includes('NEXTAUTH_') ||
-        event.logger === 'next-auth') {
+    if (
+      event.exception?.values?.[0]?.value?.includes('NEXTAUTH_') ||
+      event.logger === 'next-auth'
+    ) {
       return null
     }
 
@@ -40,17 +44,17 @@ Sentry.init({
   },
 
   // Enhanced error context for server requests
-  integrations: [
-    Sentry.httpIntegration(),
-  ],
+  integrations: [Sentry.httpIntegration()],
 
   // Configure tracing
   tracesSampler: (samplingContext) => {
     // Don't trace health checks, static assets, etc.
     const pathname = samplingContext.request?.url
-    if (pathname?.includes('/_next/') ||
-        pathname?.includes('/api/health') ||
-        pathname?.includes('/favicon')) {
+    if (
+      pathname?.includes('/_next/') ||
+      pathname?.includes('/api/health') ||
+      pathname?.includes('/favicon')
+    ) {
       return 0
     }
     return process.env.NODE_ENV === 'production' ? 0.05 : 1.0

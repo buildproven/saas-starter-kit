@@ -5,8 +5,28 @@ import { useSession } from 'next-auth/react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Check, Star, Zap, Shield, Users, Code, Database, Gauge, ArrowRight, Github, Twitter, Linkedin } from 'lucide-react'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
+  Check,
+  Star,
+  Zap,
+  Shield,
+  Users,
+  Code,
+  Database,
+  Gauge,
+  ArrowRight,
+  Github,
+  Twitter,
+  Linkedin,
+} from 'lucide-react'
 import { LoginButton } from '@/components/auth/LoginButton'
 
 const plans = [
@@ -50,11 +70,7 @@ const plans = [
       'Custom domain',
       'Advanced analytics',
     ],
-    notIncluded: [
-      'Priority support',
-      'SSO integration',
-      'Webhooks',
-    ],
+    notIncluded: ['Priority support', 'SSO integration', 'Webhooks'],
     cta: 'Start 14-day Trial',
     popular: false,
     priceId: 'price_starter_monthly',
@@ -112,7 +128,8 @@ const features = [
   {
     icon: Zap,
     title: 'Lightning Fast',
-    description: 'Built with Next.js 14 App Router for optimal performance and developer experience.',
+    description:
+      'Built with Next.js 14 App Router for optimal performance and developer experience.',
   },
   {
     icon: Shield,
@@ -122,7 +139,8 @@ const features = [
   {
     icon: Users,
     title: 'Multi-tenant Ready',
-    description: 'Organizations, teams, and user management built-in with subscription enforcement.',
+    description:
+      'Organizations, teams, and user management built-in with subscription enforcement.',
   },
   {
     icon: Code,
@@ -145,19 +163,22 @@ const testimonials = [
   {
     name: 'Sarah Chen',
     role: 'CTO, TechFlow',
-    content: 'This template saved us 3 months of development time. The architecture is solid and scales beautifully.',
+    content:
+      'This template saved us 3 months of development time. The architecture is solid and scales beautifully.',
     avatar: '/api/placeholder/40/40',
   },
   {
     name: 'Marcus Johnson',
     role: 'Founder, DataSync',
-    content: 'The authentication and billing integration is exactly what we needed. Documentation is outstanding.',
+    content:
+      'The authentication and billing integration is exactly what we needed. Documentation is outstanding.',
     avatar: '/api/placeholder/40/40',
   },
   {
     name: 'Emily Rodriguez',
     role: 'Lead Developer, CloudCorp',
-    content: 'Best SaaS starter I\'ve used. Clean code, modern stack, and enterprise-ready features.',
+    content:
+      "Best SaaS starter I've used. Clean code, modern stack, and enterprise-ready features.",
     avatar: '/api/placeholder/40/40',
   },
 ]
@@ -195,10 +216,18 @@ export default function MarketingPage() {
             <span className="font-bold text-xl">SaaS Starter</span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <a href="#features" className="text-gray-600 hover:text-gray-900">Features</a>
-            <a href="#pricing" className="text-gray-600 hover:text-gray-900">Pricing</a>
-            <a href="#testimonials" className="text-gray-600 hover:text-gray-900">Testimonials</a>
-            <a href="/docs" className="text-gray-600 hover:text-gray-900">Docs</a>
+            <a href="#features" className="text-gray-600 hover:text-gray-900">
+              Features
+            </a>
+            <a href="#pricing" className="text-gray-600 hover:text-gray-900">
+              Pricing
+            </a>
+            <a href="#testimonials" className="text-gray-600 hover:text-gray-900">
+              Testimonials
+            </a>
+            <a href="/docs" className="text-gray-600 hover:text-gray-900">
+              Docs
+            </a>
           </nav>
           <div className="flex items-center gap-4">
             {session ? (
@@ -228,15 +257,20 @@ export default function MarketingPage() {
             Launch Your SaaS in Days, Not Months
           </h1>
           <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-            A complete Next.js 14 SaaS starter with authentication, billing, multi-tenancy,
-            and everything you need to build and scale your product.
+            A complete Next.js 14 SaaS starter with authentication, billing, multi-tenancy, and
+            everything you need to build and scale your product.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
             <Button size="lg" className="text-lg px-8" onClick={() => handleGetStarted('free')}>
               Get Started Free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-            <Button size="lg" variant="secondary" className="text-lg px-8" onClick={handleBuyTemplate}>
+            <Button
+              size="lg"
+              variant="secondary"
+              className="text-lg px-8"
+              onClick={handleBuyTemplate}
+            >
               Buy Template
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
@@ -306,15 +340,20 @@ export default function MarketingPage() {
                 }`}
               >
                 Yearly
-                <Badge className="ml-2" variant="secondary">Save 20%</Badge>
+                <Badge className="ml-2" variant="secondary">
+                  Save 20%
+                </Badge>
               </button>
             </div>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {plans.map((plan, index) => (
-              <Card key={index} className={`relative ${
-                plan.popular ? 'border-blue-500 shadow-lg scale-105' : 'border-gray-200'
-              }`}>
+              <Card
+                key={index}
+                className={`relative ${
+                  plan.popular ? 'border-blue-500 shadow-lg scale-105' : 'border-gray-200'
+                }`}
+              >
                 {plan.popular && (
                   <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600">
                     Most Popular
@@ -401,18 +440,26 @@ export default function MarketingPage() {
       {/* CTA Section */}
       <section className="py-20 px-4 bg-blue-600 text-white">
         <div className="container mx-auto max-w-4xl text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Ready to Build Your SaaS?
-          </h2>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Build Your SaaS?</h2>
           <p className="text-xl mb-8 opacity-90">
             Join thousands of developers who have launched their products with our template.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button size="lg" variant="secondary" className="text-lg px-8" onClick={() => handleGetStarted('free')}>
+            <Button
+              size="lg"
+              variant="secondary"
+              className="text-lg px-8"
+              onClick={() => handleGetStarted('free')}
+            >
               Start Building Today
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-            <Button size="lg" variant="outline" className="text-lg px-8 border-white text-white hover:bg-white hover:text-blue-600" asChild>
+            <Button
+              size="lg"
+              variant="outline"
+              className="text-lg px-8 border-white text-white hover:bg-white hover:text-blue-600"
+              asChild
+            >
               <a href="/contact">Talk to Sales</a>
             </Button>
           </div>
@@ -448,28 +495,76 @@ export default function MarketingPage() {
             <div>
               <h3 className="font-semibold mb-4">Product</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#features" className="hover:text-white">Features</a></li>
-                <li><a href="#pricing" className="hover:text-white">Pricing</a></li>
-                <li><a href="/docs" className="hover:text-white">Documentation</a></li>
-                <li><a href="/api" className="hover:text-white">API Reference</a></li>
+                <li>
+                  <a href="#features" className="hover:text-white">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#pricing" className="hover:text-white">
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <a href="/docs" className="hover:text-white">
+                    Documentation
+                  </a>
+                </li>
+                <li>
+                  <a href="/api" className="hover:text-white">
+                    API Reference
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="/about" className="hover:text-white">About</a></li>
-                <li><a href="/blog" className="hover:text-white">Blog</a></li>
-                <li><a href="/contact" className="hover:text-white">Contact</a></li>
-                <li><a href="/careers" className="hover:text-white">Careers</a></li>
+                <li>
+                  <a href="/about" className="hover:text-white">
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a href="/blog" className="hover:text-white">
+                    Blog
+                  </a>
+                </li>
+                <li>
+                  <a href="/contact" className="hover:text-white">
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <a href="/careers" className="hover:text-white">
+                    Careers
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-4">Legal</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="/privacy" className="hover:text-white">Privacy Policy</a></li>
-                <li><a href="/terms" className="hover:text-white">Terms of Service</a></li>
-                <li><a href="/security" className="hover:text-white">Security</a></li>
-                <li><a href="/status" className="hover:text-white">Status</a></li>
+                <li>
+                  <a href="/privacy" className="hover:text-white">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="/terms" className="hover:text-white">
+                    Terms of Service
+                  </a>
+                </li>
+                <li>
+                  <a href="/security" className="hover:text-white">
+                    Security
+                  </a>
+                </li>
+                <li>
+                  <a href="/status" className="hover:text-white">
+                    Status
+                  </a>
+                </li>
               </ul>
             </div>
           </div>

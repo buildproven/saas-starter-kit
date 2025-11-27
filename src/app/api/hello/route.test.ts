@@ -13,11 +13,13 @@ import { GET, POST } from './route'
 import { NextRequest } from 'next/server'
 
 // Mock NextRequest for testing
-const createMockRequest = (options: {
-  method?: string
-  body?: unknown
-  url?: string
-} = {}) => {
+const createMockRequest = (
+  options: {
+    method?: string
+    body?: unknown
+    url?: string
+  } = {}
+) => {
   const { method = 'GET', body, url = 'http://localhost:3000/api/hello' } = options
 
   const request = {
@@ -57,7 +59,7 @@ describe('/api/hello Route', () => {
       const testData = { name: 'John', email: 'john@example.com' }
       const request = createMockRequest({
         method: 'POST',
-        body: testData
+        body: testData,
       })
 
       const response = await POST(request)
@@ -66,7 +68,7 @@ describe('/api/hello Route', () => {
       expect(response.status).toBe(200)
       expect(data).toEqual({
         message: 'Data received',
-        data: testData
+        data: testData,
       })
       expect(request.json).toHaveBeenCalledTimes(1)
     })
@@ -74,7 +76,7 @@ describe('/api/hello Route', () => {
     it('handles empty JSON body', async () => {
       const request = createMockRequest({
         method: 'POST',
-        body: {}
+        body: {},
       })
 
       const response = await POST(request)
@@ -83,7 +85,7 @@ describe('/api/hello Route', () => {
       expect(response.status).toBe(200)
       expect(data).toEqual({
         message: 'Data received',
-        data: {}
+        data: {},
       })
     })
 
@@ -97,7 +99,7 @@ describe('/api/hello Route', () => {
 
       expect(response.status).toBe(400)
       expect(data).toEqual({
-        error: 'Invalid request body'
+        error: 'Invalid request body',
       })
     })
 
@@ -111,14 +113,14 @@ describe('/api/hello Route', () => {
 
       expect(response.status).toBe(400)
       expect(data).toEqual({
-        error: 'Invalid request body'
+        error: 'Invalid request body',
       })
     })
 
     it('returns a Response object with correct headers', async () => {
       const request = createMockRequest({
         method: 'POST',
-        body: { test: 'data' }
+        body: { test: 'data' },
       })
 
       const response = await POST(request)

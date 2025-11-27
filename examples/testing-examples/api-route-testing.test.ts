@@ -145,7 +145,9 @@ describe('/api/organizations', () => {
       // Arrange
       const mockUser = createMockUser({ id: 'user_123' })
       mockGetServerSession.mockResolvedValue({ user: mockUser })
-      mockPrisma.organizationMember.findMany.mockRejectedValue(new Error('Database connection failed'))
+      mockPrisma.organizationMember.findMany.mockRejectedValue(
+        new Error('Database connection failed')
+      )
 
       const request = createMockNextRequest('GET', '/api/organizations')
 
@@ -350,7 +352,7 @@ export const apiTestUtils = {
   createAuthenticatedRequest: (method: string, url: string, body?: any, userId = 'test_user') => {
     const request = createMockNextRequest(method, url, body)
     mockGetServerSession.mockResolvedValue({
-      user: createMockUser({ id: userId })
+      user: createMockUser({ id: userId }),
     })
     return request
   },
@@ -363,7 +365,11 @@ export const apiTestUtils = {
   },
 
   // Assert error response
-  assertErrorResponse: async (response: Response, expectedStatus: number, expectedError?: string) => {
+  assertErrorResponse: async (
+    response: Response,
+    expectedStatus: number,
+    expectedError?: string
+  ) => {
     expect(response.status).toBe(expectedStatus)
     if (expectedError) {
       const data = await response.json()
@@ -384,7 +390,9 @@ export const apiTestUtils = {
     Object.entries(responses).forEach(([method, returnValue]) => {
       const [model, operation] = method.split('.')
       if (mockPrisma[model as keyof typeof mockPrisma]) {
-        ;(mockPrisma[model as keyof typeof mockPrisma] as any)[operation].mockResolvedValue(returnValue)
+        ;(mockPrisma[model as keyof typeof mockPrisma] as any)[operation].mockResolvedValue(
+          returnValue
+        )
       }
     })
   },

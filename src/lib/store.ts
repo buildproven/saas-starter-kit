@@ -119,12 +119,14 @@ export const useAppStore = create<AppState>()(
       setSession: (session) => {
         try {
           set(() => ({
-            user: session?.user ? {
-              id: session.user.id || '',
-              email: session.user.email || '',
-              name: session.user.name || undefined,
-              image: session.user.image || undefined,
-            } : null,
+            user: session?.user
+              ? {
+                  id: session.user.id || '',
+                  email: session.user.email || '',
+                  name: session.user.name || undefined,
+                  image: session.user.image || undefined,
+                }
+              : null,
             isAuthenticated: !!session?.user,
           }))
         } catch (error) {
@@ -199,9 +201,10 @@ export const useAppStore = create<AppState>()(
       },
 
       // UI actions
-      toggleSidebar: () => set((state) => ({
-        sidebarOpen: !state.sidebarOpen,
-      })),
+      toggleSidebar: () =>
+        set((state) => ({
+          sidebarOpen: !state.sidebarOpen,
+        })),
 
       setTheme: (theme) => set({ theme }),
 
@@ -228,7 +231,7 @@ export const useAppStore = create<AppState>()(
           if (notification.type !== 'error') {
             setTimeout(() => {
               const { notifications } = get()
-              const notificationExists = notifications.find(n => n.id === notificationId)
+              const notificationExists = notifications.find((n) => n.id === notificationId)
               if (notificationExists) {
                 get().removeNotification(notificationId)
               }

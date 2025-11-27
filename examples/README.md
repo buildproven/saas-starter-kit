@@ -34,6 +34,7 @@ examples/
 ## Contributing Examples
 
 Have a useful pattern to share? Please:
+
 1. Follow the existing example structure
 2. Include comprehensive documentation
 3. Add corresponding test files
@@ -42,6 +43,7 @@ Have a useful pattern to share? Please:
 ## Example Categories
 
 ### API Examples
+
 - CRUD operations with validation
 - File upload handling
 - Rate limiting implementation
@@ -49,6 +51,7 @@ Have a useful pattern to share? Please:
 - API key authentication
 
 ### Authentication Examples
+
 - Custom OAuth providers
 - Role-based component rendering
 - Multi-tenant user management
@@ -56,6 +59,7 @@ Have a useful pattern to share? Please:
 - API protection patterns
 
 ### Billing Examples
+
 - Stripe webhook handling
 - Usage-based billing
 - Plan upgrade/downgrade flows
@@ -63,6 +67,7 @@ Have a useful pattern to share? Please:
 - Payment method management
 
 ### Component Examples
+
 - Data tables with sorting/filtering
 - Form validation patterns
 - File upload components
@@ -70,6 +75,7 @@ Have a useful pattern to share? Please:
 - Modal and dialog patterns
 
 ### Database Examples
+
 - Schema migration patterns
 - Complex query examples
 - Data seeding strategies
@@ -77,6 +83,7 @@ Have a useful pattern to share? Please:
 - Backup and restore
 
 ### Testing Examples
+
 - API route testing
 - Component testing with mocks
 - Integration test patterns

@@ -33,12 +33,14 @@ This document describes the major components, data flows, and extension points f
 ## Core Modules
 
 ### Authentication & Authorization
+
 - `src/lib/auth.ts` defines `authOptions` with Prisma adapter, Google/GitHub providers, and JWT callbacks that embed `user.id` and `user.role`.
 - JWT sessions are required so middleware (`src/middleware.ts`) can read `req.nextauth.token.role`.
 - `src/lib/auth/api-protection.ts` exports helpers (`withAuth`, `withAdminAuth`, `withSuperAdminAuth`) that enforce role hierarchy in API handlers while injecting the `AuthenticatedUser`.
 - UI-level protection uses `ProtectedRoute`, `RoleGate`, and `useAuth()` to guard routes and components.
 
 ### Routing & Middleware
+
 - App Router structure:
   - `src/app/page.tsx` – landing experience.
   - `src/app/auth/*` – sign-in/out/error flows.
@@ -47,6 +49,7 @@ This document describes the major components, data flows, and extension points f
 - `src/middleware.ts` inspects the pathname, identifies required access (public, authenticated, admin, super-admin), and redirects unauthenticated users to `/auth/signin` or `/unauthorized`.
 
 ### Data Access
+
 - The Prisma schema (`prisma/schema.prisma`) models:
   - **User** (with role), `Account` & `Session` (NextAuth), `VerificationToken`
   - **Organization**, `OrganizationMember`, and related `Project`, `ApiKey`, `Subscription`, `Plan`, `UsageRecord`
@@ -54,6 +57,7 @@ This document describes the major components, data flows, and extension points f
 - `src/lib/db-utils.ts` wraps common operations (organization creation, subscription management, usage tracking, API key helpers). These are used inside API routes and can be reused in server actions.
 
 ### Subscription & Billing
+
 - `src/lib/subscription.ts` contains the `SubscriptionService` which:
   - Computes plan features (`PLAN_CONFIGS` defaults) and usage limits.
   - Evaluates whether an organization can perform an action (`canPerformAction`).
@@ -62,22 +66,26 @@ This document describes the major components, data flows, and extension points f
 - `src/lib/billing.ts` is a Stripe-ready abstraction with mocked behavior. Replace methods with Stripe SDK calls for production usage. Endpoints under `src/app/api/billing/*` delegate to this service.
 
 ### State Management
+
 - `src/lib/store.ts` defines a persisted Zustand store for session-aware UI data (user, organizations, API keys, notifications, theme).
 - Hooks in `src/lib/hooks/useStore.ts` expose composable selectors (`useSessionSync`, `useCurrentOrganization`, `useNotifications`, etc.).
 - Auth-specific hooks (`src/lib/hooks/useAuth.ts`) derive role checks and convenience methods for RBAC-enabled UI.
 
 ### UI & Styling
+
 - Tailwind is configured in `tailwind.config.ts` with shadcn tokens (`background`, `card`, `muted`, etc.) and CSS variables defined in `src/app/globals.css`.
 - UI primitives live in `src/components/ui/*` (Button, Card, Tabs, Switch, Avatar, Skeleton, etc.) and follow Radix/Slot patterns for flexibility.
 - Feature components (auth flows, error boundary, providers) sit under `src/components/auth`, `src/components/error`, `src/components/providers`.
 
 ### Error Handling & Instrumentation
+
 - `src/lib/error-logging.ts` wraps Sentry logging with error categorization and helper functions (`authError`, `validationError`, etc.).
 - Global error boundaries:
   - `src/app/global-error.tsx` handles uncaught App Router errors and reports to Sentry.
   - `src/components/error/ErrorBoundary.tsx` covers client component failures.
 
 ### Testing
+
 - Jest configuration (`jest.config.js`) integrates with Next.js via `next/jest`.
 - `jest.setup.ts` polyfills browser APIs, mocks Next navigation, and sets up custom `Request`/`Response` classes for route testing.
 - Example tests:
@@ -107,6 +115,7 @@ This document describes the major components, data flows, and extension points f
 ## Data Model Snapshot
 
 Key relationships (simplified):
+
 - `User` ↔ `Organization` (owns organizations and joins via `OrganizationMember`)
 - `Organization` ↔ `Project`, `ApiKey`, `Subscription`
 - `Subscription` ↔ `Plan`

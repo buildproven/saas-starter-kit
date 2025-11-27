@@ -45,12 +45,12 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome back, {user.name || user.email}
-          </p>
+          <p className="text-muted-foreground">Welcome back, {user.name || user.email}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={hasActiveSubscription ? 'default' : isTrialing ? 'secondary' : 'destructive'}>
+          <Badge
+            variant={hasActiveSubscription ? 'default' : isTrialing ? 'secondary' : 'destructive'}
+          >
             {hasActiveSubscription ? 'Active' : isTrialing ? 'Trial' : 'Inactive'}
           </Badge>
           <Button size="sm" variant="outline">
@@ -77,20 +77,8 @@ export default function DashboardPage() {
 
       {/* Quick Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
-          title="Total Users"
-          value="2,350"
-          change="+20.1%"
-          icon={Users}
-          trend="up"
-        />
-        <StatsCard
-          title="Revenue"
-          value="$45,231.89"
-          change="+201"
-          icon={DollarSign}
-          trend="up"
-        />
+        <StatsCard title="Total Users" value="2,350" change="+20.1%" icon={Users} trend="up" />
+        <StatsCard title="Revenue" value="$45,231.89" change="+201" icon={DollarSign} trend="up" />
         <StatsCard
           title="Active Sessions"
           value="12,234"
@@ -124,21 +112,9 @@ export default function DashboardPage() {
               time="2 minutes ago"
               type="profile"
             />
-            <ActivityItem
-              action="Created new API key"
-              time="1 hour ago"
-              type="api"
-            />
-            <ActivityItem
-              action="Invited team member"
-              time="3 hours ago"
-              type="team"
-            />
-            <ActivityItem
-              action="Upgraded subscription plan"
-              time="1 day ago"
-              type="billing"
-            />
+            <ActivityItem action="Created new API key" time="1 hour ago" type="api" />
+            <ActivityItem action="Invited team member" time="3 hours ago" type="team" />
+            <ActivityItem action="Upgraded subscription plan" time="1 day ago" type="billing" />
           </CardContent>
         </Card>
 
@@ -177,24 +153,9 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
-            <UsageMetric
-              label="API Calls"
-              current={8420}
-              limit={10000}
-              unit="calls"
-            />
-            <UsageMetric
-              label="Storage"
-              current={2.4}
-              limit={10}
-              unit="GB"
-            />
-            <UsageMetric
-              label="Team Members"
-              current={5}
-              limit={25}
-              unit="members"
-            />
+            <UsageMetric label="API Calls" current={8420} limit={10000} unit="calls" />
+            <UsageMetric label="Storage" current={2.4} limit={10} unit="GB" />
+            <UsageMetric label="Team Members" current={5} limit={25} unit="members" />
           </div>
         </CardContent>
       </Card>
@@ -294,11 +255,7 @@ function UsageMetric({
       <div className="w-full bg-muted rounded-full h-2">
         <div
           className={`h-2 rounded-full ${
-            percentage > 80
-              ? 'bg-red-500'
-              : percentage > 60
-              ? 'bg-yellow-500'
-              : 'bg-green-500'
+            percentage > 80 ? 'bg-red-500' : percentage > 60 ? 'bg-yellow-500' : 'bg-green-500'
           }`}
           style={{ width: `${Math.min(percentage, 100)}%` }}
         />

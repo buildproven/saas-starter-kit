@@ -126,94 +126,85 @@ jest.mock('@/lib/prisma', () => {
           : undefined
       return record ? clone(record) : null
     }) as any,
-    update: jest.fn(
-      async ({
-        where,
-        data,
-      }: any) => {
-        const existing = where.sessionId
-          ? saleStoreBySession.get(where.sessionId)
-          : where.id
-            ? saleStoreById.get(where.id)
-            : undefined
-        if (!existing) throw new Error('Sale not found for update')
-        const updated: TemplateSaleRecord = {
-          ...existing,
-          ...data,
-          githubUsername:
-            data.githubUsername !== undefined
-              ? (data.githubUsername as string | null)
-              : existing.githubUsername,
-          metadata:
-            data.metadata !== undefined
-              ? (data.metadata as Record<string, unknown> | null)
-              : existing.metadata,
-          customerDetails:
-            data.customerDetails !== undefined
-              ? (data.customerDetails as Record<string, unknown> | null)
-              : existing.customerDetails,
-          status: (data.status as TemplateSaleRecord['status']) ?? existing.status,
-          paymentIntentId: data.paymentIntentId ?? existing.paymentIntentId,
-          completedAt: data.completedAt ?? existing.completedAt ?? null,
-          updatedAt: new Date(),
-        }
-        saleStoreBySession.set(updated.sessionId, updated)
-        saleStoreById.set(updated.id, updated)
-        return clone(updated)
+    update: jest.fn(async ({ where, data }: any) => {
+      const existing = where.sessionId
+        ? saleStoreBySession.get(where.sessionId)
+        : where.id
+          ? saleStoreById.get(where.id)
+          : undefined
+      if (!existing) throw new Error('Sale not found for update')
+      const updated: TemplateSaleRecord = {
+        ...existing,
+        ...data,
+        githubUsername:
+          data.githubUsername !== undefined
+            ? (data.githubUsername as string | null)
+            : existing.githubUsername,
+        metadata:
+          data.metadata !== undefined
+            ? (data.metadata as Record<string, unknown> | null)
+            : existing.metadata,
+        customerDetails:
+          data.customerDetails !== undefined
+            ? (data.customerDetails as Record<string, unknown> | null)
+            : existing.customerDetails,
+        status: (data.status as TemplateSaleRecord['status']) ?? existing.status,
+        paymentIntentId: data.paymentIntentId ?? existing.paymentIntentId,
+        completedAt: data.completedAt ?? existing.completedAt ?? null,
+        updatedAt: new Date(),
       }
-    ) as any,
+      saleStoreBySession.set(updated.sessionId, updated)
+      saleStoreById.set(updated.id, updated)
+      return clone(updated)
+    }) as any,
   }
 
   prisma.templateSaleCustomer = {
-    upsert: jest.fn(
-      async ({
-        where,
-        update,
-        create,
-      }: any) => {
-        const existing = customerStore.get(where.saleId)
-        if (existing) {
-          const updated: TemplateSaleCustomerRecord = {
-            ...existing,
-            ...update,
-            githubTeamId: update.githubTeamId ?? existing.githubTeamId ?? null,
-            githubUsername:
-              update.githubUsername !== undefined
-                ? (update.githubUsername as string | null)
-                : existing.githubUsername ?? null,
-            accessExpiresAt: update.accessExpiresAt ?? existing.accessExpiresAt ?? null,
-            metadata:
-              update.metadata !== undefined
-                ? (update.metadata as Record<string, unknown> | null)
-                : existing.metadata ?? null,
-            updatedAt: new Date(),
-          }
-          customerStore.set(where.saleId, updated)
-          return clone(updated)
-        }
-
-        const newRecord: TemplateSaleCustomerRecord = {
-          id: randomUUID(),
-          saleId: where.saleId,
-          email: create.email!,
-          package: create.package ?? 'basic',
-          licenseKey: create.licenseKey ?? 'LIC-UNKNOWN',
-          downloadToken: create.downloadToken ?? 'token-unknown',
-          githubTeamId: create.githubTeamId ?? null,
-          githubUsername: (create.githubUsername as string | undefined) ?? null,
-          supportTier: create.supportTier ?? 'email',
-          accessExpiresAt: create.accessExpiresAt ?? null,
-          metadata: (create.metadata as Record<string, unknown>) ?? null,
-          createdAt: new Date(),
+    upsert: jest.fn(async ({ where, update, create }: any) => {
+      const existing = customerStore.get(where.saleId)
+      if (existing) {
+        const updated: TemplateSaleCustomerRecord = {
+          ...existing,
+          ...update,
+          githubTeamId: update.githubTeamId ?? existing.githubTeamId ?? null,
+          githubUsername:
+            update.githubUsername !== undefined
+              ? (update.githubUsername as string | null)
+              : (existing.githubUsername ?? null),
+          accessExpiresAt: update.accessExpiresAt ?? existing.accessExpiresAt ?? null,
+          metadata:
+            update.metadata !== undefined
+              ? (update.metadata as Record<string, unknown> | null)
+              : (existing.metadata ?? null),
           updatedAt: new Date(),
         }
-        customerStore.set(where.saleId, newRecord)
-        return clone(newRecord)
+        customerStore.set(where.saleId, updated)
+        return clone(updated)
       }
-    ) as any,
+
+      const newRecord: TemplateSaleCustomerRecord = {
+        id: randomUUID(),
+        saleId: where.saleId,
+        email: create.email!,
+        package: create.package ?? 'basic',
+        licenseKey: create.licenseKey ?? 'LIC-UNKNOWN',
+        downloadToken: create.downloadToken ?? 'token-unknown',
+        githubTeamId: create.githubTeamId ?? null,
+        githubUsername: (create.githubUsername as string | undefined) ?? null,
+        supportTier: create.supportTier ?? 'email',
+        accessExpiresAt: create.accessExpiresAt ?? null,
+        metadata: (create.metadata as Record<string, unknown>) ?? null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      customerStore.set(where.saleId, newRecord)
+      return clone(newRecord)
+    }) as any,
     findUnique: jest.fn(async ({ where }: any) => {
       if (where.downloadToken) {
-        const customer = [...customerStore.values()].find((c) => c.downloadToken === where.downloadToken)
+        const customer = [...customerStore.values()].find(
+          (c) => c.downloadToken === where.downloadToken
+        )
         if (!customer) return null
         const sale = saleStoreById.get(customer.saleId)
         return sale

@@ -94,12 +94,12 @@ export function useApiKeys() {
   const addApiKey = useAppStore((state) => state.addApiKey)
   const removeApiKey = useAppStore((state) => state.removeApiKey)
 
-  const activeKeys = apiKeys.filter(key => {
+  const activeKeys = apiKeys.filter((key) => {
     if (!key.expiresAt) return true
     return new Date(key.expiresAt) > new Date()
   })
 
-  const expiredKeys = apiKeys.filter(key => {
+  const expiredKeys = apiKeys.filter((key) => {
     if (!key.expiresAt) return false
     return new Date(key.expiresAt) <= new Date()
   })
@@ -146,14 +146,14 @@ export function useOrganizations() {
   const setCurrentOrganization = useAppStore((state) => state.setCurrentOrganization)
 
   const switchOrganization = (organizationId: string) => {
-    const org = organizations.find(o => o.id === organizationId)
+    const org = organizations.find((o) => o.id === organizationId)
     if (org) {
       setCurrentOrganization(org)
     }
   }
 
-  const ownedOrganizations = organizations.filter(org => org.role === 'OWNER')
-  const memberOrganizations = organizations.filter(org => org.role !== 'OWNER')
+  const ownedOrganizations = organizations.filter((org) => org.role === 'OWNER')
+  const memberOrganizations = organizations.filter((org) => org.role !== 'OWNER')
 
   return {
     organizations,

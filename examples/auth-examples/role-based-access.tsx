@@ -29,15 +29,15 @@ export function RoleGate({
   children,
   allowedRoles,
   fallback = null,
-  requireAllRoles = false
+  requireAllRoles = false,
 }: RoleGateProps) {
   const { user, hasRole } = useAuth()
 
   if (!user) return fallback
 
   const hasAccess = requireAllRoles
-    ? allowedRoles.every(role => hasRole(role))
-    : allowedRoles.some(role => hasRole(role))
+    ? allowedRoles.every((role) => hasRole(role))
+    : allowedRoles.some((role) => hasRole(role))
 
   return hasAccess ? <>{children}</> : <>{fallback}</>
 }
@@ -54,13 +54,11 @@ export function OrgRoleGate({
   children,
   organizationId,
   allowedOrgRoles,
-  fallback = null
+  fallback = null,
 }: OrgRoleGateProps) {
   const { hasOrgRole } = useAuth()
 
-  const hasAccess = allowedOrgRoles.some(role =>
-    hasOrgRole(organizationId, role)
-  )
+  const hasAccess = allowedOrgRoles.some((role) => hasOrgRole(organizationId, role))
 
   return hasAccess ? <>{children}</> : <>{fallback}</>
 }
@@ -77,7 +75,7 @@ export function FeatureGate({
   children,
   feature,
   organizationId,
-  fallback = <FeatureUpgradePrompt feature={feature} />
+  fallback = <FeatureUpgradePrompt feature={feature} />,
 }: FeatureGateProps) {
   const { hasFeature } = useAuth()
 
@@ -149,7 +147,7 @@ export function PermissionGate({
   children,
   permissions,
   operator = 'OR',
-  fallback = null
+  fallback = null,
 }: PermissionGateProps) {
   const { user, hasRole, hasOrgRole, hasFeature } = useAuth()
 
@@ -159,14 +157,14 @@ export function PermissionGate({
 
   // Check user roles
   if (permissions.userRole) {
-    checks.push(permissions.userRole.some(role => hasRole(role)))
+    checks.push(permissions.userRole.some((role) => hasRole(role)))
   }
 
   // Check organization roles
   if (permissions.orgRole) {
     checks.push(
       permissions.orgRole.some(({ organizationId, roles }) =>
-        roles.some(role => hasOrgRole(organizationId, role))
+        roles.some((role) => hasOrgRole(organizationId, role))
       )
     )
   }
@@ -175,7 +173,7 @@ export function PermissionGate({
   if (permissions.features) {
     checks.push(
       permissions.features.some(({ organizationId, features }) =>
-        features.some(feature => hasFeature(organizationId, feature))
+        features.some((feature) => hasFeature(organizationId, feature))
       )
     )
   }
@@ -185,9 +183,7 @@ export function PermissionGate({
     checks.push(permissions.customCheck())
   }
 
-  const hasAccess = operator === 'AND'
-    ? checks.every(Boolean)
-    : checks.some(Boolean)
+  const hasAccess = operator === 'AND' ? checks.every(Boolean) : checks.some(Boolean)
 
   return hasAccess ? <>{children}</> : <>{fallback}</>
 }
@@ -224,10 +220,7 @@ export function RoleBasedExamples() {
       {/* Feature gate */}
       <div className="space-y-2">
         <h3 className="text-lg font-semibold">Premium Feature</h3>
-        <FeatureGate
-          feature="analytics"
-          organizationId="org_123"
-        >
+        <FeatureGate feature="analytics" organizationId="org_123">
           <Button>View Analytics Dashboard</Button>
         </FeatureGate>
       </div>
@@ -238,12 +231,8 @@ export function RoleBasedExamples() {
         <PermissionGate
           permissions={{
             userRole: ['ADMIN'],
-            orgRole: [
-              { organizationId: 'org_123', roles: ['OWNER'] }
-            ],
-            features: [
-              { organizationId: 'org_123', features: ['advanced_settings'] }
-            ]
+            orgRole: [{ organizationId: 'org_123', roles: ['OWNER'] }],
+            features: [{ organizationId: 'org_123', features: ['advanced_settings'] }],
           }}
           operator="OR"
           fallback={<p className="text-gray-500">Insufficient permissions</p>}
@@ -275,7 +264,7 @@ export function useExtendedAuth() {
 
   // Check if user has access to specific organization
   const hasOrgAccess = (organizationId: string) => {
-    return baseAuth.organizations?.some(org => org.id === organizationId)
+    return baseAuth.organizations?.some((org) => org.id === organizationId)
   }
 
   // Check if user can perform action based on role hierarchy
@@ -285,11 +274,11 @@ export function useExtendedAuth() {
   ) => {
     // Define action-role mappings
     const actionRoles: Record<string, { userRoles?: UserRole[]; orgRoles?: OrganizationRole[] }> = {
-      'delete_organization': { orgRoles: ['OWNER'] },
-      'manage_billing': { orgRoles: ['OWNER', 'ADMIN'] },
-      'invite_members': { orgRoles: ['OWNER', 'ADMIN'] },
-      'view_analytics': { orgRoles: ['OWNER', 'ADMIN', 'MEMBER'] },
-      'system_admin': { userRoles: ['SUPER_ADMIN'] },
+      delete_organization: { orgRoles: ['OWNER'] },
+      manage_billing: { orgRoles: ['OWNER', 'ADMIN'] },
+      invite_members: { orgRoles: ['OWNER', 'ADMIN'] },
+      view_analytics: { orgRoles: ['OWNER', 'ADMIN', 'MEMBER'] },
+      system_admin: { userRoles: ['SUPER_ADMIN'] },
     }
 
     const requirements = actionRoles[action]
@@ -297,13 +286,13 @@ export function useExtendedAuth() {
 
     // Check user-level roles
     if (requirements.userRoles) {
-      const hasUserRole = requirements.userRoles.some(role => baseAuth.hasRole(role))
+      const hasUserRole = requirements.userRoles.some((role) => baseAuth.hasRole(role))
       if (hasUserRole) return true
     }
 
     // Check organization-level roles
     if (requirements.orgRoles && context.organizationId) {
-      return requirements.orgRoles.some(role =>
+      return requirements.orgRoles.some((role) =>
         baseAuth.hasOrgRole(context.organizationId!, role)
       )
     }
@@ -333,12 +322,11 @@ export function withRoleProtection<T extends object>(
       return <div>Please sign in to access this content.</div>
     }
 
-    const hasAccess = requiredRoles.some(role => hasRole(role))
+    const hasAccess = requiredRoles.some((role) => hasRole(role))
 
     if (!hasAccess) {
-      const FallbackComponent = fallbackComponent || (() => (
-        <div>You don't have permission to access this content.</div>
-      ))
+      const FallbackComponent =
+        fallbackComponent || (() => <div>You don't have permission to access this content.</div>)
       return <FallbackComponent />
     }
 

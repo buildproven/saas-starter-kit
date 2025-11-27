@@ -1,11 +1,13 @@
 # To-Do List
 
 Status legend:
+
 - ⭕️ Planned / not started
 - 🚧 In progress
 - ✅ Completed
 
 ## Immediate (Sprint 0–1)
+
 - ⭕️ Wire Stripe SDK into `BillingService` and remove mock implementations.
 - ⭕️ Implement `/api/webhooks/stripe` handler with signature validation and subscription sync.
 - ⭕️ Store Stripe product/price IDs on `Plan` records and align seed data.
@@ -16,6 +18,7 @@ Status legend:
 - ⭕️ Define GitHub issue templates, labels, and project board (tracking this roadmap).
 
 ## Near-Term (Phase 1–2)
+
 - ⭕️ Create `/admin` dashboard for SUPER_ADMIN operations (user/org search, plan overrides).
 - ⭕️ Expand audit logging for key events (sign-in, API key creation, billing actions).
 - ⭕️ Implement email verification flow (SendGrid integration, transactional templates).
@@ -26,6 +29,7 @@ Status legend:
 - ⭕️ Introduce feature flag system and admin UI for toggles.
 
 ## Long-Term (Phase 3+)
+
 - ⭕️ Generate OpenAPI spec / TS SDK for the public API.
 - ⭕️ Publish developer documentation (guides, Postman collection).
 - ⭕️ Offer additional OAuth providers (Microsoft, Slack, Okta).
@@ -36,6 +40,7 @@ Status legend:
 - ⭕️ Internationalize UI (i18n) and prep for multi-region deployments.
 
 ## Nice-to-Haves / Backlog
+
 - ⭕️ Automated revenue reporting dashboards (MRR, churn, cohort charts).
 - ⭕️ Customer self-serve data export and delete (GDPR tooling).
 - ⭕️ SLA monitoring & status page integration.

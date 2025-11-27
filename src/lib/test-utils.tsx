@@ -46,10 +46,7 @@ const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>
 }
 
-const customRender = (
-  ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>,
-) => {
+const customRender = (ui: ReactElement, options?: Omit<RenderOptions, 'wrapper'>) => {
   return render(ui, { wrapper: AllTheProviders, ...options })
 }
 

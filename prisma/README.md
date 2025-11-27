@@ -21,6 +21,7 @@ This project uses Prisma with PostgreSQL for the database layer. The schema is d
 ## Getting Started
 
 1. **Setup Database**:
+
    ```bash
    # Generate Prisma client
    npm run db:generate
@@ -40,6 +41,7 @@ This project uses Prisma with PostgreSQL for the database layer. The schema is d
 ## Environment Variables
 
 Required environment variables:
+
 ```
 DATABASE_URL="postgresql://user:password@localhost:5432/database"
 ```
@@ -47,19 +49,23 @@ DATABASE_URL="postgresql://user:password@localhost:5432/database"
 ## Schema Features
 
 ### Multi-tenancy
+
 Organizations serve as the primary tenant boundary. Users can belong to multiple organizations with different roles.
 
 ### Subscription Management
+
 - Stripe-compatible subscription tracking
 - Plan features stored as JSON for flexibility
 - Support for monthly/yearly billing cycles
 
 ### Usage Tracking
+
 - Granular usage metrics by project or API key
 - Indexed for efficient querying and reporting
 - Designed for real-time billing calculations
 
 ### API Authentication
+
 - Secure API key management with hashing
 - Organization and user-scoped keys
 - Usage tracking per API key

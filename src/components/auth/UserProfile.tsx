@@ -45,12 +45,8 @@ export function UserProfile({ className = '', showEmail = true }: UserProfilePro
         </div>
       )}
       <div className="flex flex-col">
-        {user.name && (
-          <span className="text-sm font-medium text-gray-900">{user.name}</span>
-        )}
-        {showEmail && user.email && (
-          <span className="text-xs text-gray-500">{user.email}</span>
-        )}
+        {user.name && <span className="text-sm font-medium text-gray-900">{user.name}</span>}
+        {showEmail && user.email && <span className="text-xs text-gray-500">{user.email}</span>}
       </div>
     </div>
   )

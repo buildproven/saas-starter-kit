@@ -26,21 +26,22 @@ This document captures how we organize work across GitHub Projects, labels, and 
 
 Create the following labels (hex colours in parentheses):
 
-| Label | Description | Colour |
-| --- | --- | --- |
-| `bug` | Reproducible defect impacting end users. | `#d73a4a` |
-| `enhancement` | Product improvement or feature request. | `#a2eeef` |
-| `chore` | Internal maintenance (deps, refactors). | `#cfd3d7` |
-| `needs-triage` | Awaiting review; auto-applied via templates. | `#fbca04` |
-| `phase-0` … `phase-4` | Track phase alignment with the roadmap. | `#5319e7` (re-use), adjust shade if desired. |
-| `blocked` | Requires external input before progressing. | `#b60205` |
-| `security` | Security-sensitive change or report. | `#000000` |
+| Label                 | Description                                  | Colour                                       |
+| --------------------- | -------------------------------------------- | -------------------------------------------- |
+| `bug`                 | Reproducible defect impacting end users.     | `#d73a4a`                                    |
+| `enhancement`         | Product improvement or feature request.      | `#a2eeef`                                    |
+| `chore`               | Internal maintenance (deps, refactors).      | `#cfd3d7`                                    |
+| `needs-triage`        | Awaiting review; auto-applied via templates. | `#fbca04`                                    |
+| `phase-0` … `phase-4` | Track phase alignment with the roadmap.      | `#5319e7` (re-use), adjust shade if desired. |
+| `blocked`             | Requires external input before progressing.  | `#b60205`                                    |
+| `security`            | Security-sensitive change or report.         | `#000000`                                    |
 
 > Use `gh label create` with the colour codes above to bootstrap the repo (`scripts/github-labels.json` can be generated from this table if desired).
 
 ## 3. Issue Templates
 
 We ship two guided templates (`Bug Report`, `Feature Request`) under `.github/ISSUE_TEMPLATE`. They:
+
 - Pre-apply `needs-triage`.
 - Capture environment, impact, and dependencies early.
 - Encourage linking to roadmap phases using the `phase-*` labels.
@@ -50,6 +51,7 @@ If a contributor needs to open an infrastructure or security-only issue, direct 
 ## 4. Pull Request Template
 
 `.github/PULL_REQUEST_TEMPLATE.md` enforces:
+
 - Summary of the change & roadmap linkage.
 - Verification of quality checks (`npm run lint`, `npm run typecheck`, `npm test`).
 - Deployment readiness checklist (migrations, feature flags, monitoring).

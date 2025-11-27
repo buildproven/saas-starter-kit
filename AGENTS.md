@@ -3,6 +3,7 @@
 ## Pre-Action Checklist
 
 Before suggesting ANY infrastructure, CI/CD, or tooling changes:
+
 1. Run `ls .github/workflows/` to see existing workflows
 2. Run `cat package.json | grep scripts -A 50` to see available commands
 3. Check for `.qualityrc.json`, `CLAUDE.md`, or similar config files
@@ -61,6 +62,7 @@ Before suggesting ANY infrastructure, CI/CD, or tooling changes:
 2. `.qualityrc.json` — CQA configuration file
 
 **DO NOT** create duplicate workflows. The existing workflow already handles:
+
 - ESLint with security rules
 - Prettier formatting checks
 - Stylelint for CSS
@@ -70,6 +72,7 @@ Before suggesting ANY infrastructure, CI/CD, or tooling changes:
 - Secret detection
 
 **Available Commands** (use these instead of suggesting new workflows):
+
 - `npm run quality:ci` — Full CI quality pipeline
 - `npm run validate:all` — Comprehensive validation
 - `npm run validate:comprehensive` — Extended validation

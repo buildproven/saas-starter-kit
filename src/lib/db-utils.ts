@@ -1,8 +1,5 @@
 import { prisma } from './prisma'
-import {
-  OrganizationRole,
-  SubscriptionStatus
-} from '@prisma/client'
+import { OrganizationRole, SubscriptionStatus } from '@prisma/client'
 
 // Organization utilities
 export async function createOrganization(data: {
@@ -139,7 +136,7 @@ export async function getUsageStats(
     select: { id: true },
   })
 
-  const projectIds = projects.map(p => p.id)
+  const projectIds = projects.map((p) => p.id)
 
   return await prisma.usageRecord.groupBy({
     by: ['projectId'],
@@ -248,10 +245,7 @@ export async function updateMemberRole(
   })
 }
 
-export async function activateMember(
-  organizationId: string,
-  userId: string
-) {
+export async function activateMember(organizationId: string, userId: string) {
   return await prisma.organizationMember.update({
     where: {
       userId_organizationId: {
