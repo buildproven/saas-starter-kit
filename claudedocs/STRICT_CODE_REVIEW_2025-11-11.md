@@ -1,6 +1,6 @@
 # Code Review Report (STRICT MODE)
 
-**Repository**: saas-starter-template
+**Repository**: saas-starter-kit
 **Reviewed**: 2025-11-11
 **Baseline**: HEAD (7857de2)
 **Reviewers**: security-engineer, quality-engineer, performance-engineer, system-architect
@@ -1896,7 +1896,7 @@ describe('Environment validation', () => {
         "driver": {
           "name": "SuperClaude Strict Review",
           "version": "1.0.0",
-          "informationUri": "https://github.com/brettstark73/saas-starter-template"
+          "informationUri": "https://github.com/brettstark73/saas-starter-kit"
         }
       },
       "results": [

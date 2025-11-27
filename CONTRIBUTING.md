@@ -1,6 +1,6 @@
 # Contributing Guide
 
-Thank you for helping improve the SaaS Starter Template! This document describes the expectations, workflows, and quality bars for maintainers and contributors.
+Thank you for helping improve the SaaS Starter Kit! This document describes the expectations, workflows, and quality bars for maintainers and contributors.
 
 ## Prerequisites
 

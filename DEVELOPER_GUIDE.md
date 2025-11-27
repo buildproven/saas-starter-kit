@@ -1,6 +1,6 @@
 # Developer Guide
 
-A comprehensive guide for developers working with the SaaS Starter Template. This guide covers development workflows, best practices, and common patterns.
+A comprehensive guide for developers working with the SaaS Starter Kit. This guide covers development workflows, best practices, and common patterns.
 
 ## Table of Contents
 
@@ -58,7 +58,7 @@ A comprehensive guide for developers working with the SaaS Starter Template. Thi
 ```bash
 # 1. Clone and install
 git clone <your-repo>
-cd saas-starter-template
+cd saas-starter-kit
 npm install
 
 # 2. Database setup
@@ -713,7 +713,7 @@ npm test -- --clearCache
 
 ---
 
-This guide covers the essentials of developing with the SaaS Starter Template. For more specific topics, refer to the other documentation files or reach out to the development team.
+This guide covers the essentials of developing with the SaaS Starter Kit. For more specific topics, refer to the other documentation files or reach out to the development team.
 
 ## Template Sales Notes
 

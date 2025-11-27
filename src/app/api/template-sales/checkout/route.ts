@@ -26,7 +26,7 @@ function isTemplateSalesConfigured(): boolean {
 // Template sales packages
 const TEMPLATE_PACKAGES = {
   basic: {
-    name: 'SaaS Starter Template - Basic',
+    name: 'SaaS Starter Kit - Basic',
     price: 29900, // $299
     priceId: process.env.STRIPE_TEMPLATE_BASIC_PRICE_ID!,
     features: [
@@ -39,7 +39,7 @@ const TEMPLATE_PACKAGES = {
     ],
   },
   pro: {
-    name: 'SaaS Starter Template - Pro',
+    name: 'SaaS Starter Kit - Pro',
     price: 59900, // $599
     priceId: process.env.STRIPE_TEMPLATE_PRO_PRICE_ID!,
     features: [
@@ -52,7 +52,7 @@ const TEMPLATE_PACKAGES = {
     ],
   },
   enterprise: {
-    name: 'SaaS Starter Template - Enterprise',
+    name: 'SaaS Starter Kit - Enterprise',
     price: 149900, // $1,499
     priceId: process.env.STRIPE_TEMPLATE_ENTERPRISE_PRICE_ID!,
     features: [

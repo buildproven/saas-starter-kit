@@ -275,7 +275,7 @@ export default function MarketingPage() {
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <Button size="lg" variant="outline" className="text-lg px-8" asChild>
-              <a href="https://github.com/yourusername/saas-starter-template" target="_blank">
+              <a href="https://github.com/yourusername/saas-starter-kit" target="_blank">
                 <Github className="w-5 h-5 mr-2" />
                 View on GitHub
               </a>

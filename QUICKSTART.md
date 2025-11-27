@@ -13,7 +13,7 @@ Get your SaaS application running in under 10 minutes.
 ```bash
 # Clone and install
 git clone <your-repo-url>
-cd saas-starter-template
+cd saas-starter-kit
 npm install
 
 # Configure environment

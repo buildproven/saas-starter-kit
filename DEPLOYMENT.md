@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This guide explains how to promote the SaaS Starter Template to production (Vercel recommended) and configure the supporting services (database, Stripe, Sentry).
+This guide explains how to promote the SaaS Starter Kit to production (Vercel recommended) and configure the supporting services (database, Stripe, Sentry).
 
 > **Tip**: Make sure your code passes `npm run lint`, `npm run typecheck`, and `npm test` before deploying.
 

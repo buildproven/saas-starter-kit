@@ -158,7 +158,7 @@ function generateEmailContent(params: {
     </div>
 
     <div class="footer">
-      <p>Thank you for choosing SaaS Starter Template!</p>
+      <p>Thank you for choosing SaaS Starter Kit!</p>
       <p>This email was sent to ${params.customerEmail} regarding your template purchase.</p>
       <p>
         <a href="${process.env.NEXT_PUBLIC_APP_URL}">Visit our website</a> |

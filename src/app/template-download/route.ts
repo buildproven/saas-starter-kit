@@ -352,7 +352,7 @@ function createMockTemplateZip(
   const fileList = templateFiles.map((f) => f.name).join('\n')
 
   return `
-SaaS Starter Template - ${packageType.toUpperCase()} Package
+SaaS Starter Kit - ${packageType.toUpperCase()} Package
 Downloaded: ${new Date().toISOString()}
 License Key: [Your license key from email]
 

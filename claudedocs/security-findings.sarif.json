@@ -7,7 +7,7 @@
         "driver": {
           "name": "Security Engineer Agent - Manual Code Review",
           "version": "1.0.0",
-          "informationUri": "https://github.com/brettstark/saas-starter-template",
+          "informationUri": "https://github.com/brettstark/saas-starter-kit",
           "rules": [
             {
               "id": "SEC-001",
@@ -561,7 +561,7 @@
       "columnKind": "utf16CodeUnits",
       "properties": {
         "analysisDate": "2025-11-11T00:00:00Z",
-        "repository": "saas-starter-template",
+        "repository": "saas-starter-kit",
         "analysisType": "manual-code-review",
         "coveragePercent": 95.0,
         "totalFiles": 89,

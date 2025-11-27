@@ -1,4 +1,4 @@
-# SaaS Starter Template
+# SaaS Starter Kit
 
 A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma, and Stripe-ready billing flows. Use it to launch multi-tenant products with authentication, RBAC, subscriptions, and modern DX defaults already wired together.
 
@@ -23,8 +23,8 @@ A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma
 1. **Clone & Install**
 
    ```bash
-   git clone https://github.com/yourusername/saas-starter-template.git
-   cd saas-starter-template
+   git clone https://github.com/yourusername/saas-starter-kit.git
+   cd saas-starter-kit
    npm install
    ```
 
