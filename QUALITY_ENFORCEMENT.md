@@ -1,4 +1,4 @@
-# SaaS Starter Template - Quality Enforcement
+# SaaS Starter Kit - Quality Enforcement
 
 **This project enforces organization-level quality standards. See `/Users/brettstark/Projects/QUALITY_STANDARDS.md` for full details.**
 

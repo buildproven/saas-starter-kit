@@ -1,7 +1,7 @@
 # Test Coverage and Quality Analysis Report
 
 **Generated**: 2025-11-11
-**Project**: saas-starter-template
+**Project**: saas-starter-kit
 **Analysis Scope**: Complete codebase
 
 ---

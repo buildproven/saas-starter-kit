@@ -1,6 +1,6 @@
 # Architecture Overview
 
-This document describes the major components, data flows, and extension points for the SaaS Starter Template. The goal is to provide a mental model that helps contributors reason about the system and make safe changes.
+This document describes the major components, data flows, and extension points for the SaaS Starter Kit. The goal is to provide a mental model that helps contributors reason about the system and make safe changes.
 
 ## High-Level Stack
 

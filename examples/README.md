@@ -1,6 +1,6 @@
 # Code Examples
 
-This directory contains practical examples showing how to extend and customize the SaaS Starter Template for common use cases.
+This directory contains practical examples showing how to extend and customize the SaaS Starter Kit for common use cases.
 
 ## Directory Structure
 

@@ -1,6 +1,6 @@
 # API Reference
 
-This document describes the REST endpoints exposed by the SaaS Starter Template. All routes are located under the Next.js App Router (`src/app/api`). Unless noted as **Public**, endpoints require an authenticated NextAuth session (JWT strategy) and will return `401 Unauthorized` when accessed without the session cookie. Some routes additionally enforce role-based access (`USER`, `ADMIN`, `SUPER_ADMIN`) through middleware and per-route guards.
+This document describes the REST endpoints exposed by the SaaS Starter Kit. All routes are located under the Next.js App Router (`src/app/api`). Unless noted as **Public**, endpoints require an authenticated NextAuth session (JWT strategy) and will return `401 Unauthorized` when accessed without the session cookie. Some routes additionally enforce role-based access (`USER`, `ADMIN`, `SUPER_ADMIN`) through middleware and per-route guards.
 
 ## Authentication
 

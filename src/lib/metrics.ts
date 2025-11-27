@@ -11,7 +11,7 @@ export const registry = new Registry()
 
 // Default labels applied to all metrics
 registry.setDefaultLabels({
-  app: 'saas-starter-template',
+  app: 'saas-starter-kit',
   env: process.env.NODE_ENV || 'development',
 })
 

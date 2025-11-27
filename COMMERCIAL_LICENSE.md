@@ -1,8 +1,8 @@
-# SaaS Starter Template - Commercial License
+# SaaS Starter Kit - Commercial License
 
 ## License Terms for Paid Template Packages
 
-This Commercial License applies to customers who have purchased the **Pro** or **Enterprise** tiers of the SaaS Starter Template. For the free/open-source version, see `LICENSE` (MIT License).
+This Commercial License applies to customers who have purchased the **Pro** or **Enterprise** tiers of the SaaS Starter Kit. For the free/open-source version, see `LICENSE` (MIT License).
 
 ---
 

@@ -1,6 +1,6 @@
 # Product Roadmap
 
-A high-level plan for evolving the SaaS Starter Template from internal alpha to production-ready platform. Timelines assume a small team (2–3 engineers) working in two-week sprints; adjust to match your cadence.
+A high-level plan for evolving the SaaS Starter Kit from internal alpha to production-ready platform. Timelines assume a small team (2–3 engineers) working in two-week sprints; adjust to match your cadence.
 
 ---
 

@@ -1,7 +1,7 @@
-# Security Analysis Report - SaaS Starter Template
+# Security Analysis Report - SaaS Starter Kit
 
 **Analysis Date**: 2025-11-11
-**Scope**: Complete repository at `/Users/brettstark/Projects/saas-starter-template`
+**Scope**: Complete repository at `/Users/brettstark/Projects/saas-starter-kit`
 **Severity Scale**: P0 (Critical Blocker) → P1 (High) → P2 (Medium) → P3 (Low)
 **Risk Score**: Probability (0-1) × Impact (0-10) × Exploitability (0-1)
 
@@ -41,7 +41,7 @@ The codebase demonstrates solid security fundamentals with comprehensive protect
 
 **Severity**: HIGH | **Risk Score**: 7.2/10 (0.8 × 9 × 1.0)
 
-**Location**: `/Users/brettstark/Projects/saas-starter-template/src/lib/rate-limit.ts:26`
+**Location**: `/Users/brettstark/Projects/saas-starter-kit/src/lib/rate-limit.ts:26`
 
 **Description**:
 The rate limiting implementation uses an in-memory Map store which will not work correctly in multi-instance deployments (horizontal scaling, serverless functions). Each instance maintains its own rate limit state, allowing attackers to bypass limits by hitting different instances.
@@ -125,7 +125,7 @@ const ratelimit = new Ratelimit({
 
 **Severity**: HIGH | **Risk Score**: 6.4/10 (0.8 × 8 × 1.0)
 
-**Location**: `/Users/brettstark/Projects/saas-starter-template/src/lib/env.ts:19-21`
+**Location**: `/Users/brettstark/Projects/saas-starter-kit/src/lib/env.ts:19-21`
 
 **Description**:
 JWT secret validation only checks length (≥32 characters) but doesn't enforce entropy or randomness requirements. Weak secrets like "12345678901234567890123456789012" pass validation, making JWT tokens vulnerable to brute force attacks.
@@ -220,7 +220,7 @@ if (process.env.NODE_ENV === 'production') {
 
 **Severity**: HIGH | **Risk Score**: 6.0/10 (0.6 × 10 × 1.0)
 
-**Location**: `/Users/brettstark/Projects/saas-starter-template/src/lib/auth.ts:10` and middleware
+**Location**: `/Users/brettstark/Projects/saas-starter-kit/src/lib/auth.ts:10` and middleware
 
 **Description**:
 No checks enforce HTTPS in production. NextAuth cookies and JWT tokens transmitted over HTTP are vulnerable to interception. While Vercel provides HTTPS by default, self-hosted deployments may not enforce it.
@@ -333,7 +333,7 @@ export default withAuth(
 
 **Severity**: MEDIUM-HIGH | **Risk Score**: 5.6/10 (0.7 × 8 × 1.0)
 
-**Location**: `/Users/brettstark/Projects/saas-starter-template/src/lib/auth/api-protection.ts:149-154`
+**Location**: `/Users/brettstark/Projects/saas-starter-kit/src/lib/auth/api-protection.ts:149-154`
 
 **Description**:
 CORS allowed origins are hardcoded in the source code, including example domains. Production deployments may inadvertently allow requests from unauthorized origins or block legitimate ones.
@@ -429,7 +429,7 @@ export function corsHeaders(origin?: string) {
 
 **Severity**: MEDIUM | **Risk Score**: 4.5/10 (0.5 × 9 × 1.0)
 
-**Location**: `/Users/brettstark/Projects/saas-starter-template/src/lib/rate-limit.ts:26`
+**Location**: `/Users/brettstark/Projects/saas-starter-kit/src/lib/rate-limit.ts:26`
 
 **Description**:
 While cleanup is implemented, the in-memory Map can grow unbounded if cleanup fails or is stopped. High-traffic scenarios with unique IPs can exhaust server memory.
@@ -568,7 +568,7 @@ const createOrgSchema = z.object({
 
 **Severity**: MEDIUM | **Risk Score**: 4.0/10 (0.5 × 8 × 1.0)
 
-**Location**: `/Users/brettstark/Projects/saas-starter-template/src/middleware.ts:80`
+**Location**: `/Users/brettstark/Projects/saas-starter-kit/src/middleware.ts:80`
 
 **Description**:
 Middleware checks token existence and role but doesn't explicitly validate JWT expiration. While NextAuth handles this internally, adding explicit validation provides defense in depth.
