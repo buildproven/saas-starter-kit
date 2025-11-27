@@ -61,19 +61,13 @@ export async function POST(request: NextRequest) {
       const currentSubscription = await SubscriptionService.getSubscription(organizationId)
 
       if (!currentSubscription) {
-        return NextResponse.json(
-          { error: 'No active subscription found' },
-          { status: 404 }
-        )
+        return NextResponse.json({ error: 'No active subscription found' }, { status: 404 })
       }
 
       // Get target plan details
       const newPlan = await SubscriptionService.getPlanByPriceId(newPriceId)
       if (!newPlan) {
-        return NextResponse.json(
-          { error: 'Invalid plan selected' },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 })
       }
 
       // Validate upgrade path (prevent downgrades through upgrade endpoint)
@@ -104,19 +98,16 @@ export async function POST(request: NextRequest) {
       )
 
       // Update subscription item to new price
-      const updatedStripeSubscription = await stripe.subscriptions.update(
-        stripeSubscription.id,
-        {
-          items: [
-            {
-              id: stripeSubscription.items.data[0].id,
-              price: newPriceId,
-            },
-          ],
-          proration_behavior: 'create_prorations', // Pro-rate charges
-          billing_cycle_anchor: billingCycle === 'YEARLY' ? 'now' : undefined,
-        }
-      )
+      const updatedStripeSubscription = await stripe.subscriptions.update(stripeSubscription.id, {
+        items: [
+          {
+            id: stripeSubscription.items.data[0].id,
+            price: newPriceId,
+          },
+        ],
+        proration_behavior: 'create_prorations', // Pro-rate charges
+        billing_cycle_anchor: billingCycle === 'YEARLY' ? 'now' : undefined,
+      })
 
       // Update local subscription record
       const updatedSubscription = await SubscriptionService.updateSubscription(
@@ -157,7 +148,6 @@ export async function POST(request: NextRequest) {
           nextBillingDate: new Date(updatedStripeSubscription.current_period_end * 1000),
         },
       })
-
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
@@ -175,10 +165,7 @@ export async function POST(request: NextRequest) {
       }
 
       logError('subscription-upgrade-error', error, { userId: user.id })
-      return NextResponse.json(
-        { error: 'Failed to upgrade subscription' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to upgrade subscription' }, { status: 500 })
     }
   })(request)
 }
@@ -211,10 +198,7 @@ export async function PUT(request: NextRequest) {
       const newPlan = await SubscriptionService.getPlanByPriceId(newPriceId)
 
       if (!currentSubscription || !newPlan) {
-        return NextResponse.json(
-          { error: 'Subscription or plan not found' },
-          { status: 404 }
-        )
+        return NextResponse.json({ error: 'Subscription or plan not found' }, { status: 404 })
       }
 
       // Check if current usage fits in new plan limits
@@ -223,23 +207,30 @@ export async function PUT(request: NextRequest) {
 
       const violations: string[] = []
       if (newPlanFeatures.maxUsers !== -1 && usage.users > newPlanFeatures.maxUsers) {
-        violations.push(`User count (${usage.users}) exceeds new limit (${newPlanFeatures.maxUsers})`)
+        violations.push(
+          `User count (${usage.users}) exceeds new limit (${newPlanFeatures.maxUsers})`
+        )
       }
       if (newPlanFeatures.maxProjects !== -1 && usage.projects > newPlanFeatures.maxProjects) {
-        violations.push(`Project count (${usage.projects}) exceeds new limit (${newPlanFeatures.maxProjects})`)
+        violations.push(
+          `Project count (${usage.projects}) exceeds new limit (${newPlanFeatures.maxProjects})`
+        )
       }
 
       if (violations.length > 0) {
-        return NextResponse.json({
-          error: 'Cannot downgrade due to usage violations',
-          violations,
-          currentUsage: usage,
-          newLimits: newPlanFeatures,
-          suggestions: [
-            'Remove excess users or projects before downgrading',
-            'Contact support for migration assistance',
-          ],
-        }, { status: 409 })
+        return NextResponse.json(
+          {
+            error: 'Cannot downgrade due to usage violations',
+            violations,
+            currentUsage: usage,
+            newLimits: newPlanFeatures,
+            suggestions: [
+              'Remove excess users or projects before downgrading',
+              'Contact support for migration assistance',
+            ],
+          },
+          { status: 409 }
+        )
       }
 
       // Handle downgrade based on effective date
@@ -250,7 +241,8 @@ export async function PUT(request: NextRequest) {
           {
             items: [
               {
-                id: (await stripe.subscriptions.retrieve(currentSubscription.subscriptionId)).items.data[0].id,
+                id: (await stripe.subscriptions.retrieve(currentSubscription.subscriptionId)).items
+                  .data[0].id,
                 price: newPriceId,
               },
             ],
@@ -267,14 +259,14 @@ export async function PUT(request: NextRequest) {
           message: 'Subscription downgraded immediately',
           creditAmount: calculateCredit(currentSubscription, newPlan),
         })
-
       } else {
         // Schedule downgrade for end of period
         await stripe.subscriptions.update(currentSubscription.subscriptionId, {
           cancel_at_period_end: false, // Ensure it doesn't cancel
           items: [
             {
-              id: (await stripe.subscriptions.retrieve(currentSubscription.subscriptionId)).items.data[0].id,
+              id: (await stripe.subscriptions.retrieve(currentSubscription.subscriptionId)).items
+                .data[0].id,
               price: newPriceId,
             },
           ],
@@ -301,13 +293,9 @@ export async function PUT(request: NextRequest) {
           newPlan: newPlan.name,
         })
       }
-
     } catch (error) {
       logError('subscription-downgrade-error', error, { userId: user.id })
-      return NextResponse.json(
-        { error: 'Failed to process downgrade' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to process downgrade' }, { status: 500 })
     }
   })(request)
 }
@@ -318,7 +306,9 @@ function calculateProration(currentSubscription: any, newPlan: any): number {
     (currentSubscription.currentPeriodEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   )
   const totalDaysInPeriod = Math.ceil(
-    (currentSubscription.currentPeriodEnd.getTime() - currentSubscription.currentPeriodStart.getTime()) / (1000 * 60 * 60 * 24)
+    (currentSubscription.currentPeriodEnd.getTime() -
+      currentSubscription.currentPeriodStart.getTime()) /
+      (1000 * 60 * 60 * 24)
   )
 
   const currentPlanDaily = (currentSubscription.plan?.amount || 0) / totalDaysInPeriod
@@ -333,7 +323,9 @@ function calculateCredit(currentSubscription: any, newPlan: any): number {
     (currentSubscription.currentPeriodEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   )
   const totalDaysInPeriod = Math.ceil(
-    (currentSubscription.currentPeriodEnd.getTime() - currentSubscription.currentPeriodStart.getTime()) / (1000 * 60 * 60 * 24)
+    (currentSubscription.currentPeriodEnd.getTime() -
+      currentSubscription.currentPeriodStart.getTime()) /
+      (1000 * 60 * 60 * 24)
   )
 
   const currentPlanDaily = (currentSubscription.plan?.amount || 0) / totalDaysInPeriod

@@ -67,7 +67,9 @@ async function buildPlanSeeds(): Promise<PlanSeed[]> {
         : price.product
 
     if (isDeletedProduct(productRecord)) {
-      throw new Error(`Stripe product ${productRecord.id} is deleted. Restore or update pricing before seeding.`)
+      throw new Error(
+        `Stripe product ${productRecord.id} is deleted. Restore or update pricing before seeding.`
+      )
     }
 
     const productName = productRecord.name || getPlanLabel(variant.tier)

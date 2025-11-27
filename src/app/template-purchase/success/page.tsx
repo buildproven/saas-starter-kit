@@ -5,7 +5,15 @@ import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { CheckCircle, Download, Mail, BookOpen, MessageCircle, Copy, ExternalLink } from 'lucide-react'
+import {
+  CheckCircle,
+  Download,
+  Mail,
+  BookOpen,
+  MessageCircle,
+  Copy,
+  ExternalLink,
+} from 'lucide-react'
 
 interface PurchaseData {
   sale: {
@@ -121,9 +129,7 @@ export default function TemplatePurchaseSuccessPage() {
             <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Purchase Successful!</h1>
-          <p className="text-xl text-gray-600">
-            Thank you for purchasing the {pkg.name}
-          </p>
+          <p className="text-xl text-gray-600">Thank you for purchasing the {pkg.name}</p>
           <Badge className="mt-2" variant="secondary">
             Order ID: {sale.id}
           </Badge>
@@ -150,9 +156,7 @@ export default function TemplatePurchaseSuccessPage() {
               </div>
               <div>
                 <h3 className="font-medium mb-2">Purchase Date</h3>
-                <p className="text-gray-600">
-                  {new Date(sale.completedAt).toLocaleDateString()}
-                </p>
+                <p className="text-gray-600">{new Date(sale.completedAt).toLocaleDateString()}</p>
               </div>
             </div>
           </CardContent>
@@ -249,9 +253,7 @@ export default function TemplatePurchaseSuccessPage() {
                   Get help with setup, customization, and deployment.
                 </p>
                 <Button variant="outline" size="sm" asChild className="w-full">
-                  <a href={`mailto:${nextSteps.supportEmail}`}>
-                    Contact Support
-                  </a>
+                  <a href={`mailto:${nextSteps.supportEmail}`}>Contact Support</a>
                 </Button>
               </div>
               <div>
@@ -277,7 +279,11 @@ export default function TemplatePurchaseSuccessPage() {
                   Join our Discord community for tips and discussions.
                 </p>
                 <Button variant="outline" size="sm" asChild className="w-full">
-                  <a href="https://discord.gg/your-invite" target="_blank" rel="noopener noreferrer">
+                  <a
+                    href="https://discord.gg/your-invite"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     Join Discord
                   </a>
                 </Button>
@@ -306,7 +312,8 @@ export default function TemplatePurchaseSuccessPage() {
         {/* Email Confirmation */}
         <div className="text-center mt-8 p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">
-            📧 A confirmation email with download links has been sent to <strong>{sale.email}</strong>
+            📧 A confirmation email with download links has been sent to{' '}
+            <strong>{sale.email}</strong>
           </p>
           <p className="text-xs text-blue-600 mt-1">
             Check your spam folder if you don&apos;t see it within a few minutes.

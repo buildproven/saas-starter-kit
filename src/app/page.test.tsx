@@ -15,7 +15,9 @@ describe('Home Page', () => {
     render(<Home />)
 
     // Should have the main marketing heading
-    expect(screen.getByRole('heading', { name: /launch your saas in days, not months/i })).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: /launch your saas in days, not months/i })
+    ).toBeInTheDocument()
   })
 
   it('has navigation links', () => {
@@ -79,7 +81,7 @@ describe('Home Page', () => {
 
     // Buttons should be focusable
     const buttons = screen.getAllByRole('button')
-    buttons.forEach(button => {
+    buttons.forEach((button) => {
       expect(button).not.toHaveAttribute('disabled')
     })
   })

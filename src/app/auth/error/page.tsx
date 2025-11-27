@@ -15,9 +15,7 @@ export default function AuthErrorPage() {
   const searchParams = useSearchParams()
   const error = searchParams?.get('error')
 
-  const errorMessage = error && errorMessages[error]
-    ? errorMessages[error]
-    : errorMessages.Default
+  const errorMessage = error && errorMessages[error] ? errorMessages[error] : errorMessages.Default
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -38,25 +36,15 @@ export default function AuthErrorPage() {
               />
             </svg>
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Authentication Error
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            {errorMessage}
-          </p>
-          {error && (
-            <p className="mt-1 text-xs text-gray-500">
-              Error code: {error}
-            </p>
-          )}
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Authentication Error</h2>
+          <p className="mt-2 text-sm text-gray-600">{errorMessage}</p>
+          {error && <p className="mt-1 text-xs text-gray-500">Error code: {error}</p>}
         </div>
 
         <div className="mt-8 space-y-4">
           <div className="flex flex-col space-y-2">
             <Link href="/auth/signin">
-              <Button className="w-full">
-                Try Again
-              </Button>
+              <Button className="w-full">Try Again</Button>
             </Link>
             <Link href="/">
               <Button variant="outline" className="w-full">

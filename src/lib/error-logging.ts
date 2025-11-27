@@ -164,12 +164,10 @@ export function withErrorHandling<T extends any[], R>(
     try {
       return await fn(...args)
     } catch (error) {
-      logError(
-        error instanceof Error ? error : new Error(String(error)),
-        errorType,
-        severity,
-        { function: fn.name, arguments: args }
-      )
+      logError(error instanceof Error ? error : new Error(String(error)), errorType, severity, {
+        function: fn.name,
+        arguments: args,
+      })
       throw error
     }
   }

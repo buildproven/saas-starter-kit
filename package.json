@@ -36,7 +36,12 @@
     "type-check:tests": "tsc --noEmit --project tests/tsconfig.json",
     "type-check:all": "npm run type-check && npm run type-check:tests",
     "quality:check": "npm run type-check:all && npm run lint && npm run test",
-    "quality:ci": "npm run quality:check && npm run security:audit"
+    "quality:ci": "npm run quality:check && npm run security:audit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
+    "test:secrets": "trufflehog filesystem . --only-verified --fail 2>/dev/null || echo 'TruffleHog not installed - run: brew install trufflehog'"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -71,17 +76,21 @@
   },
   "devDependencies": {
     "@jest/types": "^29.0.0",
+    "@lhci/cli": "^0.14.0",
+    "@playwright/test": "^1.56.1",
     "@testing-library/jest-dom": "^6.0.0",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.0.0",
     "@types/jest": "^29.0.0",
+    "@types/jest-axe": "^3.5.9",
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "@vitest/coverage-v8": "^2.1.8",
     "autoprefixer": "^10.4.0",
-    "create-quality-automation": "^4.1.1",
+    "create-quality-automation": "^4.3.3",
     "cross-env": "^7.0.3",
     "eslint": "^8.0.0",
     "eslint-config-next": "^14.0.0",
@@ -104,10 +113,8 @@
     "tailwindcss": "^3.3.0",
     "tsx": "^4.20.6",
     "typescript": "^5.0.0",
-    "webpack-bundle-analyzer": "^4.10.2",
-    "@lhci/cli": "^0.14.0",
     "vitest": "^2.1.8",
-    "@vitest/coverage-v8": "^2.1.8"
+    "webpack-bundle-analyzer": "^4.10.2"
   },
   "overrides": {
     "glob": "^11.0.0"
@@ -136,12 +143,12 @@
       "prettier --write"
     ],
     "**/*.{ts,tsx}": [
-      "tsc --noEmit --skipLibCheck",
+      "bash -c 'tsc --noEmit --skipLibCheck'",
       "eslint --fix",
       "prettier --write"
     ],
     "tests/**/*.{ts,tsx,js,jsx}": [
-      "tsc --noEmit --project tests/tsconfig.json",
+      "bash -c 'tsc --noEmit --project tests/tsconfig.json'",
       "eslint --fix",
       "prettier --write"
     ]

@@ -239,7 +239,6 @@ describe('retry', () => {
 
         const promise = withRetry(fn, { maxRetries: 3, baseDelay: 100 })
 
-
         const expectation = expect(promise).rejects.toThrow('Invalid email format')
         await jest.runAllTimersAsync()
         await expectation
@@ -258,7 +257,6 @@ describe('retry', () => {
         })
 
         const promise = withRetry(fn, { maxRetries: 3, baseDelay: 100 })
-
 
         const expectation = expect(promise).rejects.toThrow('Bad Request')
         await jest.runAllTimersAsync()
@@ -305,7 +303,6 @@ describe('retry', () => {
           jitter: false,
           operationName: 'test_exhaustion',
         })
-
 
         const expectation = expect(promise).rejects.toThrow('ECONNRESET')
         await jest.advanceTimersByTimeAsync(0)
@@ -480,7 +477,6 @@ describe('retry', () => {
 
         const promise = withTimeout(fn, 1000, 'test_timeout')
 
-
         const expectation = expect(promise).rejects.toThrow('test_timeout timed out after 1000ms')
         await jest.advanceTimersByTimeAsync(1000)
 
@@ -505,7 +501,6 @@ describe('retry', () => {
         )
 
         const promise = withTimeout(fn, 1000, 'test')
-
 
         const expectation = expect(promise).rejects.toMatchObject({
           name: 'TimeoutError',
@@ -615,7 +610,6 @@ describe('retry', () => {
           operationName: 'all_timeout',
         })
 
-
         const expectation = expect(promise).rejects.toThrow('all_timeout timed out after 1000ms')
         // First attempt timeout
         await jest.advanceTimersByTimeAsync(1000)
@@ -643,7 +637,6 @@ describe('retry', () => {
           jitter: false,
           operationName: 'custom_op_name',
         })
-
 
         const expectation = expect(promise).rejects.toThrow('custom_op_name timed out after 1000ms')
         await jest.advanceTimersByTimeAsync(1000)

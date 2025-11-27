@@ -1,6 +1,6 @@
 name: Feature Request
 description: Propose a new capability or significant enhancement.
-title: "feat: "
+title: 'feat: '
 labels:
   - enhancement
   - needs-triage
@@ -14,7 +14,7 @@ body:
     attributes:
       label: Problem Statement
       description: What user problem are we trying to solve?
-      placeholder: "Customers cannot self-serve plan upgrades."
+      placeholder: 'Customers cannot self-serve plan upgrades.'
     validations:
       required: true
   - type: textarea

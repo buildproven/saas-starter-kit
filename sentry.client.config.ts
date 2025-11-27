@@ -39,15 +39,16 @@ Sentry.init({
         return null
       }
       // Filter out network errors that are outside our control
-      if (exception?.value?.includes('Network Error') ||
-          exception?.value?.includes('Failed to fetch')) {
+      if (
+        exception?.value?.includes('Network Error') ||
+        exception?.value?.includes('Failed to fetch')
+      ) {
         return null
       }
     }
 
     // Filter out NextAuth CSRF errors (these are handled gracefully)
-    if (event.message?.includes('NEXTAUTH_') ||
-        event.message?.includes('csrf')) {
+    if (event.message?.includes('NEXTAUTH_') || event.message?.includes('csrf')) {
       return null
     }
 

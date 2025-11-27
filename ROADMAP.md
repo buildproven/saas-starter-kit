@@ -5,6 +5,7 @@ A high-level plan for evolving the SaaS Starter Template from internal alpha to 
 ---
 
 ## Phase 0 – Stabilize & Document (Week 0)
+
 - ✅ Harden core docs (`README`, `ARCHITECTURE`, `API`, `DEPLOYMENT`, `CONTRIBUTING`, `AGENTS`).
 - ✅ Confirm role propagation, subscription gating, and notification UX.
 - ✅ Stand up project management tooling (labels, issue templates, GH Projects/Notion).
@@ -12,6 +13,7 @@ A high-level plan for evolving the SaaS Starter Template from internal alpha to 
 ---
 
 ## Phase 1 – Monetization Foundations (Weeks 1–4)
+
 1. **Stripe Integration**
    - Replace mock `BillingService` with Stripe SDK calls.
    - Create products/prices per seeded plan; store Stripe IDs in `Plan`.
@@ -28,6 +30,7 @@ Deliverable: Functional billing + org admin for closed beta customers.
 ---
 
 ## Phase 2 – Admin & Enterprise Controls (Weeks 5–8)
+
 1. **Platform Admin Console**
    - Build `/admin` dashboard for user search, org overview, plan overrides, support tooling.
    - Role-gated access (SUPER_ADMIN) with proper audit logging.
@@ -45,6 +48,7 @@ Deliverable: Internal ops-ready system with compliance controls for enterprise d
 ---
 
 ## Phase 3 – Growth & Ecosystem (Weeks 9–14)
+
 1. **API & SDK Enhancements**
    - Expand `/api` surface (webhook management, feature flags, reporting endpoints).
    - Generate TypeScript SDK / OpenAPI spec.
@@ -62,6 +66,7 @@ Deliverable: Self-serve growth engine with integrations and marketing collateral
 ---
 
 ## Phase 4 – Reliability & Scale (Ongoing)
+
 - **Observability**: Structured logging, metrics dashboards (Datadog, Grafana), alerting via PagerDuty.
 - **Performance**: Load testing, caching strategy (Redis, ISR), rate limits.
 - **DevEx**: Merge queue automation, preview environments, smoke test suites.
@@ -70,6 +75,7 @@ Deliverable: Self-serve growth engine with integrations and marketing collateral
 ---
 
 ## Success Metrics
+
 - Time-to-live for new customers (signup → first value).
 - Conversion rate from Free → Paid plans.
 - Monthly churn percentage per plan.

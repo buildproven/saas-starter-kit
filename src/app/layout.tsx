@@ -12,19 +12,13 @@ export const metadata: Metadata = {
   description: 'Modern SaaS starter template',
 }
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions)
 
   return (
     <html lang="en">
       <body className={inter.className}>
-        <SessionProvider session={session}>
-          {children}
-        </SessionProvider>
+        <SessionProvider session={session}>{children}</SessionProvider>
       </body>
     </html>
   )

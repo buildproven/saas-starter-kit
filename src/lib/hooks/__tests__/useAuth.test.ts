@@ -13,7 +13,9 @@ const asAuthenticated = (session: Session): SessionContextValue => ({
   update: jest.fn(),
 })
 
-const asStatus = (status: Exclude<SessionContextValue['status'], 'authenticated'>): SessionContextValue => ({
+const asStatus = (
+  status: Exclude<SessionContextValue['status'], 'authenticated'>
+): SessionContextValue => ({
   data: null,
   status,
   update: jest.fn(),

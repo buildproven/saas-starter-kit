@@ -52,10 +52,7 @@ export async function GET(request: NextRequest) {
         })
 
         if (!member) {
-          return NextResponse.json(
-            { error: 'Access denied to organization' },
-            { status: 403 }
-          )
+          return NextResponse.json({ error: 'Access denied to organization' }, { status: 403 })
         }
       }
 
@@ -71,7 +68,7 @@ export async function GET(request: NextRequest) {
           where: { userId: user.id, status: 'ACTIVE' },
           select: { organizationId: true },
         })
-        where.organizationId = { in: userOrgs.map(org => org.organizationId) }
+        where.organizationId = { in: userOrgs.map((org) => org.organizationId) }
       }
 
       // Get paginated results
@@ -111,10 +108,7 @@ export async function GET(request: NextRequest) {
       }
 
       logError('tasks-list-error', error, { userId: user.id })
-      return NextResponse.json(
-        { error: 'Failed to fetch tasks' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 })
     }
   })(request)
 }
@@ -137,10 +131,7 @@ export async function POST(request: NextRequest) {
       })
 
       if (!member) {
-        return NextResponse.json(
-          { error: 'Access denied to organization' },
-          { status: 403 }
-        )
+        return NextResponse.json({ error: 'Access denied to organization' }, { status: 403 })
       }
 
       // Check subscription limits (example usage enforcement)
@@ -159,7 +150,7 @@ export async function POST(request: NextRequest) {
           return NextResponse.json(
             {
               error: 'Task limit reached',
-              details: { limit: planFeatures.maxTasks, current: taskCount }
+              details: { limit: planFeatures.maxTasks, current: taskCount },
             },
             { status: 402 }
           )
@@ -182,17 +173,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ task }, { status: 201 })
     } catch (error) {
       if (error instanceof z.ZodError) {
-        return NextResponse.json(
-          { error: 'Invalid input', details: error.issues },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
       }
 
       logError('task-creation-error', error, { userId: user.id })
-      return NextResponse.json(
-        { error: 'Failed to create task' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Failed to create task' }, { status: 500 })
     }
   })(request)
 }

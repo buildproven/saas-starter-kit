@@ -109,7 +109,14 @@ describe('ProtectedRoute', () => {
 
   it('should allow super admin to access admin routes', () => {
     mockUseSession.mockReturnValue(
-      withStatus('authenticated', authenticatedSession({ email: 'superadmin@example.com', role: 'SUPER_ADMIN', name: 'Super Admin' }))
+      withStatus(
+        'authenticated',
+        authenticatedSession({
+          email: 'superadmin@example.com',
+          role: 'SUPER_ADMIN',
+          name: 'Super Admin',
+        })
+      )
     )
 
     render(

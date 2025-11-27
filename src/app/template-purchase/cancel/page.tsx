@@ -22,8 +22,8 @@ export default function TemplatePurchaseCancelPage() {
             <div className="bg-gray-50 rounded-lg p-4">
               <h3 className="font-medium mb-2">What happened?</h3>
               <p className="text-sm text-gray-600 mb-3">
-                You cancelled the checkout process or the payment was not completed.
-                This is completely normal and no charges were made to your card.
+                You cancelled the checkout process or the payment was not completed. This is
+                completely normal and no charges were made to your card.
               </p>
               <p className="text-sm text-gray-600">
                 If you encountered any issues during checkout, we&apos;re here to help!
@@ -40,9 +40,7 @@ export default function TemplatePurchaseCancelPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <Button variant="outline" asChild>
-                  <a href="/">
-                    Back to Home
-                  </a>
+                  <a href="/">Back to Home</a>
                 </Button>
                 <Button variant="outline" asChild>
                   <a href="mailto:support@your-domain.com">
@@ -55,7 +53,12 @@ export default function TemplatePurchaseCancelPage() {
 
             <div className="text-center text-sm text-gray-500 border-t pt-4">
               <p>Need assistance with your purchase?</p>
-              <p>Contact us at <a href="mailto:support@your-domain.com" className="text-blue-600 hover:underline">support@your-domain.com</a></p>
+              <p>
+                Contact us at{' '}
+                <a href="mailto:support@your-domain.com" className="text-blue-600 hover:underline">
+                  support@your-domain.com
+                </a>
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -16,8 +16,10 @@ Sentry.init({
   // Edge-specific error filtering
   beforeSend(event) {
     // Filter out middleware timeout errors
-    if (event.exception?.values?.[0]?.value?.includes('timeout') ||
-        event.exception?.values?.[0]?.value?.includes('edge')) {
+    if (
+      event.exception?.values?.[0]?.value?.includes('timeout') ||
+      event.exception?.values?.[0]?.value?.includes('edge')
+    ) {
       return null
     }
 
