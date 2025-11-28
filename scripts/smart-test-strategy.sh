@@ -77,9 +77,14 @@ echo "   ⚡ Speed Bonus: $SPEED_BONUS"
 echo ""
 
 # Decision logic
+# NOTE: E2E tests are excluded from pre-push (run in CI only)
+# - E2E: Requires browser, CI has better infrastructure
+# These run in GitHub Actions on every PR and push to main
+
 if [[ $RISK_SCORE -ge 7 ]]; then
-  echo "🔴 HIGH RISK - Comprehensive validation"
+  echo "🔴 HIGH RISK - Comprehensive validation (pre-push)"
   echo "   • All tests + typecheck + security audit"
+  echo "   • (E2E tests run in CI only)"
   npm run typecheck && npm test && npm run security:audit
 elif [[ $RISK_SCORE -ge 4 ]]; then
   echo "🟡 MEDIUM RISK - Standard validation"

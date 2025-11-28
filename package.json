@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "cross-env SKIP_DB_HEALTHCHECK=true next build",
+    "build": "cross-env SKIP_DB_HEALTHCHECK=true SKIP_ENV_VALIDATION=true next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",

@@ -123,11 +123,23 @@ export function validateEnv(): Env {
 
 /**
  * Get validated environment variables.
- * Call validateEnv() first during app initialization.
+ * During build time, returns partial env without validation.
+ * At runtime, throws if environment was not validated.
  */
 export function getEnv(): Env {
+  // During build time, return process.env directly without validation
+  const isBuildTime =
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    process.env.SKIP_ENV_VALIDATION === 'true'
+
+  if (isBuildTime) {
+    // Return process.env with defaults for build-time compatibility
+    return process.env as unknown as Env
+  }
+
   if (!cachedEnv) {
-    throw new Error('Environment not validated. Call validateEnv() during app initialization.')
+    // Try to validate if not already done
+    return validateEnv()
   }
   return cachedEnv
 }
@@ -162,6 +174,10 @@ export function isFeatureEnabled(feature: 'template_sales' | 'sentry' | 'github_
 }
 
 // Validate on module load in non-test environments
-if (process.env.NODE_ENV !== 'test') {
+// Skip validation during build to allow building without all env vars
+const isBuildTime =
+  process.env.NEXT_PHASE === 'phase-production-build' || process.env.SKIP_ENV_VALIDATION === 'true'
+
+if (process.env.NODE_ENV !== 'test' && !isBuildTime) {
   validateEnv()
 }
