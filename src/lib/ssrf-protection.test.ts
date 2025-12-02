@@ -132,10 +132,8 @@ describe('SSRFProtection', () => {
 
       // Check that URL validation was attempted
       expect(result).toBeDefined()
-      // If allowed, verify the structure
-      if (result.allowed) {
-        expect(result.port).toBe(443)
-      }
+      // Verify port is set when allowed
+      expect(result.allowed ? result.port : 443).toBe(443)
     })
 
     it('rejects invalid hostname patterns', async () => {
@@ -217,9 +215,7 @@ describe('SSRFProtection', () => {
     it('extracts IP from cf-connecting-ip when trusted', () => {
       process.env.NEXT_TRUST_PROXY = 'true'
 
-      const ip = ssrfProtection.getClientIP(
-        createRequest({ 'cf-connecting-ip': '8.8.8.8' })
-      )
+      const ip = ssrfProtection.getClientIP(createRequest({ 'cf-connecting-ip': '8.8.8.8' }))
 
       expect(ip).toBe('8.8.8.8')
     })
