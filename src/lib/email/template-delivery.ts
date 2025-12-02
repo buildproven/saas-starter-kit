@@ -7,7 +7,7 @@
 
 interface DeliveryEmailParams {
   customerEmail: string
-  package: 'basic' | 'pro' | 'enterprise'
+  package: 'hobby' | 'pro' | 'director'
   accessCredentials: {
     licenseKey: string
     downloadToken: string
@@ -147,7 +147,7 @@ function generateEmailContent(params: {
       <p>
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/docs" class="button">Documentation</a>
         <a href="${process.env.NEXT_PUBLIC_APP_URL}/quickstart" class="button">Quick Start Guide</a>
-        ${packageType !== 'basic' ? `<a href="${process.env.NEXT_PUBLIC_APP_URL}/premium-portal" class="button">Premium Portal</a>` : ''}
+        ${packageType !== 'hobby' ? `<a href="${process.env.NEXT_PUBLIC_APP_URL}/premium-portal" class="button">Premium Portal</a>` : ''}
       </p>
 
       <h3>🆘 Need Help?</h3>
@@ -195,7 +195,7 @@ ${getNextStepsText(packageType)}
 📚 Resources:
 - Documentation: ${process.env.NEXT_PUBLIC_APP_URL}/docs
 - Quick Start: ${process.env.NEXT_PUBLIC_APP_URL}/quickstart
-${packageType !== 'basic' ? `- Premium Portal: ${process.env.NEXT_PUBLIC_APP_URL}/premium-portal` : ''}
+${packageType !== 'hobby' ? `- Premium Portal: ${process.env.NEXT_PUBLIC_APP_URL}/premium-portal` : ''}
 
 🆘 Support:
 ${getSupportText(packageType)}
@@ -206,60 +206,53 @@ ${getSupportText(packageType)}
 
 function getPackageInfo(packageType: string) {
   const packages = {
-    basic: {
-      name: 'Basic Package',
+    hobby: {
+      name: 'Hobby Package',
       features: [
         'Complete Next.js 14 SaaS template',
         'Authentication & authorization',
         'Multi-tenant architecture',
         'Basic billing integration',
         'Documentation & examples',
-        'Email support',
+        'Community support',
       ],
     },
     pro: {
       name: 'Pro Package',
       features: [
-        'Everything in Basic',
-        'Advanced billing features',
-        'White-label customization',
+        'Everything in Hobby',
+        'White-label customization rights',
         'Video tutorials',
-        'Priority support',
-        '1-hour consultation call',
-        'Private GitHub repository access',
+        'Priority email support',
+        'GitHub repository access',
       ],
     },
-    enterprise: {
-      name: 'Enterprise Package',
+    director: {
+      name: 'Director Package',
       features: [
         'Everything in Pro',
-        'Custom deployment setup',
-        'Team training session',
-        'Extended support (6 months)',
-        'Custom integrations',
-        'Source code modifications',
-        'Dedicated account manager',
+        '3 months Vibe Lab Pro access',
+        '1-hour consultation call',
+        'Priority support',
       ],
     },
   }
 
-  return packages[packageType as keyof typeof packages] || packages.basic
+  return packages[packageType as keyof typeof packages] || packages.hobby
 }
 
 function getNextStepsHTML(packageType: string): string {
   switch (packageType) {
     case 'pro':
       return `
-        <li><strong>Access your private GitHub repository</strong> with premium features</li>
+        <li><strong>Access your GitHub repository</strong> with premium features</li>
         <li><strong>Watch the video tutorial series</strong> in your premium portal</li>
-        <li><strong>Schedule your consultation call</strong> using the calendar link</li>
       `
-    case 'enterprise':
+    case 'director':
       return `
-        <li><strong>Access your private GitHub repository</strong> with all enterprise features</li>
-        <li><strong>Review custom deployment documentation</strong></li>
-        <li><strong>Contact your account manager</strong> to schedule team training</li>
-        <li><strong>Set up your dedicated support channel</strong></li>
+        <li><strong>Access your GitHub repository</strong> with all features</li>
+        <li><strong>Activate your Vibe Lab Pro membership</strong> (3 months included)</li>
+        <li><strong>Schedule your consultation call</strong> using the calendar link</li>
       `
     default:
       return ''
@@ -270,15 +263,13 @@ function getNextStepsText(packageType: string): string {
   switch (packageType) {
     case 'pro':
       return `
-5. Access your private GitHub repository
-6. Watch the video tutorial series
-7. Schedule your consultation call`
-    case 'enterprise':
+5. Access your GitHub repository
+6. Watch the video tutorial series`
+    case 'director':
       return `
-5. Access your private GitHub repository
-6. Review custom deployment documentation
-7. Contact your account manager for team training
-8. Set up your dedicated support channel`
+5. Access your GitHub repository
+6. Activate your Vibe Lab Pro membership
+7. Schedule your consultation call`
     default:
       return ''
   }
@@ -286,27 +277,27 @@ function getNextStepsText(packageType: string): string {
 
 function getSupportHTML(packageType: string): string {
   switch (packageType) {
-    case 'basic':
-      return '<li>📧 Email support (48-hour response time)</li><li>💬 Community Discord access</li>'
+    case 'hobby':
+      return '<li>💬 Community support</li><li>📚 Documentation access</li>'
     case 'pro':
-      return '<li>⚡ Priority email support (24-hour response time)</li><li>📞 1-hour consultation call included</li><li>🎥 Video tutorial library</li>'
-    case 'enterprise':
-      return '<li>🚨 24/7 phone + email support</li><li>👤 Dedicated account manager</li><li>🏢 Team training session</li><li>🔧 Custom integration consultation</li>'
+      return '<li>⚡ Priority email support</li><li>🎥 Video tutorial library</li><li>💻 GitHub repository access</li>'
+    case 'director':
+      return '<li>⚡ Priority email support</li><li>📞 1-hour consultation call included</li><li>🌟 3 months Vibe Lab Pro access</li>'
     default:
-      return '<li>📧 Email support</li>'
+      return '<li>💬 Community support</li>'
   }
 }
 
 function getSupportText(packageType: string): string {
   switch (packageType) {
-    case 'basic':
-      return '• Email support (48-hour response)\n• Community Discord access'
+    case 'hobby':
+      return '• Community support\n• Documentation access'
     case 'pro':
-      return '• Priority email support (24-hour response)\n• 1-hour consultation call included\n• Video tutorial library'
-    case 'enterprise':
-      return '• 24/7 phone + email support\n• Dedicated account manager\n• Team training session\n• Custom integration consultation'
+      return '• Priority email support\n• Video tutorial library\n• GitHub repository access'
+    case 'director':
+      return '• Priority email support\n• 1-hour consultation call included\n• 3 months Vibe Lab Pro access'
     default:
-      return '• Email support'
+      return '• Community support'
   }
 }
 

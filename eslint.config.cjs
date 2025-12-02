@@ -61,6 +61,9 @@ configs.push({
       ...globals.node,
     },
   },
+  plugins: {
+    ...(security ? { security } : {}),
+  },
   rules: {
     ...baseRules,
     ...securityRules,

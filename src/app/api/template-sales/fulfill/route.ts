@@ -6,7 +6,7 @@ import { logError, ErrorType } from '@/lib/error-logging'
 const FulfillmentRequestSchema = z.object({
   sessionId: z.string(),
   customerEmail: z.string().email(),
-  package: z.enum(['basic', 'pro', 'enterprise']),
+  package: z.enum(['hobby', 'pro', 'director']),
   customerName: z.string().optional(),
   companyName: z.string().optional(),
 })

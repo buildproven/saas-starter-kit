@@ -17,51 +17,48 @@ import { fulfillTemplateSale } from '@/lib/template-sales/fulfillment'
 function isTemplateSalesConfigured(): boolean {
   return !!(
     process.env.STRIPE_SECRET_KEY &&
-    process.env.STRIPE_TEMPLATE_BASIC_PRICE_ID &&
+    process.env.STRIPE_TEMPLATE_HOBBY_PRICE_ID &&
     process.env.STRIPE_TEMPLATE_PRO_PRICE_ID &&
-    process.env.STRIPE_TEMPLATE_ENTERPRISE_PRICE_ID
+    process.env.STRIPE_TEMPLATE_DIRECTOR_PRICE_ID
   )
 }
 
-// Template sales packages
+// Template sales packages (canonical pricing from PRICING_STRATEGY.md)
 const TEMPLATE_PACKAGES = {
-  basic: {
-    name: 'SaaS Starter Kit - Basic',
-    price: 29900, // $299
-    priceId: process.env.STRIPE_TEMPLATE_BASIC_PRICE_ID!,
+  hobby: {
+    name: 'SaaS Starter Kit - Hobby',
+    price: 9900, // $99
+    priceId: process.env.STRIPE_TEMPLATE_HOBBY_PRICE_ID!,
     features: [
       'Complete Next.js 14 SaaS template',
       'Authentication & authorization',
       'Multi-tenant architecture',
       'Basic billing integration',
       'Documentation & examples',
-      'Email support',
+      'Community support',
     ],
   },
   pro: {
     name: 'SaaS Starter Kit - Pro',
-    price: 59900, // $599
+    price: 24900, // $249
     priceId: process.env.STRIPE_TEMPLATE_PRO_PRICE_ID!,
     features: [
-      'Everything in Basic',
-      'Advanced billing features',
-      'White-label customization',
+      'Everything in Hobby',
+      'White-label customization rights',
       'Video tutorials',
-      'Priority support',
-      '1-hour consultation call',
+      'Priority email support',
+      'GitHub repository access',
     ],
   },
-  enterprise: {
-    name: 'SaaS Starter Kit - Enterprise',
-    price: 149900, // $1,499
-    priceId: process.env.STRIPE_TEMPLATE_ENTERPRISE_PRICE_ID!,
+  director: {
+    name: 'SaaS Starter Kit - Director',
+    price: 39900, // $399
+    priceId: process.env.STRIPE_TEMPLATE_DIRECTOR_PRICE_ID!,
     features: [
       'Everything in Pro',
-      'Custom deployment setup',
-      'Team training session',
-      'Extended support (6 months)',
-      'Custom integrations',
-      'Source code modifications',
+      '3 months Vibe Lab Pro access',
+      '1-hour consultation call',
+      'Priority support',
     ],
   },
 }
@@ -69,7 +66,7 @@ const TEMPLATE_PACKAGES = {
 const githubUsernameRegex = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i
 
 const CheckoutRequestSchema = z.object({
-  package: z.enum(['basic', 'pro', 'enterprise']),
+  package: z.enum(['hobby', 'pro', 'director']),
   email: z.string().email().max(254), // RFC 5321 max email length
   companyName: z.string().max(200).optional(),
   useCase: z.string().max(2000).optional(),
@@ -270,7 +267,7 @@ export async function GET(request: NextRequest) {
       fulfillmentSummary = await fulfillTemplateSale({
         sessionId,
         customerEmail: session.customer_details?.email || updatedSale.email,
-        package: updatedSale.package as 'basic' | 'pro' | 'enterprise',
+        package: updatedSale.package as 'hobby' | 'pro' | 'director',
         customerName: session.customer_details?.name,
         companyName: session.customer_details?.name || updatedSale.companyName || undefined,
         githubUsername,

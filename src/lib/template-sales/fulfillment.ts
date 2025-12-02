@@ -4,7 +4,7 @@ import { sendTemplateDeliveryEmail } from '@/lib/email/template-delivery'
 import { grantGitHubAccess, normalizeGithubUsername } from '@/lib/github/access-management'
 import crypto from 'node:crypto'
 
-type TemplatePackage = 'basic' | 'pro' | 'enterprise'
+type TemplatePackage = 'hobby' | 'pro' | 'director'
 
 interface FulfillmentParams {
   sessionId: string
@@ -28,15 +28,15 @@ interface FulfillmentResult {
 }
 
 const SUPPORT_TIERS: Record<TemplatePackage, string> = {
-  basic: 'email',
+  hobby: 'community',
   pro: 'priority_email',
-  enterprise: 'phone_email_dedicated',
+  director: 'priority_email',
 }
 
 const ACCESS_WINDOWS_DAYS: Record<TemplatePackage, number | null> = {
-  basic: 30,
-  pro: 90,
-  enterprise: null,
+  hobby: null, // Lifetime updates
+  pro: null, // Lifetime updates
+  director: null, // Lifetime updates + 90 days VLP
 }
 
 export async function fulfillTemplateSale(params: FulfillmentParams): Promise<FulfillmentResult> {
@@ -111,7 +111,7 @@ export async function fulfillTemplateSale(params: FulfillmentParams): Promise<Fu
     const accessExpiresAt = accessCredentials.expiresAt
 
     let githubAccess: { success: boolean; teamId?: string | null } = { success: false }
-    if (packageType === 'pro' || packageType === 'enterprise') {
+    if (packageType === 'pro' || packageType === 'director') {
       try {
         const result = await grantGitHubAccess({
           email: customerEmail,

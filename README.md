@@ -1,225 +1,179 @@
 # SaaS Starter Kit
 
-A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma, and Stripe-ready billing flows. Use it to launch multi-tenant products with authentication, RBAC, subscriptions, and modern DX defaults already wired together.
+A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma, and Stripe-ready billing flows. Launch multi-tenant products with authentication, RBAC, subscriptions, and modern DX defaults already wired together.
 
-## Highlights
+---
 
-- **Next.js App Router** with hybrid rendering, server actions, and middleware-driven RBAC.
-- **Authentication & Authorization** using NextAuth (JWT strategy), Prisma adapter, and role-aware middleware (`USER`, `ADMIN`, `SUPER_ADMIN`).
-- **Multi-tenant data model** with Organizations, Projects, API Keys, Plans, and Usage tracking powered by Prisma & PostgreSQL.
-- **Billing scaffolding** with Stripe-compatible helpers (checkout, billing portal, subscription enforcement).
-- **Production tooling**: Jest + Testing Library, ESLint (security plugin), Prettier, Tailwind (shadcn/ui tokens), Sentry, Husky + lint-staged, and GitHub Actions.
-- **State management & UI**: Zustand global store, shadcn-style component primitives, and Lucide iconography.
+> **Maintainer & Ownership**
+> This project is maintained by **Vibe Build Lab LLC**, a studio focused on AI-assisted product development, micro-SaaS, and "vibe coding" workflows for solo founders and small teams.
+> Learn more at **https://www.vibebuildlab.com**.
 
-## Prerequisites
+---
 
-- Node.js ≥ 20 (Volta and `.nvmrc` are provided).
-- PostgreSQL 14+ (local or managed). SQLite is not supported.
-- npm ≥ 10 (installed automatically via Volta if desired).
-- Stripe + Sentry credentials when enabling billing or production monitoring (optional in local dev).
+## Features
 
-## Quick Start
+- **Next.js App Router** with hybrid rendering, server actions, and middleware-driven RBAC
+- **Authentication & Authorization** using NextAuth (JWT strategy), Prisma adapter, and role-aware middleware (`USER`, `ADMIN`, `SUPER_ADMIN`)
+- **Multi-tenant data model** with Organizations, Projects, API Keys, Plans, and Usage tracking powered by Prisma & PostgreSQL
+- **Billing scaffolding** with Stripe-compatible helpers (checkout, billing portal, subscription enforcement)
+- **Production tooling**: Jest + Testing Library, ESLint (security plugin), Prettier, Tailwind (shadcn/ui tokens), Sentry, Husky + lint-staged, and GitHub Actions
+- **State management & UI**: Zustand global store, shadcn-style component primitives, and Lucide iconography
+- **Smart Test Strategy**: Intelligent risk-based pre-push validation that adapts to your changes
 
-1. **Clone & Install**
+## Target Users
 
-   ```bash
-   git clone https://github.com/yourusername/saas-starter-kit.git
-   cd saas-starter-kit
-   npm install
-   ```
+- **Solo founders** building their first SaaS product
+- **Small teams** who want a production-ready starting point without reinventing auth, billing, and deployment
+- **Agencies** shipping client projects faster with a proven foundation
 
-2. **Configure environment**
+## Pricing & Licensing
 
-   ```bash
-   cp .env.example .env.local
-   # Fill in database, NextAuth, Stripe, and Sentry values
-   ```
+### Template Pricing
 
-3. **Database bootstrap**
+| Package      | Price | What's Included                                              |
+| ------------ | ----- | ------------------------------------------------------------ |
+| **Hobby**    | $99   | Complete template + documentation                            |
+| **Pro**      | $249  | Hobby + white-label rights + video tutorials + GitHub access |
+| **Director** | $399  | Pro + 3 months Vibe Lab Pro access + consultation call       |
 
-   ```bash
-   npm run db:push        # Apply Prisma schema
-   npm run db:seed        # (Optional) Seed plans & demo data
-   ```
-
-4. **Run the app**
-   ```bash
-   npm run dev
-   ```
-   Visit `http://localhost:3000` and sign in with any configured OAuth provider (Google/GitHub by default).
-
-## Environment Cheat Sheet
-
-`DATABASE_URL` is required for Prisma. The following groups should be populated before deploying:
-
-- **NextAuth** – `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, provider IDs/secrets.
-- **Stripe** – `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` identifiers for each active plan.
-- **Template sales (optional)** – `STRIPE_TEMPLATE_*` price IDs, `TEMPLATE_FULFILLMENT_SECRET`, `TEMPLATE_FILES_PATH` (points to packaged assets).
-- **Sentry (optional)** – `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`.
-- **App metadata** – `NEXT_PUBLIC_APP_VERSION`, `NEXT_PUBLIC_APP_URL`.
-- **Emails (optional)** – `SENDGRID_API_KEY` or `RESEND_API_KEY`, plus `FROM_EMAIL`.
-
-Refer to `.env.example` for the full list and descriptions.
-
-## Project Layout
-
-```
-├── prisma/                 # Prisma schema, seeds, migrations
-├── src/
-│   ├── app/                # Next.js App Router routes & API endpoints
-│   │   ├── api/            # REST endpoints (organizations, billing, etc.)
-│   │   ├── auth/           # Auth pages (signin, signout, error)
-│   │   └── dashboard/      # Example authenticated UI
-│   ├── components/         # UI primitives (shadcn-derived) & feature widgets
-│   ├── lib/                # Services: auth, billing, subscription, Zustand store
-│   └── styles/             # Tailwind globals and tokens
-├── docs/                   # Additional product documentation (optional)
-├── API.md                  # Endpoint reference
-├── ARCHITECTURE.md         # System design & module overview
-├── DEPLOYMENT.md           # Production deployment playbook
-└── CONTRIBUTING.md         # Developer workflow guidelines
-```
-
-## Development Workflow
-
-| Command                                   | Purpose                                           |
-| ----------------------------------------- | ------------------------------------------------- |
-| `npm run dev`                             | Start the Next.js dev server with hot reload      |
-| `npm run lint`                            | ESLint (including security and React hooks rules) |
-| `npm run typecheck`                       | TypeScript project validation (`tsc --noEmit`)    |
-| `npm test` / `npm run test:watch`         | Jest + Testing Library (JS DOM environment)       |
-| `npm run test:coverage`                   | Enforce 80% global coverage threshold             |
-| `npm run format` / `npm run format:check` | Prettier and Stylelint                            |
-| `npm run db:push` / `npm run db:generate` | Prisma schema application & client generation     |
-| `npm run db:seed`                         | Populate core Plan data and sample content        |
-| `npm run security:audit`                  | `npm audit` high severity gate                    |
-| `npm run security:secrets`                | Detect hardcoded secrets in repository            |
-
-Husky hooks run lint-staged tasks on staged files; ensure you install dependencies before committing.
-
-> **Note:** In restricted environments (CI or read-only worktrees) run `HUSKY=0 npm install` to skip Husky's `prepare` hook when it cannot update `.git/config`.
-
-## Smart Test Strategy
-
-This template includes intelligent risk-based test selection to optimize developer workflow while maintaining quality:
-
-### How It Works
-
-The pre-push hook (`scripts/smart-test-strategy.sh`) analyzes your changes and selects appropriate validation:
-
-**Risk Scoring (0-10):**
-
-- High-risk files (auth, payment, billing, stripe, prisma): +4
-- API files: +2
-- Config files: +2
-- Large changes (>10 files, >200 lines): +2-3
-- Critical branches (main/master, hotfix/\*): +3-4
-- Time of day (work hours favor speed)
-
-**Test Tiers:**
-
-- **Risk 0-1:** Minimal (lint + format only) - 2-5s
-- **Risk 2-3:** Fast (lint + format + typecheck) - 30s
-- **Risk 4-6:** Medium (+ tests) - 1-2min
-- **Risk ≥7:** Comprehensive (+ security audit) - 2-5min
-
-### Examples
-
-```bash
-# Documentation-only change
-git add README.md
-git commit -m "docs: update setup instructions"
-git push  # Runs: lint + format (2-5s)
-
-# Small code change
-git add src/components/Button.tsx
-git commit -m "feat: add button variant"
-git push  # Runs: lint + format + typecheck (~30s)
-
-# Auth/payment change on main branch
-git checkout main
-git add src/lib/auth.ts
-git commit -m "fix: auth session handling"
-git push  # Runs: full validation + security audit (2-5min)
-```
-
-### Philosophy
-
-Pre-push validation should provide **fast feedback** without blocking workflow. Comprehensive testing happens in CI/CD where it can run in parallel. This approach:
-
-- Reduces friction for small changes (docs, styling)
-- Maintains quality gates for critical code (auth, billing)
-- Adapts to context (branch, time, change size)
-- Enables developer flow state
-
-The smart strategy eliminates the "run all tests on every push" bottleneck while ensuring critical changes get thorough validation.
-
-## Optional: Selling the Template
-
-The repo includes APIs for monetising the starter itself. To enable them:
-
-1. Configure Stripe template products/prices (`STRIPE_TEMPLATE_*`).
-2. Set `TEMPLATE_FULFILLMENT_SECRET` and point `TEMPLATE_FILES_PATH` to the packaged assets.
-3. Wire an email provider in `src/lib/email/template-delivery.ts` (the default logs a warning instead of sending).
-4. Provide a GitHub access token if you want automated repo access for Pro/Enterprise buyers and collect GitHub usernames during checkout (the purchase form includes an optional field).
-5. Support staff can retry or override invitations via the `/api/admin/template-sales/github-access` endpoint (SUPER_ADMIN only).
-6. Download tokens are rate limited (5 requests per 15 minutes per IP/token) and every attempt is logged to `TemplateDownloadAudit` for auditing.
-
-Without these values the template-sales endpoints return informative errors and skip fulfillment.
-
-Once configured, package the deliverables with `npm run template:package` to populate the tiered archives under `TEMPLATE_FILES_PATH`.
-
-## Testing & Quality Gates
-
-- Unit/integration tests live alongside source files (`*.test.ts[x]`) and under `src/lib`.
-- `jest.setup.ts` configures the JS DOM environment, mocks Next navigation, and polyfills web streams.
-- Coverage target: 80% branches/functions/lines/statements (enforced in `jest.config.js`).
-- ESLint includes `eslint-plugin-security` to surface common security pitfalls.
-- Stylelint enforces consistency for Tailwind and utility CSS.
-
-Run the full suite before opening a PR:
-
-```bash
-npm run lint
-npm run typecheck
-npm test
-
-# Optional: run template-sales smoke test
-npm test -- --runInBand src/app/api/template-sales/smoke.test.ts
-```
-
-## Documentation
-
-- [API.md](./API.md) – HTTP endpoints and authentication expectations.
-- [ARCHITECTURE.md](./ARCHITECTURE.md) – Module boundaries, data flow, and extension points.
-- [DEPLOYMENT.md](./DEPLOYMENT.md) – How to promote the stack to production/Vercel.
-- [CONTRIBUTING.md](./CONTRIBUTING.md) – Coding standards, branch strategy, and PR checklist.
-
-## Deployment
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for step-by-step instructions on deploying to Vercel (or another Node-friendly platform), configuring environment variables, seeding databases, enabling Sentry, and wiring Stripe webhooks.
-
-## 💰 Commercial Template Sales
-
-This open-source template is free to use under MIT license. We also offer **premium packages** with advanced features:
-
-| Package        | Price  | Features                                                       |
-| -------------- | ------ | -------------------------------------------------------------- |
-| **Basic**      | $299   | Complete template + docs + email support                       |
-| **Pro**        | $599   | Basic + white-label + videos + GitHub access + consultation    |
-| **Enterprise** | $1,499 | Pro + deployment + training + extended support + customization |
-
-**[🚀 Purchase Premium Packages](https://your-domain.com/template-purchase)**
-
-## License
+### License
 
 **Dual Licensed:**
 
 - **Open Source**: MIT License (see [LICENSE](./LICENSE)) - Free for personal and commercial use
 - **Commercial**: Premium packages include additional rights and restrictions (see [COMMERCIAL_LICENSE.md](./COMMERCIAL_LICENSE.md))
 
-The open-source version is free to use for any purpose. Premium packages provide enhanced features, support, and commercial protections.
+## Tech Stack
 
-## Support & Feedback
+| Layer          | Technology                                  |
+| -------------- | ------------------------------------------- |
+| **Framework**  | Next.js 14 (App Router)                     |
+| **Language**   | TypeScript 5+                               |
+| **Database**   | PostgreSQL 14+ via Prisma ORM               |
+| **Auth**       | NextAuth.js with JWT strategy               |
+| **Payments**   | Stripe (checkout, billing portal, webhooks) |
+| **Styling**    | Tailwind CSS + shadcn/ui                    |
+| **State**      | Zustand                                     |
+| **Testing**    | Jest + Testing Library                      |
+| **Monitoring** | Sentry                                      |
+| **CI/CD**      | GitHub Actions                              |
 
-Issues and pull requests are encouraged. If you launch something with the template, let us know!
+## Getting Started
+
+### Prerequisites
+
+- Node.js >= 20 (Volta and `.nvmrc` provided)
+- PostgreSQL 14+ (local or managed)
+- npm >= 10
+- Stripe + Sentry credentials (optional in local dev)
+
+### Installation
+
+```bash
+# Clone & install
+git clone https://github.com/vibebuildlab/saas-starter-kit.git
+cd saas-starter-kit
+npm install
+
+# Configure environment
+cp .env.example .env.local
+# Fill in database, NextAuth, Stripe, and Sentry values
+
+# Database setup
+npm run db:push        # Apply Prisma schema
+npm run db:seed        # (Optional) Seed plans & demo data
+
+# Start development
+npm run dev
+```
+
+Visit `http://localhost:3000` and sign in with any configured OAuth provider.
+
+### Environment Variables
+
+Key environment groups to configure:
+
+- **NextAuth** – `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, provider IDs/secrets
+- **Database** – `DATABASE_URL` (required)
+- **Stripe** – `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`
+- **Sentry** – `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`
+
+Refer to `.env.example` for the full list.
+
+### Development Commands
+
+| Command                  | Purpose                           |
+| ------------------------ | --------------------------------- |
+| `npm run dev`            | Start dev server with hot reload  |
+| `npm run lint`           | ESLint (including security rules) |
+| `npm run typecheck`      | TypeScript validation             |
+| `npm test`               | Jest + Testing Library            |
+| `npm run test:coverage`  | Enforce 80% coverage threshold    |
+| `npm run db:push`        | Apply Prisma schema               |
+| `npm run db:seed`        | Seed demo data                    |
+| `npm run security:audit` | npm audit high severity gate      |
+
+## Usage Examples
+
+### Protecting an API Route
+
+```typescript
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+
+export async function GET(req: Request) {
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+  // Your protected logic here
+}
+```
+
+### Creating a Subscription Checkout
+
+```typescript
+import { createCheckoutSession } from '@/lib/billing'
+
+const session = await createCheckoutSession({
+  priceId: process.env.STRIPE_PRICE_PRO,
+  customerId: user.stripeCustomerId,
+  successUrl: '/dashboard',
+  cancelUrl: '/pricing',
+})
+```
+
+## Roadmap
+
+- [x] Core authentication with NextAuth
+- [x] Multi-tenant data model
+- [x] Stripe billing integration
+- [x] Smart test strategy
+- [ ] Team collaboration features
+- [ ] Advanced analytics dashboard
+- [ ] Email notification system
+- [ ] Webhook management UI
+
+## Contributing
+
+Issues and pull requests are encouraged! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
+
+## Documentation
+
+- [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) – Module boundaries, data flow, and extension points
+- [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) – Production deployment playbook
+- [docs/TESTING.md](./docs/TESTING.md) – Testing strategy and guidelines
+- [CONTRIBUTING.md](./CONTRIBUTING.md) – Coding standards and PR checklist
+
+## License
+
+This project is MIT licensed. See [LICENSE](./LICENSE) for full details.
+
+## Legal
+
+- [Privacy Policy](https://vibebuildlab.com/privacy-policy)
+- [Terms of Service](https://vibebuildlab.com/terms)
+
+---
+
+> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)

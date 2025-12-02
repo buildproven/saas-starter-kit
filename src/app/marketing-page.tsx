@@ -546,12 +546,22 @@ export default function MarketingPage() {
               <h3 className="font-semibold mb-4">Legal</h3>
               <ul className="space-y-2 text-gray-400">
                 <li>
-                  <a href="/privacy" className="hover:text-white">
+                  <a
+                    href="https://vibebuildlab.com/privacy-policy"
+                    className="hover:text-white"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     Privacy Policy
                   </a>
                 </li>
                 <li>
-                  <a href="/terms" className="hover:text-white">
+                  <a
+                    href="https://vibebuildlab.com/terms"
+                    className="hover:text-white"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
                     Terms of Service
                   </a>
                 </li>
@@ -569,7 +579,8 @@ export default function MarketingPage() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 SaaS Starter. All rights reserved.</p>
+            <p>© 2025 Vibe Build Lab LLC. All rights reserved.</p>
+            <p>Vibe Build Lab LLC, c/o Northwest Registered Agent, WY.</p>
           </div>
         </div>
       </footer>

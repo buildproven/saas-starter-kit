@@ -35,33 +35,30 @@ This project uses multiple layers of automated security scanning:
 ## Manual Security Commands
 
 ```bash
-# Run all security checks
-npm run security:check
-
-# Check for secrets
-npm run security:secrets
-
-# Check dependencies
+# Check dependencies for vulnerabilities
 npm run security:audit
 
-# Fix dependency issues
-npm run security:audit:fix
+# Scan for hardcoded secrets
+npm run security:secrets
 
-# Generate security report
-npm run security:report
+# Validate security configuration
+npm run security:config
 ```
 
 ## Reporting Security Issues
 
-If you discover a security vulnerability:
+**Please do not report security vulnerabilities through public GitHub issues.**
 
-1. **DO NOT** create a public GitHub issue
-2. Email security reports to: [Your security email]
-3. Include:
-   - Description of the vulnerability
-   - Steps to reproduce
-   - Potential impact
-   - Suggested fix (if known)
+Instead, please report them via email to: **security@vibebuildlab.com**
+
+Include:
+
+- Description of the vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
+
+You should receive a response within 48 hours.
 
 ## Security Best Practices
 
@@ -69,7 +66,7 @@ If you discover a security vulnerability:
 
 - Never commit secrets, API keys, or passwords
 - Use environment variables for sensitive configuration
-- Run `npm run security:check` before pushing
+- Run `npm run security:audit` before pushing
 - Keep dependencies updated
 - Review security scanner output carefully
 
@@ -80,11 +77,11 @@ If you discover a security vulnerability:
 - Secrets stored in secure environment variables
 - Regular security audits in automated schedules
 
-## Security Contact
+## Legal
 
-For security-related questions: [Your contact information]
+- [Privacy Policy](https://vibebuildlab.com/privacy-policy)
+- [Terms of Service](https://vibebuildlab.com/terms)
 
-## Policy Updates
+---
 
-This security policy is reviewed and updated quarterly.
-Last updated: [Current date]
+> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)

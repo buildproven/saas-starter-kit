@@ -1,6 +1,6 @@
 #!/bin/bash
 # Smart Test Strategy - saas-starter-kit
-# Generated pattern from create-quality-automation
+# Generated pattern from create-qa-architect
 # https://www.aibuilderlab.com/cqa
 set -e
 
