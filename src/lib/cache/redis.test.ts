@@ -22,8 +22,8 @@ describe('RedisCache', () => {
     delete process.env.PRIVACY_MODE
 
     // Re-import fresh module
-    const module = await import('./redis')
-    RedisCache = module.RedisCache
+    const redisModule = await import('./redis')
+    RedisCache = redisModule.RedisCache
   })
 
   describe('initialization', () => {
