@@ -348,9 +348,9 @@ describe('Template sales smoke test', () => {
   beforeAll(async () => {
     process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000'
     process.env.STRIPE_SECRET_KEY = 'sk_test'
-    process.env.STRIPE_TEMPLATE_BASIC_PRICE_ID = 'price_basic'
+    process.env.STRIPE_TEMPLATE_HOBBY_PRICE_ID = 'price_hobby'
     process.env.STRIPE_TEMPLATE_PRO_PRICE_ID = 'price_pro'
-    process.env.STRIPE_TEMPLATE_ENTERPRISE_PRICE_ID = 'price_enterprise'
+    process.env.STRIPE_TEMPLATE_DIRECTOR_PRICE_ID = 'price_director'
     ;({ POST: checkoutPost, GET: checkoutVerify } = await import(
       '@/app/api/template-sales/checkout/route'
     ))

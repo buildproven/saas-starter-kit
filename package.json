@@ -9,7 +9,7 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test:coverage": "jest --coverage && node scripts/check-coverage.js",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
