@@ -202,5 +202,362 @@ describe('POST /api/webhooks/subscription', () => {
     expect(response.status).toBe(400)
     expect(json).toEqual({ error: 'Missing Stripe signature or secret' })
   })
+
+  it('handles subscription deleted event', async () => {
+    __constructEventMock.mockReturnValue({
+      id: 'evt_deleted',
+      type: 'customer.subscription.deleted',
+      data: {
+        object: {
+          id: 'sub_to_cancel',
+          cancel_at_period_end: false,
+        },
+      },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+    __prismaMock.subscription.update.mockResolvedValueOnce({})
+
+    const response = await POST(createRequest({}))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ received: true })
+    expect(__prismaMock.subscription.update).toHaveBeenCalledWith({
+      where: { subscriptionId: 'sub_to_cancel' },
+      data: { status: 'CANCELED', cancelAtPeriodEnd: false },
+    })
+  })
+
+  it('handles subscription deleted when update fails', async () => {
+    __constructEventMock.mockReturnValue({
+      id: 'evt_deleted_notfound',
+      type: 'customer.subscription.deleted',
+      data: {
+        object: {
+          id: 'sub_nonexistent',
+          cancel_at_period_end: true,
+        },
+      },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+    __prismaMock.subscription.update.mockRejectedValueOnce(new Error('Not found'))
+
+    const response = await POST(createRequest({}))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ received: true })
+  })
+
+  it('handles invoice payment success', async () => {
+    __constructEventMock.mockReturnValue({
+      id: 'evt_invoice_paid',
+      type: 'invoice.payment_succeeded',
+      data: {
+        object: {
+          id: 'in_123',
+          subscription: 'sub_paid',
+        },
+      },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+    __updateSubscriptionMock.mockResolvedValueOnce({})
+
+    const response = await POST(createRequest({}))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ received: true })
+    expect(__updateSubscriptionMock).toHaveBeenCalledWith('sub_paid', { status: 'ACTIVE' })
+  })
+
+  it('handles invoice payment success when subscription update fails', async () => {
+    __constructEventMock.mockReturnValue({
+      id: 'evt_invoice_paid_err',
+      type: 'invoice.payment_succeeded',
+      data: {
+        object: {
+          id: 'in_err',
+          subscription: 'sub_err',
+        },
+      },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+    __updateSubscriptionMock.mockRejectedValueOnce(new Error('Update failed'))
+
+    const response = await POST(createRequest({}))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ received: true })
+  })
+
+  it('handles invoice without subscription', async () => {
+    __constructEventMock.mockReturnValue({
+      id: 'evt_invoice_nosub',
+      type: 'invoice.payment_succeeded',
+      data: {
+        object: {
+          id: 'in_no_sub',
+          subscription: null,
+        },
+      },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+
+    const response = await POST(createRequest({}))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ received: true })
+    expect(__updateSubscriptionMock).not.toHaveBeenCalled()
+  })
+
+  it('handles invoice payment failed when subscription update fails', async () => {
+    __constructEventMock.mockReturnValue({
+      id: 'evt_invoice_failed_err',
+      type: 'invoice.payment_failed',
+      data: {
+        object: {
+          id: 'in_failed_err',
+          subscription: 'sub_failed_err',
+        },
+      },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+    __updateSubscriptionMock.mockRejectedValueOnce(new Error('Update failed'))
+
+    const response = await POST(createRequest({}))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ received: true })
+  })
+
+  it('handles unhandled event type', async () => {
+    __constructEventMock.mockReturnValue({
+      id: 'evt_unknown',
+      type: 'charge.succeeded',
+      data: { object: {} },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+
+    const response = await POST(createRequest({}))
+    const json = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(json).toEqual({ received: true })
+  })
+
+  it('looks up organization from customer when metadata is missing', async () => {
+    const subscription = {
+      id: 'sub_no_meta',
+      status: 'active',
+      items: { data: [{ price: { id: 'price_xyz' } }] },
+      customer: 'cus_customer',
+      current_period_start: 1710000000,
+      current_period_end: 1710600000,
+      cancel_at_period_end: false,
+      metadata: {},
+    }
+
+    __constructEventMock.mockReturnValue({
+      id: 'evt_no_meta',
+      type: 'customer.subscription.created',
+      data: { object: subscription },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+    __prismaMock.plan.findUnique.mockResolvedValueOnce({ id: 'plan_1' })
+    __prismaMock.subscription.findUnique.mockResolvedValueOnce(null)
+    __prismaMock.subscription.findFirst.mockResolvedValueOnce({ organizationId: 'org_from_customer' })
+    __prismaMock.subscription.upsert.mockResolvedValueOnce({})
+
+    const response = await POST(createRequest({}))
+
+    expect(response.status).toBe(200)
+    expect(__prismaMock.subscription.findFirst).toHaveBeenCalledWith({
+      where: { customerId: 'cus_customer' },
+      select: { organizationId: true },
+    })
+  })
+
+  it('skips upsert when organization cannot be resolved', async () => {
+    // Reset all mocks to ensure clean state (clears implementations too)
+    __prismaMock.subscription.findFirst.mockReset()
+    __prismaMock.subscription.findUnique.mockReset()
+    __prismaMock.subscription.upsert.mockReset()
+
+    const subscription = {
+      id: 'sub_no_org',
+      status: 'active',
+      items: { data: [{ price: { id: 'price_xyz' } }] },
+      customer: 'cus_unknown',
+      current_period_start: 1710000000,
+      current_period_end: 1710600000,
+      cancel_at_period_end: false,
+      metadata: {},
+    }
+
+    __constructEventMock.mockReturnValue({
+      id: 'evt_no_org',
+      type: 'customer.subscription.created',
+      data: { object: subscription },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+    __prismaMock.plan.findUnique.mockResolvedValueOnce({ id: 'plan_1' })
+    __prismaMock.subscription.findUnique.mockResolvedValue(null)
+    __prismaMock.subscription.findFirst.mockResolvedValue(null)
+
+    const response = await POST(createRequest({}))
+
+    expect(response.status).toBe(200)
+    // When org cannot be resolved, upsert should not be called
+    expect(__prismaMock.subscription.upsert).not.toHaveBeenCalled()
+  })
+
+  it('handles subscription with string price', async () => {
+    const subscription = {
+      id: 'sub_str_price',
+      status: 'trialing',
+      items: { data: [{ price: 'price_string' }] },
+      customer: { id: 'cus_obj' },
+      current_period_start: 1710000000,
+      current_period_end: 1710600000,
+      cancel_at_period_end: true,
+      metadata: { organizationId: 'org_str' },
+    }
+
+    __constructEventMock.mockReturnValue({
+      id: 'evt_str_price',
+      type: 'customer.subscription.updated',
+      data: { object: subscription },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+    __prismaMock.plan.findUnique.mockResolvedValueOnce({ id: 'plan_1' })
+    __prismaMock.subscription.upsert.mockResolvedValueOnce({})
+
+    const response = await POST(createRequest({}))
+
+    expect(response.status).toBe(200)
+    const upsertCall = __prismaMock.subscription.upsert.mock.calls[0][0]
+    expect(upsertCall.create.priceId).toBe('price_string')
+  })
+
+  it('handles subscription without price', async () => {
+    const subscription = {
+      id: 'sub_no_price',
+      status: 'active',
+      items: { data: [] },
+      customer: 'cus_no_price',
+      current_period_start: 1710000000,
+      current_period_end: 1710600000,
+      cancel_at_period_end: false,
+      metadata: { organizationId: 'org_no_price' },
+    }
+
+    __constructEventMock.mockReturnValue({
+      id: 'evt_no_price',
+      type: 'customer.subscription.created',
+      data: { object: subscription },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+
+    const response = await POST(createRequest({}))
+
+    expect(response.status).toBe(200)
+    expect(__prismaMock.subscription.upsert).not.toHaveBeenCalled()
+  })
+
+  it('maps various subscription statuses correctly', async () => {
+    const testStatuses = [
+      { input: 'incomplete', expected: 'INCOMPLETE' },
+      { input: 'incomplete_expired', expected: 'INCOMPLETE_EXPIRED' },
+      { input: 'trialing', expected: 'TRIALING' },
+      { input: 'active', expected: 'ACTIVE' },
+      { input: 'past_due', expected: 'PAST_DUE' },
+      { input: 'canceled', expected: 'CANCELED' },
+      { input: 'unpaid', expected: 'UNPAID' },
+      { input: 'unknown', expected: 'INCOMPLETE' },
+    ]
+
+    for (const { input, expected } of testStatuses) {
+      __prismaMock.subscription.upsert.mockClear()
+
+      const subscription = {
+        id: `sub_status_${input}`,
+        status: input,
+        items: { data: [{ price: { id: 'price_test' } }] },
+        customer: 'cus_status',
+        current_period_start: 1710000000,
+        current_period_end: 1710600000,
+        cancel_at_period_end: false,
+        metadata: { organizationId: 'org_status' },
+      }
+
+      __constructEventMock.mockReturnValue({
+        id: `evt_status_${input}`,
+        type: 'customer.subscription.created',
+        data: { object: subscription },
+      })
+      __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+      __prismaMock.plan.findUnique.mockResolvedValueOnce({ id: 'plan_1' })
+      __prismaMock.subscription.upsert.mockResolvedValueOnce({})
+
+      await POST(createRequest({}))
+
+      const upsertCall = __prismaMock.subscription.upsert.mock.calls[0][0]
+      expect(upsertCall.create.status).toBe(expected)
+    }
+  })
+
+  it('returns 500 on processing error', async () => {
+    __constructEventMock.mockReturnValue({
+      id: 'evt_error',
+      type: 'customer.subscription.created',
+      data: {
+        object: {
+          id: 'sub_error',
+          status: 'active',
+          items: { data: [{ price: { id: 'price_err' } }] },
+          customer: 'cus_err',
+          current_period_start: 1710000000,
+          current_period_end: 1710600000,
+          metadata: { organizationId: 'org_err' },
+        },
+      },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
+    __prismaMock.plan.findUnique.mockResolvedValueOnce({ id: 'plan_1' })
+    __prismaMock.subscription.upsert.mockRejectedValueOnce(new Error('DB crashed'))
+
+    const response = await POST(createRequest({}))
+    const json = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(json).toEqual({ error: 'Webhook processing failed' })
+  })
+
+  it('handles stripeWebhookEvent create throwing non-P2002 error', async () => {
+    __constructEventMock.mockReturnValue({
+      id: 'evt_throw',
+      type: 'customer.subscription.created',
+      data: {
+        object: {
+          id: 'sub_throw',
+          status: 'active',
+          items: { data: [{ price: { id: 'price_throw' } }] },
+          customer: 'cus_throw',
+          current_period_start: 1710000000,
+          current_period_end: 1710600000,
+          metadata: { organizationId: 'org_throw' },
+        },
+      },
+    })
+    __prismaMock.stripeWebhookEvent.create.mockRejectedValueOnce(new Error('Connection lost'))
+
+    const response = await POST(createRequest({}))
+
+    expect(response.status).toBe(500)
+  })
 })
 import type { NextRequest } from 'next/server'

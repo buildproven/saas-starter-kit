@@ -2,7 +2,7 @@ import { renderHook } from '@testing-library/react'
 import { useSession } from 'next-auth/react'
 import type { Session } from 'next-auth'
 import type { SessionContextValue } from 'next-auth/react'
-import { useAuth, usePermissions } from '../useAuth'
+import { useAuth, usePermissions, useOrganizationPermissions } from '../useAuth'
 
 // Mock next-auth
 jest.mock('next-auth/react')
@@ -228,5 +228,101 @@ describe('usePermissions', () => {
     expect(result.current.canAccessSuperAdmin()).toBe(false)
     expect(result.current.canDeleteUsers()).toBe(false)
     expect(result.current.canModifySystemSettings()).toBe(false)
+  })
+})
+
+describe('useOrganizationPermissions', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('should return false for membership when not authenticated', () => {
+    mockUseSession.mockReturnValue(asStatus('unauthenticated'))
+
+    const { result } = renderHook(() => useOrganizationPermissions('org_123'))
+
+    expect(result.current.isOrganizationMember).toBe(false)
+    expect(result.current.organizationRole).toBeNull()
+  })
+
+  it('should return false when no organization ID provided', () => {
+    const mockSession: Session = {
+      user: {
+        id: '1',
+        email: 'user@example.com',
+        role: 'USER',
+      },
+      expires: '2025-01-01T00:00:00.000Z',
+    }
+
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+
+    const { result } = renderHook(() => useOrganizationPermissions())
+
+    expect(result.current.isOrganizationMember).toBe(false)
+    expect(result.current.organizationRole).toBeNull()
+  })
+
+  it('should return membership for authenticated user with org ID', () => {
+    const mockSession: Session = {
+      user: {
+        id: '1',
+        email: 'user@example.com',
+        role: 'USER',
+      },
+      expires: '2025-01-01T00:00:00.000Z',
+    }
+
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+
+    const { result } = renderHook(() => useOrganizationPermissions('org_123'))
+
+    expect(result.current.isOrganizationMember).toBe(true)
+    expect(result.current.organizationRole).toBe('MEMBER')
+  })
+
+  it('should provide correct organization permissions for member role', () => {
+    const mockSession: Session = {
+      user: {
+        id: '1',
+        email: 'user@example.com',
+        role: 'USER',
+      },
+      expires: '2025-01-01T00:00:00.000Z',
+    }
+
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+
+    const { result } = renderHook(() => useOrganizationPermissions('org_123'))
+
+    // MEMBER role - the default role in the hook
+    expect(result.current.canEditOrganization).toBe(false)
+    expect(result.current.canInviteMembers).toBe(false)
+    expect(result.current.canViewBilling).toBe(false)
+    expect(result.current.canDeleteOrganization).toBe(false)
+  })
+
+  it('should update when organization ID changes', () => {
+    const mockSession: Session = {
+      user: {
+        id: '1',
+        email: 'user@example.com',
+        role: 'USER',
+      },
+      expires: '2025-01-01T00:00:00.000Z',
+    }
+
+    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+
+    const { result, rerender } = renderHook(
+      ({ orgId }) => useOrganizationPermissions(orgId),
+      { initialProps: { orgId: 'org_123' } }
+    )
+
+    expect(result.current.isOrganizationMember).toBe(true)
+
+    // Change to undefined
+    rerender({ orgId: undefined })
+    expect(result.current.isOrganizationMember).toBe(false)
   })
 })
