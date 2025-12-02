@@ -45,5 +45,15 @@
     "jest.config.js",
     "jest.setup.js"
   ],
-  "exclude": ["node_modules", ".next", "out", "dist", "build", "examples"]
+  "exclude": [
+    "node_modules",
+    ".next",
+    "out",
+    "dist",
+    "build",
+    "examples",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/__tests__/**"
+  ]
 }
