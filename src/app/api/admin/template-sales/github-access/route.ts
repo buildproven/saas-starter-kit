@@ -80,12 +80,12 @@ async function postHandler(request: NextRequest, { user }: AuthContext): Promise
     }
 
     let invitationResult: Awaited<ReturnType<typeof grantGitHubAccess>> | null = null
-    const shouldRetry = parsed.retry !== false && sale.package !== 'basic'
+    const shouldRetry = parsed.retry !== false && sale.package !== 'hobby'
 
     if (shouldRetry) {
       invitationResult = await grantGitHubAccess({
         email: customerEmail,
-        package: sale.package as 'basic' | 'pro' | 'enterprise',
+        package: sale.package as 'hobby' | 'pro' | 'director',
         saleId: sale.id,
         githubUsername: normalizedUsername,
       })

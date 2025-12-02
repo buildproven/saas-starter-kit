@@ -18,10 +18,9 @@ import { Check, Star, ArrowRight, Code, Zap, Shield } from 'lucide-react'
 
 const packages = [
   {
-    id: 'basic',
-    name: 'Basic Template',
-    price: '$299',
-    originalPrice: '$499',
+    id: 'hobby',
+    name: 'Hobby',
+    price: '$99',
     description: 'Perfect for solo developers and small projects',
     features: [
       'Complete Next.js 14 SaaS template',
@@ -29,47 +28,40 @@ const packages = [
       'Multi-tenant architecture',
       'Basic Stripe billing integration',
       'Comprehensive documentation',
-      'Email support for 30 days',
+      'Community support',
       'Lifetime updates',
     ],
     popular: false,
-    badge: 'Best Value',
+    badge: 'Starter',
   },
   {
     id: 'pro',
-    name: 'Pro Template',
-    price: '$599',
-    originalPrice: '$999',
+    name: 'Pro',
+    price: '$249',
     description: 'For serious developers and growing teams',
     features: [
-      'Everything in Basic',
-      'Advanced billing & subscription features',
-      'White-label customization guide',
+      'Everything in Hobby',
+      'White-label customization rights',
       'Video tutorials & walkthroughs',
-      'Priority support for 90 days',
-      '1-hour consultation call',
-      'Custom deployment assistance',
+      'Priority email support',
+      'GitHub repository access',
     ],
     popular: true,
     badge: 'Most Popular',
   },
   {
-    id: 'enterprise',
-    name: 'Enterprise Package',
-    price: '$1,499',
-    originalPrice: '$2,999',
-    description: 'For teams and enterprises',
+    id: 'director',
+    name: 'Director',
+    price: '$399',
+    description: 'For founders who want extra support',
     features: [
       'Everything in Pro',
-      'Custom deployment & setup',
-      'Team training session (2 hours)',
-      'Extended support (6 months)',
-      'Custom integrations assistance',
-      'Source code modifications',
-      'Dedicated Slack channel',
+      '3 months Vibe Lab Pro access',
+      '1-hour consultation call',
+      'Priority support',
     ],
     popular: false,
-    badge: 'Enterprise',
+    badge: 'Premium',
   },
 ]
 
@@ -147,7 +139,7 @@ export default function TemplatePurchasePage() {
         <div className="text-center mb-12">
           <Badge className="mb-4" variant="secondary">
             <Star className="w-4 h-4 mr-1" />
-            Limited Time Offer - 40% Off
+            Production-Ready SaaS Foundation
           </Badge>
           <h1 className="text-4xl md:text-5xl font-bold mb-4">Get Your SaaS Template</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -181,7 +173,6 @@ export default function TemplatePurchasePage() {
                 <div className="mt-4">
                   <div className="flex items-center justify-center gap-2">
                     <span className="text-3xl font-bold text-blue-600">{pkg.price}</span>
-                    <span className="text-lg text-gray-400 line-through">{pkg.originalPrice}</span>
                   </div>
                   <p className="text-sm text-gray-500 mt-1">One-time payment</p>
                 </div>

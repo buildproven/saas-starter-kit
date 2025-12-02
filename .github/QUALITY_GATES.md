@@ -44,7 +44,7 @@ npm test                  # Run all tests
 npm run build             # Verify build works
 
 # Quality automation
-npx create-quality-automation@latest  # Apply org standards
+npx create-qa-architect@latest  # Apply org standards
 ```
 
 ## 📋 Current Enforcement

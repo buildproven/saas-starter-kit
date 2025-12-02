@@ -9,7 +9,7 @@ import { Octokit } from '@octokit/rest'
 
 interface GitHubAccessParams {
   email: string
-  package: 'basic' | 'pro' | 'enterprise'
+  package: 'hobby' | 'pro' | 'director'
   saleId: string
   githubUsername?: string | null
 }
@@ -32,8 +32,8 @@ export async function grantGitHubAccess(params: GitHubAccessParams): Promise<Git
   const { email, package: packageType, saleId } = params
   const normalizedUsername = normalizeGithubUsername(params.githubUsername)
 
-  // Basic tier doesn't get private repo access
-  if (packageType === 'basic') {
+  // Hobby tier doesn't get private repo access
+  if (packageType === 'hobby') {
     return {
       success: true, // Not an error, just no private access needed
     }
@@ -112,11 +112,11 @@ function getAccessConfiguration(packageType: string) {
       repositories: ['saas-starter-premium'],
       permissions: ['pull'],
     },
-    enterprise: {
-      teamSlug: 'saas-starter-enterprise',
+    director: {
+      teamSlug: 'saas-starter-director',
       role: 'member' as const,
-      repositories: ['saas-starter-premium', 'saas-starter-enterprise'],
-      permissions: ['pull', 'triage'],
+      repositories: ['saas-starter-premium'],
+      permissions: ['pull'],
     },
   }
 

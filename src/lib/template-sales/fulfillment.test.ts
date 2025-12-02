@@ -154,7 +154,7 @@ describe('fulfillTemplateSale', () => {
       fulfillTemplateSale({
         sessionId: 'missing',
         customerEmail: 'buyer@example.com',
-        package: 'basic',
+        package: 'hobby',
       })
     ).rejects.toThrow('Sale record not found')
   })
@@ -171,7 +171,7 @@ describe('fulfillTemplateSale', () => {
       fulfillTemplateSale({
         sessionId: 'sess_1',
         customerEmail: 'buyer@example.com',
-        package: 'basic',
+        package: 'hobby',
       })
     ).rejects.toThrow('Template already delivered')
   })

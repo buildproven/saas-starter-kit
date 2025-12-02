@@ -3,9 +3,10 @@
     "next/core-web-vitals",
     "plugin:@typescript-eslint/recommended",
     "plugin:jest/recommended",
+    "plugin:security/recommended-legacy",
     "prettier"
   ],
-  "plugins": ["@typescript-eslint", "jest", "react-hooks"],
+  "plugins": ["@typescript-eslint", "jest", "react-hooks", "security"],
   "ignorePatterns": ["examples/**/*", "scripts/**/*", "jest.setup.ts"],
   "rules": {
     "react-hooks/rules-of-hooks": "error",
