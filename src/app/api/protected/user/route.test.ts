@@ -2,8 +2,8 @@
  * Tests for Protected User API Routes
  */
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -15,7 +15,7 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('@/lib/auth/api-protection', () => ({
+vi.mock('@/lib/auth/api-protection', () => ({
   withUserAuth: (handler: (req: unknown, ctx: { user: unknown }) => unknown) => {
     return async (request: unknown) => {
       const mockUser = (request as { _mockUser?: unknown })._mockUser
@@ -42,7 +42,7 @@ describe('Protected User API', () => {
 
   const createRequest = (body?: object, user?: unknown) => {
     return {
-      json: jest.fn().mockResolvedValue(body || {}),
+      json: vi.fn().mockResolvedValue(body || {}),
       _mockUser: user,
     } as unknown
   }

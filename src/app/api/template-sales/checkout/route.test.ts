@@ -2,8 +2,8 @@
  * Tests for Template Sales Checkout API Routes
  */
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -15,37 +15,37 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('@/lib/stripe', () => ({
-  getStripeClient: jest.fn(() => ({
+vi.mock('@/lib/stripe', () => ({
+  getStripeClient: vi.fn(() => ({
     checkout: {
       sessions: {
-        create: jest.fn(),
-        retrieve: jest.fn(),
+        create: vi.fn(),
+        retrieve: vi.fn(),
       },
     },
   })),
 }))
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     templateSale: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
     },
   },
 }))
 
-jest.mock('@/lib/error-logging', () => ({
-  logError: jest.fn(),
+vi.mock('@/lib/error-logging', () => ({
+  logError: vi.fn(),
   ErrorType: {
     PAYMENT: 'payment',
     SYSTEM: 'system',
   },
 }))
 
-jest.mock('@/lib/template-sales/fulfillment', () => ({
-  fulfillTemplateSale: jest.fn(),
+vi.mock('@/lib/template-sales/fulfillment', () => ({
+  fulfillTemplateSale: vi.fn(),
 }))
 
 import { NextRequest } from 'next/server'
@@ -54,9 +54,9 @@ import { prisma } from '@/lib/prisma'
 import { fulfillTemplateSale } from '@/lib/template-sales/fulfillment'
 import { POST, GET } from './route'
 
-const mockStripe = getStripeClient as jest.Mock
-const mockPrisma = prisma as jest.Mocked<typeof prisma>
-const mockFulfillTemplateSale = fulfillTemplateSale as jest.Mock
+const mockStripe = getStripeClient as vi.Mock
+const mockPrisma = prisma as vi.Mocked<typeof prisma>
+const mockFulfillTemplateSale = fulfillTemplateSale as vi.Mock
 
 describe('Template Sales Checkout API', () => {
   const originalEnv = process.env
@@ -64,14 +64,14 @@ describe('Template Sales Checkout API', () => {
   const mockStripeClient = {
     checkout: {
       sessions: {
-        create: jest.fn(),
-        retrieve: jest.fn(),
+        create: vi.fn(),
+        retrieve: vi.fn(),
       },
     },
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockStripe.mockReturnValue(mockStripeClient)
     process.env = {
       ...originalEnv,
@@ -89,7 +89,7 @@ describe('Template Sales Checkout API', () => {
 
   const createRequest = (body?: object, url?: string): NextRequest => {
     return {
-      json: jest.fn().mockResolvedValue(body || {}),
+      json: vi.fn().mockResolvedValue(body || {}),
       url: url || 'https://example.com/api/template-sales/checkout',
     } as unknown as NextRequest
   }

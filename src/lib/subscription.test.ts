@@ -1,26 +1,26 @@
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     subscription: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
     },
     organizationMember: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
     project: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
     apiKey: {
-      count: jest.fn(),
+      count: vi.fn(),
     },
     usageRecord: {
-      aggregate: jest.fn(),
-      create: jest.fn(),
+      aggregate: vi.fn(),
+      create: vi.fn(),
     },
     plan: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
     },
   },
 }))
@@ -29,16 +29,16 @@ import { SubscriptionService, PLAN_CONFIGS } from './subscription'
 import { prisma } from '@/lib/prisma'
 
 // Type-safe mock accessors
-const subMock = prisma.subscription as { findUnique: jest.Mock; create: jest.Mock; update: jest.Mock }
-const memberMock = prisma.organizationMember as { count: jest.Mock }
-const projectMock = prisma.project as { count: jest.Mock }
-const apiKeyMock = prisma.apiKey as { count: jest.Mock }
-const usageMock = prisma.usageRecord as { aggregate: jest.Mock; create: jest.Mock }
-const planMock = prisma.plan as { findMany: jest.Mock; findUnique: jest.Mock }
+const subMock = prisma.subscription as { findUnique: vi.Mock; create: vi.Mock; update: vi.Mock }
+const memberMock = prisma.organizationMember as { count: vi.Mock }
+const projectMock = prisma.project as { count: vi.Mock }
+const apiKeyMock = prisma.apiKey as { count: vi.Mock }
+const usageMock = prisma.usageRecord as { aggregate: vi.Mock; create: vi.Mock }
+const planMock = prisma.plan as { findMany: vi.Mock; findUnique: vi.Mock }
 
 describe('SubscriptionService', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('PLAN_CONFIGS', () => {

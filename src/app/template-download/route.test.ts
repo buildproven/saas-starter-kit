@@ -1,36 +1,37 @@
 import { GET, __setTemplateFilesProviderForTesting } from './route'
 import type { NextRequest } from 'next/server'
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     templateSaleCustomer: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     templateDownloadAudit: {
-      create: jest.fn(),
+      create: vi.fn(),
     },
   },
 }))
 
-jest.mock('@/lib/error-logging', () => ({
-  logError: jest.fn(),
+vi.mock('@/lib/error-logging', () => ({
+  logError: vi.fn(),
   ErrorType: { SYSTEM: 'SYSTEM' },
   ErrorSeverity: { MEDIUM: 'MEDIUM' },
 }))
 
-jest.mock('@/lib/auth/api-protection', () => ({
-  rateLimit: jest.fn(),
+vi.mock('@/lib/auth/api-protection', () => ({
+  rateLimit: vi.fn(),
 }))
 
-const { prisma } = jest.requireMock('@/lib/prisma') as {
+import { prisma } from '@/lib/prisma'
+const _prismaMock = prisma as {
   prisma: {
-    templateSaleCustomer: { findUnique: jest.Mock }
-    templateDownloadAudit: { create: jest.Mock }
+    templateSaleCustomer: { findUnique: vi.Mock }
+    templateDownloadAudit: { create: vi.Mock }
   }
 }
 
-const { rateLimit } = jest.requireMock('@/lib/auth/api-protection') as {
-  rateLimit: jest.Mock
+const { rateLimit } = vi.mocked('@/lib/auth/api-protection') as {
+  rateLimit: vi.Mock
 }
 
 const createRequest = (token: string, format: 'zip' | 'tar' = 'zip'): NextRequest => {
@@ -45,7 +46,7 @@ const createRequest = (token: string, format: 'zip' | 'tar' = 'zip'): NextReques
 }
 
 beforeEach(() => {
-  jest.clearAllMocks()
+  vi.clearAllMocks()
   __setTemplateFilesProviderForTesting()
 })
 
@@ -102,7 +103,7 @@ describe('/template-download rate limiting and audit', () => {
     )
   })
 })
-jest.mock('next/server', () => {
+vi.mock('next/server', () => {
   class MockNextResponse {
     body: unknown
     status: number
@@ -122,8 +123,8 @@ jest.mock('next/server', () => {
     }
   }
 
-  const json = jest.fn((data: unknown, init: { status?: number } = {}) => ({
-    json: jest.fn().mockResolvedValue(data),
+  const json = vi.fn((data: unknown, init: { status?: number } = {}) => ({
+    json: vi.fn().mockResolvedValue(data),
     status: init.status ?? 200,
     headers: new Map<string, string>(),
   }))

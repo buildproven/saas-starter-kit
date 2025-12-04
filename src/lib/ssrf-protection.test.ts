@@ -5,16 +5,16 @@
 import { ssrfProtection } from './ssrf-protection'
 
 // Mock dns module
-jest.mock('dns', () => ({
+vi.mock('dns', () => ({
   promises: {
-    resolve4: jest.fn(),
-    resolve6: jest.fn(),
+    resolve4: vi.fn(),
+    resolve6: vi.fn(),
   },
 }))
 
 describe('SSRFProtection', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     process.env.NODE_ENV = 'test'
   })
 
@@ -87,7 +87,7 @@ describe('SSRFProtection', () => {
 
     it('rejects domains resolving to private IPs', async () => {
       const dns = await import('dns').then((m) => m.promises)
-      ;(dns.resolve4 as jest.Mock).mockResolvedValueOnce(['10.0.0.1'])
+      ;(dns.resolve4 as vi.Mock).mockResolvedValueOnce(['10.0.0.1'])
 
       const result = await ssrfProtection.validateUrl('http://internal.example.com')
 
@@ -97,7 +97,7 @@ describe('SSRFProtection', () => {
 
     it('rejects 192.168.x.x addresses', async () => {
       const dns = await import('dns').then((m) => m.promises)
-      ;(dns.resolve4 as jest.Mock).mockResolvedValueOnce(['192.168.1.1'])
+      ;(dns.resolve4 as vi.Mock).mockResolvedValueOnce(['192.168.1.1'])
 
       const result = await ssrfProtection.validateUrl('http://router.local')
 
@@ -106,7 +106,7 @@ describe('SSRFProtection', () => {
 
     it('rejects 172.16-31.x.x addresses', async () => {
       const dns = await import('dns').then((m) => m.promises)
-      ;(dns.resolve4 as jest.Mock).mockResolvedValueOnce(['172.20.0.1'])
+      ;(dns.resolve4 as vi.Mock).mockResolvedValueOnce(['172.20.0.1'])
 
       const result = await ssrfProtection.validateUrl('http://internal.network')
 
@@ -115,8 +115,8 @@ describe('SSRFProtection', () => {
 
     it('handles DNS resolution failure', async () => {
       const dns = await import('dns').then((m) => m.promises)
-      ;(dns.resolve4 as jest.Mock).mockRejectedValueOnce(new Error('NXDOMAIN'))
-      ;(dns.resolve6 as jest.Mock).mockRejectedValueOnce(new Error('NXDOMAIN'))
+      ;(dns.resolve4 as vi.Mock).mockRejectedValueOnce(new Error('NXDOMAIN'))
+      ;(dns.resolve6 as vi.Mock).mockRejectedValueOnce(new Error('NXDOMAIN'))
 
       const result = await ssrfProtection.validateUrl('http://nonexistent.domain')
 
@@ -126,7 +126,7 @@ describe('SSRFProtection', () => {
 
     it('allows valid public URLs when DNS resolves to public IP', async () => {
       const dns = await import('dns').then((m) => m.promises)
-      ;(dns.resolve4 as jest.Mock).mockResolvedValueOnce(['93.184.216.34'])
+      ;(dns.resolve4 as vi.Mock).mockResolvedValueOnce(['93.184.216.34'])
 
       const result = await ssrfProtection.validateUrl('https://example.com')
 

@@ -5,8 +5,8 @@
 import { GET, POST } from './route'
 import type { NextRequest } from 'next/server'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -18,31 +18,31 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('next-auth/next', () => ({
-  getServerSession: jest.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }))
 
-jest.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     organization: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     project: {
-      findMany: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
     },
   },
 }))
 
-jest.mock('@/lib/subscription', () => ({
+vi.mock('@/lib/subscription', () => ({
   SubscriptionService: {
-    canPerformAction: jest.fn(),
-    getPlanFeatures: jest.fn(),
+    canPerformAction: vi.fn(),
+    getPlanFeatures: vi.fn(),
   },
 }))
 
@@ -50,13 +50,13 @@ import { getServerSession } from 'next-auth/next'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 
-const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
-const mockPrismaOrgFindUnique = prisma.organization.findUnique as jest.Mock
-const mockPrismaProjectFindMany = prisma.project.findMany as jest.Mock
-const mockPrismaProjectCount = prisma.project.count as jest.Mock
-const mockPrismaProjectCreate = prisma.project.create as jest.Mock
-const mockCanPerformAction = SubscriptionService.canPerformAction as jest.Mock
-const mockGetPlanFeatures = SubscriptionService.getPlanFeatures as jest.Mock
+const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockPrismaOrgFindUnique = prisma.organization.findUnique as vi.Mock
+const mockPrismaProjectFindMany = prisma.project.findMany as vi.Mock
+const mockPrismaProjectCount = prisma.project.count as vi.Mock
+const mockPrismaProjectCreate = prisma.project.create as vi.Mock
+const mockCanPerformAction = SubscriptionService.canPerformAction as vi.Mock
+const mockGetPlanFeatures = SubscriptionService.getPlanFeatures as vi.Mock
 
 describe('GET /api/projects', () => {
   const createRequest = (params: Record<string, string> = {}): NextRequest => {
@@ -66,7 +66,7 @@ describe('GET /api/projects', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -158,7 +158,7 @@ describe('GET /api/projects', () => {
     })
     mockPrismaProjectFindMany.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
     const response = await GET(createRequest())
     const json = await response.json()
 
@@ -172,11 +172,11 @@ describe('GET /api/projects', () => {
 describe('POST /api/projects', () => {
   const createRequest = (body: Record<string, unknown>): NextRequest =>
     ({
-      json: jest.fn().mockResolvedValue(body),
+      json: vi.fn().mockResolvedValue(body),
     }) as unknown as NextRequest
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {

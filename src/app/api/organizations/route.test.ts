@@ -5,8 +5,8 @@
 import { GET, POST } from './route'
 import type { NextRequest } from 'next/server'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -18,20 +18,20 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('next-auth/next', () => ({
-  getServerSession: jest.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }))
 
-jest.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     organization: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      create: jest.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      create: vi.fn(),
     },
   },
 }))
@@ -39,14 +39,14 @@ jest.mock('@/lib/prisma', () => ({
 import { getServerSession } from 'next-auth/next'
 import { prisma } from '@/lib/prisma'
 
-const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
-const mockPrismaOrgFindMany = prisma.organization.findMany as jest.Mock
-const mockPrismaOrgFindUnique = prisma.organization.findUnique as jest.Mock
-const mockPrismaOrgCreate = prisma.organization.create as jest.Mock
+const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockPrismaOrgFindMany = prisma.organization.findMany as vi.Mock
+const mockPrismaOrgFindUnique = prisma.organization.findUnique as vi.Mock
+const mockPrismaOrgCreate = prisma.organization.create as vi.Mock
 
 describe('GET /api/organizations', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -117,7 +117,7 @@ describe('GET /api/organizations', () => {
     })
     mockPrismaOrgFindMany.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
     const response = await GET()
     const json = await response.json()
 
@@ -131,11 +131,11 @@ describe('GET /api/organizations', () => {
 describe('POST /api/organizations', () => {
   const createRequest = (body: Record<string, unknown>): NextRequest =>
     ({
-      json: jest.fn().mockResolvedValue(body),
+      json: vi.fn().mockResolvedValue(body),
     }) as unknown as NextRequest
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -232,7 +232,7 @@ describe('POST /api/organizations', () => {
     mockPrismaOrgFindUnique.mockResolvedValueOnce(null)
     mockPrismaOrgCreate.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
     const response = await POST(
       createRequest({
         name: 'New Org',

@@ -5,8 +5,8 @@
 import { POST } from './route'
 import type { NextRequest } from 'next/server'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -18,12 +18,12 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('@/lib/template-sales/fulfillment', () => ({
-  fulfillTemplateSale: jest.fn(),
+vi.mock('@/lib/template-sales/fulfillment', () => ({
+  fulfillTemplateSale: vi.fn(),
 }))
 
-jest.mock('@/lib/error-logging', () => ({
-  logError: jest.fn(),
+vi.mock('@/lib/error-logging', () => ({
+  logError: vi.fn(),
   ErrorType: {
     SYSTEM: 'system',
   },
@@ -31,7 +31,7 @@ jest.mock('@/lib/error-logging', () => ({
 
 import { fulfillTemplateSale } from '@/lib/template-sales/fulfillment'
 
-const mockFulfillTemplateSale = fulfillTemplateSale as jest.MockedFunction<
+const mockFulfillTemplateSale = fulfillTemplateSale as vi.MockedFunction<
   typeof fulfillTemplateSale
 >
 
@@ -42,7 +42,7 @@ describe('POST /api/template-sales/fulfill', () => {
   ): NextRequest => {
     const headerMap = new Map(Object.entries(headers))
     return {
-      json: jest.fn().mockResolvedValue(body),
+      json: vi.fn().mockResolvedValue(body),
       headers: {
         get: (key: string) => headerMap.get(key) || null,
       },
@@ -50,7 +50,7 @@ describe('POST /api/template-sales/fulfill', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     process.env.TEMPLATE_FULFILLMENT_SECRET = 'test_secret'
   })
 

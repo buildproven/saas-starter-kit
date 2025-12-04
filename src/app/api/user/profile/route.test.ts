@@ -5,8 +5,8 @@
 import { GET, PUT, DELETE } from './route'
 import type { NextRequest } from 'next/server'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -18,28 +18,28 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('next-auth/next', () => ({
-  getServerSession: jest.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }))
 
-jest.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
     organization: {
-      findMany: jest.fn(),
-      count: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
     },
     organizationMember: {
-      deleteMany: jest.fn(),
+      deleteMany: vi.fn(),
     },
   },
 }))
@@ -47,18 +47,18 @@ jest.mock('@/lib/prisma', () => ({
 import { getServerSession } from 'next-auth/next'
 import { prisma } from '@/lib/prisma'
 
-const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
-const mockPrismaUserFindUnique = prisma.user.findUnique as jest.Mock
-const mockPrismaUserFindFirst = prisma.user.findFirst as jest.Mock
-const mockPrismaUserUpdate = prisma.user.update as jest.Mock
-const mockPrismaUserDelete = prisma.user.delete as jest.Mock
-const mockPrismaOrgFindMany = prisma.organization.findMany as jest.Mock
-const mockPrismaOrgCount = prisma.organization.count as jest.Mock
-const mockPrismaMemberDeleteMany = prisma.organizationMember.deleteMany as jest.Mock
+const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockPrismaUserFindUnique = prisma.user.findUnique as vi.Mock
+const mockPrismaUserFindFirst = prisma.user.findFirst as vi.Mock
+const mockPrismaUserUpdate = prisma.user.update as vi.Mock
+const mockPrismaUserDelete = prisma.user.delete as vi.Mock
+const mockPrismaOrgFindMany = prisma.organization.findMany as vi.Mock
+const mockPrismaOrgCount = prisma.organization.count as vi.Mock
+const mockPrismaMemberDeleteMany = prisma.organizationMember.deleteMany as vi.Mock
 
 describe('GET /api/user/profile', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -131,7 +131,7 @@ describe('GET /api/user/profile', () => {
     })
     mockPrismaUserFindUnique.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
     const response = await GET()
     const json = await response.json()
 
@@ -145,11 +145,11 @@ describe('GET /api/user/profile', () => {
 describe('PUT /api/user/profile', () => {
   const createRequest = (body: Record<string, unknown>): NextRequest =>
     ({
-      json: jest.fn().mockResolvedValue(body),
+      json: vi.fn().mockResolvedValue(body),
     }) as unknown as NextRequest
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -233,11 +233,11 @@ describe('PUT /api/user/profile', () => {
 describe('DELETE /api/user/profile', () => {
   const createRequest = (body: Record<string, unknown>): NextRequest =>
     ({
-      json: jest.fn().mockResolvedValue(body),
+      json: vi.fn().mockResolvedValue(body),
     }) as unknown as NextRequest
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -299,7 +299,7 @@ describe('DELETE /api/user/profile', () => {
     })
     mockPrismaOrgCount.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
     const response = await DELETE(createRequest({ confirmDelete: true }))
     const json = await response.json()
 

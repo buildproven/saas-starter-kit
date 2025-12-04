@@ -3,10 +3,10 @@ import { renderHook, act } from '@testing-library/react'
 
 // Mock localStorage for testing persistence
 const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
 }
 
 Object.defineProperty(window, 'localStorage', {
@@ -16,7 +16,7 @@ Object.defineProperty(window, 'localStorage', {
 
 describe('App Store', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     // Clear localStorage mock
     localStorageMock.getItem.mockReturnValue(null)
 

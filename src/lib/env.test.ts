@@ -4,17 +4,17 @@ import { validateEnv, isFeatureEnabled, clearEnvCache } from './env'
 describe('env validation', () => {
   const originalEnv = { ...process.env } as NodeJS.ProcessEnv
   const originalExit = process.exit
-  let consoleErrorSpy: jest.SpyInstance
+  let consoleErrorSpy: vi.SpyInstance
 
   beforeEach(() => {
     // Reset environment before each test
     process.env = { ...originalEnv } as NodeJS.ProcessEnv
 
     // Mock process.exit to prevent tests from exiting
-    process.exit = jest.fn() as never
+    process.exit = vi.fn() as never
 
     // Silence noisy error logging during validation failure scenarios
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     // Clear the cache before each test
     clearEnvCache()

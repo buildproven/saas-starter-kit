@@ -1,8 +1,8 @@
 import { GET, POST, PUT } from './route'
 import type { NextRequest } from 'next/server'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -14,34 +14,34 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('next-auth/next', () => ({
-  getServerSession: jest.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }))
 
-jest.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     organization: {
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
     },
     subscription: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
   },
 }))
 
-jest.mock('@/lib/subscription', () => ({
+vi.mock('@/lib/subscription', () => ({
   SubscriptionService: {
-    getSubscription: jest.fn(),
-    getCurrentUsage: jest.fn(),
-    checkLimits: jest.fn(),
-    getPlanByPriceId: jest.fn(),
-    createSubscription: jest.fn(),
-    updateSubscription: jest.fn(),
+    getSubscription: vi.fn(),
+    getCurrentUsage: vi.fn(),
+    checkLimits: vi.fn(),
+    getPlanByPriceId: vi.fn(),
+    createSubscription: vi.fn(),
+    updateSubscription: vi.fn(),
   },
 }))
 
@@ -49,11 +49,11 @@ import { getServerSession } from 'next-auth/next'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 
-const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
-const mockPrismaOrg = prisma.organization.findUnique as jest.Mock
-const mockPrismaOrgMany = prisma.organization.findMany as jest.Mock
-const mockPrismaSub = prisma.subscription.findUnique as jest.Mock
-const mockSubscriptionService = SubscriptionService as jest.Mocked<typeof SubscriptionService>
+const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockPrismaOrg = prisma.organization.findUnique as vi.Mock
+const mockPrismaOrgMany = prisma.organization.findMany as vi.Mock
+const mockPrismaSub = prisma.subscription.findUnique as vi.Mock
+const mockSubscriptionService = SubscriptionService as vi.Mocked<typeof SubscriptionService>
 
 describe('GET /api/subscriptions', () => {
   const createGetRequest = (params: Record<string, string> = {}): NextRequest => {
@@ -63,7 +63,7 @@ describe('GET /api/subscriptions', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -144,10 +144,10 @@ describe('GET /api/subscriptions', () => {
 
 describe('POST /api/subscriptions', () => {
   const createPostRequest = (body: Record<string, unknown>): NextRequest =>
-    ({ json: jest.fn().mockResolvedValue(body) }) as unknown as NextRequest
+    ({ json: vi.fn().mockResolvedValue(body) }) as unknown as NextRequest
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -260,12 +260,12 @@ describe('PUT /api/subscriptions', () => {
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
     return {
       url: url.toString(),
-      json: jest.fn().mockResolvedValue(body),
+      json: vi.fn().mockResolvedValue(body),
     } as unknown as NextRequest
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {

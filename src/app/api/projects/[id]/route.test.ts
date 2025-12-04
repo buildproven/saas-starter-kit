@@ -2,8 +2,8 @@
  * Tests for Projects [id] API Routes
  */
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -15,20 +15,20 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('next-auth/next', () => ({
-  getServerSession: jest.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }))
 
-jest.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     project: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
     },
   },
 }))
@@ -38,8 +38,8 @@ import { getServerSession } from 'next-auth/next'
 import { prisma } from '@/lib/prisma'
 import { GET, PUT, DELETE } from './route'
 
-const mockGetServerSession = getServerSession as jest.Mock
-const mockPrisma = prisma as jest.Mocked<typeof prisma>
+const mockGetServerSession = getServerSession as vi.Mock
+const mockPrisma = prisma as vi.Mocked<typeof prisma>
 
 describe('Projects [id] API', () => {
   const mockSession = {
@@ -62,13 +62,13 @@ describe('Projects [id] API', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockGetServerSession.mockResolvedValue(mockSession)
   })
 
   const createRequest = (body?: object): NextRequest => {
     return {
-      json: jest.fn().mockResolvedValue(body || {}),
+      json: vi.fn().mockResolvedValue(body || {}),
     } as unknown as NextRequest
   }
 

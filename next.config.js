@@ -5,12 +5,13 @@ const nextConfig = {
   // Performance optimizations
   poweredByHeader: false,
   compress: true,
-  swcMinify: true,
+
+  // External packages for server components (moved from experimental in Next.js 16)
+  serverExternalPackages: ['@prisma/client', 'pino', 'thread-stream'],
 
   // Experimental features for better performance
   experimental: {
     optimizePackageImports: ['lucide-react', '@heroicons/react'],
-    serverComponentsExternalPackages: ['@prisma/client'],
   },
 
   // Compiler optimizations
@@ -122,14 +123,14 @@ const nextConfig = {
     ]
   },
 
-  // Image optimization with multiple domains
+  // Image optimization with remotePatterns (domains is deprecated)
   images: {
-    domains: [
-      'localhost',
-      'avatars.githubusercontent.com',
-      'lh3.googleusercontent.com',
-      'images.unsplash.com',
-      'via.placeholder.com',
+    remotePatterns: [
+      { protocol: 'http', hostname: 'localhost' },
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'via.placeholder.com' },
     ],
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],

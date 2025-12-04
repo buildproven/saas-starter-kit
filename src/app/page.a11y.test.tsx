@@ -1,15 +1,17 @@
 import React from 'react'
 import { render } from '@testing-library/react'
-import { axe } from 'jest-axe'
+import { axe, toHaveNoViolations } from 'vitest-axe'
+
+expect.extend(toHaveNoViolations)
 
 import HomePage from './page'
 
-jest.mock('next-auth/react', () => ({
+vi.mock('next-auth/react', () => ({
   __esModule: true,
   useSession: () => ({ data: null, status: 'unauthenticated' }),
   SessionProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  signIn: jest.fn(),
-  signOut: jest.fn(),
+  signIn: vi.fn(),
+  signOut: vi.fn(),
 }))
 
 describe('Home page accessibility', () => {

@@ -1,8 +1,8 @@
 // Mock NextResponse before importing the route
-jest.mock('next/server', () => ({
+vi.mock('next/server', () => ({
   NextResponse: {
-    json: jest.fn((data, init = {}) => ({
-      json: jest.fn().mockResolvedValue(data),
+    json: vi.fn((data, init = {}) => ({
+      json: vi.fn().mockResolvedValue(data),
       status: init.status || 200,
       headers: new Map(),
     })),
@@ -25,7 +25,7 @@ const createMockRequest = (
   const request = {
     method,
     url,
-    json: jest.fn().mockResolvedValue(body),
+    json: vi.fn().mockResolvedValue(body),
     headers: new Headers(),
   } as unknown as NextRequest
 
@@ -34,7 +34,7 @@ const createMockRequest = (
 
 describe('/api/hello Route', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('GET /api/hello', () => {
@@ -92,7 +92,7 @@ describe('/api/hello Route', () => {
     it('returns error for invalid JSON', async () => {
       const request = createMockRequest({ method: 'POST' })
       // Mock request.json() to throw an error
-      request.json = jest.fn().mockRejectedValue(new Error('Invalid JSON'))
+      request.json = vi.fn().mockRejectedValue(new Error('Invalid JSON'))
 
       const response = await POST(request)
       const data = await response.json()
@@ -106,7 +106,7 @@ describe('/api/hello Route', () => {
     it('handles malformed request gracefully', async () => {
       const request = createMockRequest({ method: 'POST' })
       // Mock request.json() to throw a syntax error
-      request.json = jest.fn().mockRejectedValue(new SyntaxError('Unexpected token'))
+      request.json = vi.fn().mockRejectedValue(new SyntaxError('Unexpected token'))
 
       const response = await POST(request)
       const data = await response.json()
@@ -134,7 +134,7 @@ describe('/api/hello Route', () => {
     it('handles network errors gracefully', async () => {
       const request = createMockRequest({ method: 'POST' })
       // Mock a network-like error
-      request.json = jest.fn().mockRejectedValue(new Error('Network error'))
+      request.json = vi.fn().mockRejectedValue(new Error('Network error'))
 
       const response = await POST(request)
       const data = await response.json()

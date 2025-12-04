@@ -4,8 +4,8 @@
 
 import type { NextRequest } from 'next/server'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -17,28 +17,28 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('next-auth/next', () => ({
-  getServerSession: jest.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }))
 
-jest.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     organization: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
   },
 }))
 
-jest.mock('@/lib/subscription', () => ({
+vi.mock('@/lib/subscription', () => ({
   SubscriptionService: {
-    getPlanFeatures: jest.fn(),
-    getCurrentUsage: jest.fn(),
-    canPerformAction: jest.fn(),
-    recordUsage: jest.fn(),
+    getPlanFeatures: vi.fn(),
+    getCurrentUsage: vi.fn(),
+    canPerformAction: vi.fn(),
+    recordUsage: vi.fn(),
   },
 }))
 
@@ -52,22 +52,22 @@ import {
   withWebhookAuth,
 } from './subscription-middleware'
 
-const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
-const mockPrismaOrg = prisma.organization.findUnique as jest.Mock
-const mockGetPlanFeatures = SubscriptionService.getPlanFeatures as jest.Mock
-const mockGetCurrentUsage = SubscriptionService.getCurrentUsage as jest.Mock
-const mockCanPerformAction = SubscriptionService.canPerformAction as jest.Mock
-const mockRecordUsage = SubscriptionService.recordUsage as jest.Mock
+const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockPrismaOrg = prisma.organization.findUnique as vi.Mock
+const mockGetPlanFeatures = SubscriptionService.getPlanFeatures as vi.Mock
+const mockGetCurrentUsage = SubscriptionService.getCurrentUsage as vi.Mock
+const mockCanPerformAction = SubscriptionService.canPerformAction as vi.Mock
+const mockRecordUsage = SubscriptionService.recordUsage as vi.Mock
 
 describe('withSubscriptionCheck', () => {
-  const mockHandler = jest.fn()
+  const mockHandler = vi.fn()
   const createRequest = (): NextRequest =>
     ({
       headers: new Headers(),
     }) as unknown as NextRequest
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockHandler.mockResolvedValue({
       json: async () => ({ success: true }),
       status: 200,
@@ -219,7 +219,7 @@ describe('withSubscriptionCheck', () => {
 
 describe('recordApiUsage', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('records usage successfully', async () => {
@@ -233,7 +233,7 @@ describe('recordApiUsage', () => {
   it('handles errors gracefully', async () => {
     mockRecordUsage.mockRejectedValueOnce(new Error('Recording failed'))
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
 
     // Should not throw
     await expect(recordApiUsage('org_123')).resolves.not.toThrow()
@@ -246,7 +246,7 @@ describe('recordApiUsage', () => {
 
 describe('checkPremiumFeature', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns true when feature is available', async () => {
@@ -272,7 +272,7 @@ describe('checkPremiumFeature', () => {
   it('returns false on error', async () => {
     mockGetPlanFeatures.mockRejectedValueOnce(new Error('Failed'))
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
     const result = await checkPremiumFeature('org_123', 'analytics')
 
     expect(result).toBe(false)
@@ -282,7 +282,7 @@ describe('checkPremiumFeature', () => {
 })
 
 describe('withWebhookAuth', () => {
-  const mockHandler = jest.fn()
+  const mockHandler = vi.fn()
   const createRequest = (headers: Record<string, string> = {}): NextRequest => {
     const headerMap = new Map(Object.entries(headers))
     return {
@@ -293,7 +293,7 @@ describe('withWebhookAuth', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockHandler.mockResolvedValue({
       json: async () => ({ success: true }),
       status: 200,
@@ -332,7 +332,7 @@ describe('withWebhookAuth', () => {
       },
     })
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
     const response = await middleware(createRequest())
     const json = await response.json()
 

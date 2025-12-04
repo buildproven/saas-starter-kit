@@ -3,8 +3,8 @@ import type { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import type { Session } from 'next-auth'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -18,41 +18,40 @@ jest.mock('next/server', () => {
 })
 
 // Mock dependencies
-jest.mock('next-auth/next', () => ({
-  getServerSession: jest.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }))
 
-jest.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     apiKey: {
-      findMany: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
+      findMany: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
     },
     organization: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
   },
 }))
 
-const { prisma } = jest.requireMock('@/lib/prisma') as {
-  prisma: {
-    apiKey: {
-      findMany: jest.Mock
-      count: jest.Mock
-      create: jest.Mock
-    }
-    organization: {
-      findUnique: jest.Mock
-    }
+import { prisma } from '@/lib/prisma'
+const prismaMock = prisma as unknown as {
+  apiKey: {
+    findMany: vi.Mock
+    count: vi.Mock
+    create: vi.Mock
+  }
+  organization: {
+    findUnique: vi.Mock
   }
 }
 
-const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
+const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
 
 const createRequest = (url: string, body?: unknown): NextRequest => {
   return {
@@ -63,7 +62,7 @@ const createRequest = (url: string, body?: unknown): NextRequest => {
 
 describe('/api/api-keys', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('GET', () => {
@@ -82,7 +81,7 @@ describe('/api/api-keys', () => {
         user: { id: 'user_1', email: 'test@example.com' },
       } as Session)
 
-      prisma.apiKey.findMany.mockResolvedValueOnce([
+      prismaMock.apiKey.findMany.mockResolvedValueOnce([
         {
           id: 'key_1',
           name: 'Test Key',
@@ -113,20 +112,20 @@ describe('/api/api-keys', () => {
         user: { id: 'user_1', email: 'test@example.com' },
       } as Session)
 
-      prisma.organization.findUnique.mockResolvedValueOnce({
+      prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',
         ownerId: 'user_1',
         members: [],
       })
 
-      prisma.apiKey.findMany.mockResolvedValueOnce([])
+      prismaMock.apiKey.findMany.mockResolvedValueOnce([])
 
       const response = await GET(
         createRequest('http://localhost:3000/api/api-keys?organizationId=org_1')
       )
 
       expect(response.status).toBe(200)
-      expect(prisma.apiKey.findMany).toHaveBeenCalledWith(
+      expect(prismaMock.apiKey.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             organizationId: 'org_1',
@@ -140,7 +139,7 @@ describe('/api/api-keys', () => {
         user: { id: 'user_1', email: 'test@example.com' },
       } as Session)
 
-      prisma.organization.findUnique.mockResolvedValueOnce(null)
+      prismaMock.organization.findUnique.mockResolvedValueOnce(null)
 
       const response = await GET(
         createRequest('http://localhost:3000/api/api-keys?organizationId=org_99')
@@ -157,7 +156,7 @@ describe('/api/api-keys', () => {
       } as Session)
 
       const pastDate = new Date('2020-01-01')
-      prisma.apiKey.findMany.mockResolvedValueOnce([
+      prismaMock.apiKey.findMany.mockResolvedValueOnce([
         {
           id: 'key_expired',
           name: 'Expired Key',
@@ -218,7 +217,7 @@ describe('/api/api-keys', () => {
         user: { id: 'user_1', email: 'test@example.com' },
       } as Session)
 
-      prisma.organization.findUnique.mockResolvedValueOnce(null)
+      prismaMock.organization.findUnique.mockResolvedValueOnce(null)
 
       const response = await POST(
         createRequest('http://localhost:3000/api/api-keys', {
@@ -238,7 +237,7 @@ describe('/api/api-keys', () => {
         user: { id: 'user_1', email: 'test@example.com' },
       } as Session)
 
-      prisma.organization.findUnique.mockResolvedValueOnce({
+      prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',
         ownerId: 'other_user',
         members: [{ role: 'MEMBER' }],
@@ -262,13 +261,13 @@ describe('/api/api-keys', () => {
         user: { id: 'user_1', email: 'test@example.com' },
       } as Session)
 
-      prisma.organization.findUnique.mockResolvedValueOnce({
+      prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',
         ownerId: 'user_1',
         members: [],
       })
 
-      prisma.apiKey.count.mockResolvedValueOnce(10) // At limit
+      prismaMock.apiKey.count.mockResolvedValueOnce(10) // At limit
 
       const response = await POST(
         createRequest('http://localhost:3000/api/api-keys', {
@@ -288,15 +287,15 @@ describe('/api/api-keys', () => {
         user: { id: 'user_1', email: 'test@example.com' },
       } as Session)
 
-      prisma.organization.findUnique.mockResolvedValueOnce({
+      prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',
         ownerId: 'user_1',
         members: [],
       })
 
-      prisma.apiKey.count.mockResolvedValueOnce(5) // Under limit
+      prismaMock.apiKey.count.mockResolvedValueOnce(5) // Under limit
 
-      prisma.apiKey.create.mockResolvedValueOnce({
+      prismaMock.apiKey.create.mockResolvedValueOnce({
         id: 'key_new',
         name: 'Test Key',
         scopes: ['read', 'write'],
@@ -331,15 +330,15 @@ describe('/api/api-keys', () => {
         user: { id: 'user_1', email: 'test@example.com' },
       } as Session)
 
-      prisma.organization.findUnique.mockResolvedValueOnce({
+      prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',
         ownerId: 'user_1',
         members: [],
       })
 
-      prisma.apiKey.count.mockResolvedValueOnce(0)
+      prismaMock.apiKey.count.mockResolvedValueOnce(0)
 
-      prisma.apiKey.create.mockResolvedValueOnce({
+      prismaMock.apiKey.create.mockResolvedValueOnce({
         id: 'key_new',
         name: 'Test Key',
         scopes: ['read'], // Default scope
@@ -370,16 +369,16 @@ describe('/api/api-keys', () => {
         user: { id: 'user_1', email: 'test@example.com' },
       } as Session)
 
-      prisma.organization.findUnique.mockResolvedValueOnce({
+      prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',
         ownerId: 'user_1',
         members: [],
       })
 
-      prisma.apiKey.count.mockResolvedValueOnce(0)
+      prismaMock.apiKey.count.mockResolvedValueOnce(0)
 
       const futureDate = new Date('2030-01-01')
-      prisma.apiKey.create.mockResolvedValueOnce({
+      prismaMock.apiKey.create.mockResolvedValueOnce({
         id: 'key_new',
         name: 'Test Key',
         scopes: ['read'],

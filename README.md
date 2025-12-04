@@ -97,6 +97,7 @@ Key environment groups to configure:
 - **Database** – `DATABASE_URL` (required)
 - **Stripe** – `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`
 - **Sentry** – `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`
+- **Rate limiting (prod required)** – `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (falls back to memory in dev/tests only)
 
 Refer to `.env.example` for the full list.
 

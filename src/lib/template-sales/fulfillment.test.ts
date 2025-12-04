@@ -2,50 +2,51 @@ import { fulfillTemplateSale } from './fulfillment'
 import { sendTemplateDeliveryEmail } from '@/lib/email/template-delivery'
 import { grantGitHubAccess } from '@/lib/github/access-management'
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
-    $transaction: jest.fn(),
+    $transaction: vi.fn(),
     templateSale: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
     },
     templateSaleCustomer: {
-      upsert: jest.fn(),
+      upsert: vi.fn(),
     },
   },
 }))
 
-jest.mock('@/lib/email/template-delivery', () => ({
-  sendTemplateDeliveryEmail: jest.fn(),
+vi.mock('@/lib/email/template-delivery', () => ({
+  sendTemplateDeliveryEmail: vi.fn(),
 }))
 
-jest.mock('@/lib/github/access-management', () => {
-  const actual = jest.requireActual('@/lib/github/access-management')
+vi.mock('@/lib/github/access-management', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/github/access-management')>()
   return {
     ...actual,
-    grantGitHubAccess: jest.fn(),
+    grantGitHubAccess: vi.fn(),
   }
 })
 
 type PrismaMockShape = {
-  $transaction: jest.Mock
+  $transaction: vi.Mock
   templateSale: {
-    findUnique: jest.Mock
-    update: jest.Mock
+    findUnique: vi.Mock
+    update: vi.Mock
   }
   templateSaleCustomer: {
-    upsert: jest.Mock
+    upsert: vi.Mock
   }
 }
 
-const { prisma: prismaMock } = jest.requireMock('@/lib/prisma') as { prisma: PrismaMockShape }
-prismaMock.$transaction = jest.fn(
+import { prisma } from '@/lib/prisma'
+const prismaMock = prisma as unknown as PrismaMockShape
+prismaMock.$transaction = vi.fn(
   async (cb: (ctx: PrismaMockShape) => Promise<unknown> | unknown) => cb(prismaMock)
 )
-const sendEmailMock = sendTemplateDeliveryEmail as jest.MockedFunction<
+const sendEmailMock = sendTemplateDeliveryEmail as vi.MockedFunction<
   typeof sendTemplateDeliveryEmail
 >
-const grantGitHubAccessMock = grantGitHubAccess as jest.MockedFunction<typeof grantGitHubAccess>
+const grantGitHubAccessMock = grantGitHubAccess as vi.MockedFunction<typeof grantGitHubAccess>
 
 const createSale = (overrides: Partial<TemplateSale> = {}): TemplateSale =>
   ({
@@ -91,7 +92,7 @@ describe('fulfillTemplateSale', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('fulfills a completed sale and returns summary', async () => {

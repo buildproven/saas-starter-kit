@@ -2,8 +2,8 @@
  * Tests for Organization Members API Routes
  */
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -15,27 +15,27 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('next-auth/next', () => ({
-  getServerSession: jest.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }))
 
-jest.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     organization: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     organizationMember: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
-      count: jest.fn(),
-      create: jest.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
+      count: vi.fn(),
+      create: vi.fn(),
     },
     user: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
   },
 }))
@@ -45,8 +45,8 @@ import { getServerSession } from 'next-auth/next'
 import { prisma } from '@/lib/prisma'
 import { GET, POST } from './route'
 
-const mockGetServerSession = getServerSession as jest.Mock
-const mockPrisma = prisma as jest.Mocked<typeof prisma>
+const mockGetServerSession = getServerSession as vi.Mock
+const mockPrisma = prisma as vi.Mocked<typeof prisma>
 
 describe('Organization Members API', () => {
   const mockSession = {
@@ -69,13 +69,13 @@ describe('Organization Members API', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockGetServerSession.mockResolvedValue(mockSession)
   })
 
   const createRequest = (body?: object): NextRequest => {
     return {
-      json: jest.fn().mockResolvedValue(body || {}),
+      json: vi.fn().mockResolvedValue(body || {}),
     } as unknown as NextRequest
   }
 
