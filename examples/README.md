@@ -38,5 +38,4 @@ Have a useful pattern to share? Please:
 ## Getting Help
 
 - See [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) for system design
-- See [CONTRIBUTING.md](../CONTRIBUTING.md) for development workflow
 - Ask questions in GitHub Issues or Discussions

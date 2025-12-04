@@ -133,4 +133,3 @@ See `prisma/schema.prisma` for the complete schema including enums (`UserRole`, 
 ## References
 
 - [DEPLOYMENT.md](./DEPLOYMENT.md) – Production readiness checklist.
-- [CONTRIBUTING.md](../CONTRIBUTING.md) – Development workflow standards.

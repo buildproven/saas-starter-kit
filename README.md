@@ -149,16 +149,11 @@ const session = await createCheckoutSession({
 - [ ] Email notification system
 - [ ] Webhook management UI
 
-## Contributing
-
-Issues and pull requests are encouraged! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-
 ## Documentation
 
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) – Module boundaries, data flow, and extension points
 - [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) – Production deployment playbook
 - [docs/TESTING.md](./docs/TESTING.md) – Testing strategy and guidelines
-- [CONTRIBUTING.md](./CONTRIBUTING.md) – Coding standards and PR checklist
 
 ## License
 
