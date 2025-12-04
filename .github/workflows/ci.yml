@@ -55,7 +55,7 @@ jobs:
           languages: javascript
 
       - name: Dependency review
-        uses: actions/dependency-review-action@v3
+        uses: actions/dependency-review-action@v4
 
       - name: Analyze
         uses: github/codeql-action/analyze@v2
