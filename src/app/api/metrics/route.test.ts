@@ -5,8 +5,8 @@
 import { GET } from './route'
 import type { NextRequest } from 'next/server'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -18,15 +18,15 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('@/lib/metrics', () => ({
+vi.mock('@/lib/metrics', () => ({
   registry: {
-    metrics: jest.fn(),
+    metrics: vi.fn(),
     contentType: 'text/plain; version=0.0.4; charset=utf-8',
   },
 }))
 
 import { registry } from '@/lib/metrics'
-const mockMetrics = registry.metrics as jest.Mock
+const mockMetrics = registry.metrics as vi.Mock
 
 describe('GET /api/metrics', () => {
   const createRequest = (): NextRequest =>
@@ -35,7 +35,7 @@ describe('GET /api/metrics', () => {
     }) as unknown as NextRequest
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns metrics in Prometheus format', async () => {
@@ -57,7 +57,7 @@ http_requests_total{method="GET",status="200"} 100
   it('handles metrics generation failure', async () => {
     mockMetrics.mockRejectedValueOnce(new Error('Metrics collection failed'))
 
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
     const response = await GET(createRequest())
     const json = await response.json()
 

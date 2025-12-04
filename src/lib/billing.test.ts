@@ -3,47 +3,47 @@ import { BillingService } from './billing'
 // Mock Stripe client
 const mockStripe = {
   customers: {
-    list: jest.fn(),
-    create: jest.fn(),
+    list: vi.fn(),
+    create: vi.fn(),
   },
   checkout: {
     sessions: {
-      create: jest.fn(),
-      retrieve: jest.fn(),
+      create: vi.fn(),
+      retrieve: vi.fn(),
     },
   },
   billingPortal: {
     sessions: {
-      create: jest.fn(),
+      create: vi.fn(),
     },
   },
   subscriptions: {
-    update: jest.fn(),
-    retrieve: jest.fn(),
+    update: vi.fn(),
+    retrieve: vi.fn(),
   },
   webhooks: {
-    constructEvent: jest.fn(),
+    constructEvent: vi.fn(),
   },
   invoices: {
-    retrieveUpcoming: jest.fn(),
+    retrieveUpcoming: vi.fn(),
   },
   subscriptionItems: {
-    createUsageRecord: jest.fn(),
+    createUsageRecord: vi.fn(),
   },
   paymentMethods: {
-    list: jest.fn(),
+    list: vi.fn(),
   },
   setupIntents: {
-    create: jest.fn(),
+    create: vi.fn(),
   },
 }
 
-jest.mock('@/lib/stripe', () => ({
+vi.mock('@/lib/stripe', () => ({
   getStripeClient: () => mockStripe,
 }))
 
-jest.mock('@/lib/billing/plan-definitions', () => ({
-  getPlanNameByPriceId: jest.fn((priceId: string) => {
+vi.mock('@/lib/billing/plan-definitions', () => ({
+  getPlanNameByPriceId: vi.fn((priceId: string) => {
     const plans: Record<string, string> = {
       'price_starter': 'Starter',
       'price_pro': 'Pro',
@@ -55,7 +55,7 @@ jest.mock('@/lib/billing/plan-definitions', () => ({
 
 describe('BillingService', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('createCustomer', () => {

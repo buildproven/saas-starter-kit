@@ -6,11 +6,11 @@ describe('Notification Auto-dismiss', () => {
     useAppStore.setState({
       notifications: [],
     })
-    jest.useFakeTimers()
+    vi.useFakeTimers()
   })
 
   afterEach(() => {
-    jest.useRealTimers()
+    vi.useRealTimers()
   })
 
   it('should auto-dismiss non-error notifications after 5 seconds', () => {
@@ -30,7 +30,7 @@ describe('Notification Auto-dismiss', () => {
     expect(successNotification?.title).toBe('Test Success')
 
     // Fast-forward time by 5 seconds
-    jest.advanceTimersByTime(5000)
+    vi.advanceTimersByTime(5000)
 
     // Verify notification was removed
     expect(useAppStore.getState().notifications).toHaveLength(0)
@@ -50,7 +50,7 @@ describe('Notification Auto-dismiss', () => {
     expect(useAppStore.getState().notifications).toHaveLength(1)
 
     // Fast-forward time by 5 seconds
-    jest.advanceTimersByTime(5000)
+    vi.advanceTimersByTime(5000)
 
     // Verify error notification is still there
     expect(useAppStore.getState().notifications).toHaveLength(1)
@@ -82,7 +82,7 @@ describe('Notification Auto-dismiss', () => {
     expect(useAppStore.getState().notifications).toHaveLength(3)
 
     // Fast-forward time by 5 seconds
-    jest.advanceTimersByTime(5000)
+    vi.advanceTimersByTime(5000)
 
     // Verify only error notification remains
     const remainingNotifications = useAppStore.getState().notifications
@@ -112,7 +112,7 @@ describe('Notification Auto-dismiss', () => {
     expect(useAppStore.getState().notifications).toHaveLength(0)
 
     // Fast-forward time - should not cause any errors
-    jest.advanceTimersByTime(5000)
+    vi.advanceTimersByTime(5000)
 
     // Should still be empty
     expect(useAppStore.getState().notifications).toHaveLength(0)

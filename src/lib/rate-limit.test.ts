@@ -8,23 +8,23 @@ import {
 } from './rate-limit'
 import { logger } from './logger'
 
-jest.mock('./logger', () => ({
+vi.mock('./logger', () => ({
   logger: {
-    debug: jest.fn(),
-    warn: jest.fn(),
+    debug: vi.fn(),
+    warn: vi.fn(),
   },
 }))
 
 describe('rate-limit', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     clearRateLimits()
     stopCleanup()
-    jest.useFakeTimers()
+    vi.useFakeTimers()
   })
 
   afterEach(() => {
-    jest.useRealTimers()
+    vi.useRealTimers()
     stopCleanup()
   })
 
@@ -66,7 +66,7 @@ describe('rate-limit', () => {
         }
 
         // Fast forward 61 seconds - all timestamps expire
-        jest.advanceTimersByTime(61000)
+        vi.advanceTimersByTime(61000)
 
         // Should allow new requests
         const result = checkRateLimit('client1', config)
@@ -87,7 +87,7 @@ describe('rate-limit', () => {
         expect(result.allowed).toBe(false)
 
         // T=11s: First timestamp expired, should allow 1 request
-        jest.advanceTimersByTime(11000)
+        vi.advanceTimersByTime(11000)
         result = checkRateLimit('client1', config)
         expect(result.allowed).toBe(true)
         expect(result.remaining).toBe(2) // window fully reset after 10s; only current request counted
@@ -166,7 +166,7 @@ describe('rate-limit', () => {
 
         // T=0: Make 2 requests
         checkRateLimit('client1', config)
-        jest.advanceTimersByTime(1000)
+        vi.advanceTimersByTime(1000)
         checkRateLimit('client1', config)
 
         // T=1s: Blocked (retryAfter ~9s)
@@ -175,13 +175,13 @@ describe('rate-limit', () => {
         expect(result.retryAfter).toBeLessThanOrEqual(10)
 
         // T=5s: Still blocked (retryAfter ~5s)
-        jest.advanceTimersByTime(4000)
+        vi.advanceTimersByTime(4000)
         result = checkRateLimit('client1', config)
         expect(result.allowed).toBe(false)
         expect(result.retryAfter).toBeLessThanOrEqual(6)
 
         // T=11s: First timestamp expired, unblocked
-        jest.advanceTimersByTime(6000)
+        vi.advanceTimersByTime(6000)
         result = checkRateLimit('client1', config)
         expect(result.allowed).toBe(true)
       })
@@ -212,7 +212,7 @@ describe('rate-limit', () => {
         expect(result.allowed).toBe(false)
 
         // T=11s: Unblocked (oldest timestamp expired)
-        jest.advanceTimersByTime(11000)
+        vi.advanceTimersByTime(11000)
         result = checkRateLimit('client1', config)
         expect(result.allowed).toBe(true)
       })
@@ -229,7 +229,7 @@ describe('rate-limit', () => {
         expect(result1.resetAt).toBeLessThanOrEqual(startTime + 60000)
 
         // Advance time slightly
-        jest.advanceTimersByTime(1000)
+        vi.advanceTimersByTime(1000)
 
         const result2 = checkRateLimit('client1', config)
         // Reset should be based on oldest timestamp
@@ -244,11 +244,11 @@ describe('rate-limit', () => {
         const firstReset = result1.resetAt
 
         // T=2s: Second request
-        jest.advanceTimersByTime(2000)
+        vi.advanceTimersByTime(2000)
         checkRateLimit('client1', config)
 
         // T=11s: First timestamp expired
-        jest.advanceTimersByTime(9000)
+        vi.advanceTimersByTime(9000)
         const result2 = checkRateLimit('client1', config)
 
         // New reset should be different (based on second request)
@@ -301,7 +301,7 @@ describe('rate-limit', () => {
         checkRateLimit('client1', config) // Exceeds, creates block
 
         // Clear previous logs
-        jest.clearAllMocks()
+        vi.clearAllMocks()
 
         // Attempt during block period
         checkRateLimit('client1', config)
@@ -380,7 +380,7 @@ describe('rate-limit', () => {
         expect(blocked.allowed).toBe(false)
 
         // Should unblock after 1 hour
-        jest.advanceTimersByTime(60 * 60 * 1000 + 1000)
+        vi.advanceTimersByTime(60 * 60 * 1000 + 1000)
 
         const unblocked = RateLimiters.passwordReset('password-client')
         expect(unblocked.allowed).toBe(true)
@@ -471,7 +471,7 @@ describe('rate-limit', () => {
   describe('Cleanup functionality', () => {
     describe('TEST-002-09: Cleanup interval memory management', () => {
       it('removes expired entries during cleanup', async () => {
-        jest.useRealTimers() // Use real timers for cleanup interval
+        vi.useRealTimers() // Use real timers for cleanup interval
 
         const config = { maxRequests: 2, windowMs: 1000 }
 
@@ -537,7 +537,7 @@ describe('rate-limit', () => {
       checkRateLimit('client1', config)
       checkRateLimit('client1', config)
 
-      jest.advanceTimersByTime(2)
+      vi.advanceTimersByTime(2)
 
       // Window expired, should allow new requests
       const result = checkRateLimit('client1', config)
@@ -554,12 +554,12 @@ describe('rate-limit', () => {
       expect(blocked.allowed).toBe(false)
 
       // Fast forward 30 minutes - still blocked
-      jest.advanceTimersByTime(30 * 60 * 1000)
+      vi.advanceTimersByTime(30 * 60 * 1000)
       const stillBlocked = checkRateLimit('client1', config)
       expect(stillBlocked.allowed).toBe(false)
 
       // Fast forward another 31 minutes - unblocked
-      jest.advanceTimersByTime(31 * 60 * 1000)
+      vi.advanceTimersByTime(31 * 60 * 1000)
       const unblocked = checkRateLimit('client1', config)
       expect(unblocked.allowed).toBe(true)
     })

@@ -4,8 +4,8 @@
 
 import type { NextRequest } from 'next/server'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -17,11 +17,11 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('next-auth/next', () => ({
-  getServerSession: jest.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }))
 
-jest.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
@@ -36,15 +36,15 @@ import {
   corsHeaders,
 } from './api-protection'
 
-const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
+const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
 
 describe('API Protection', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('withAuth', () => {
-    const mockHandler = jest.fn().mockResolvedValue({
+    const mockHandler = vi.fn().mockResolvedValue({
       json: async () => ({ success: true }),
       status: 200,
     })
@@ -160,7 +160,7 @@ describe('API Protection', () => {
     it('handles errors gracefully', async () => {
       mockGetServerSession.mockRejectedValueOnce(new Error('Session error'))
 
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation()
       const protectedHandler = withAuth(mockHandler)
       const response = await protectedHandler(createRequest())
       const json = await response.json()
@@ -172,7 +172,7 @@ describe('API Protection', () => {
   })
 
   describe('convenience auth functions', () => {
-    const mockHandler = jest.fn().mockResolvedValue({
+    const mockHandler = vi.fn().mockResolvedValue({
       json: async () => ({ success: true }),
       status: 200,
     })

@@ -99,17 +99,27 @@ if (tsPlugin && tsParser) {
   })
 }
 
-// Jest test file configuration
+// Vitest test file configuration
 configs.push({
   files: [
     '**/*.test.{js,jsx,ts,tsx}',
     '**/*.spec.{js,jsx,ts,tsx}',
-    '**/jest.setup.{js,ts}',
+    '**/vitest.setup.{js,ts}',
     '**/test-utils.{js,ts,tsx}',
+    'tests/**/*.{js,ts,tsx}',
   ],
   languageOptions: {
     globals: {
       ...globals.jest,
+      vi: 'readonly',
+      describe: 'readonly',
+      it: 'readonly',
+      expect: 'readonly',
+      beforeEach: 'readonly',
+      afterEach: 'readonly',
+      beforeAll: 'readonly',
+      afterAll: 'readonly',
+      test: 'readonly',
     },
   },
 })
@@ -121,6 +131,14 @@ configs.push({
     globals: {
       React: 'readonly',
     },
+  },
+})
+
+// Config files and test utilities can use require()
+configs.push({
+  files: ['**/*.config.{js,cjs,ts}', '**/tailwind.config.ts', '**/test-utils.{ts,tsx}'],
+  rules: {
+    '@typescript-eslint/no-require-imports': 'off',
   },
 })
 

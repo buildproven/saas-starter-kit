@@ -3,7 +3,7 @@
  */
 
 // Mock fetch globally
-const mockFetch = jest.fn()
+const mockFetch = vi.fn()
 global.fetch = mockFetch
 
 import { sendTemplateDeliveryEmail } from './template-delivery'
@@ -23,7 +23,7 @@ describe('sendTemplateDeliveryEmail', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     process.env.NEXT_PUBLIC_APP_URL = 'https://example.com'
   })
 
@@ -88,7 +88,7 @@ describe('sendTemplateDeliveryEmail', () => {
       const originalNodeEnv = process.env.NODE_ENV
       process.env.NODE_ENV = 'development'
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
 
       const result = await sendTemplateDeliveryEmail(baseParams)
 
@@ -104,7 +104,7 @@ describe('sendTemplateDeliveryEmail', () => {
       const originalNodeEnv = process.env.NODE_ENV
       process.env.NODE_ENV = 'production'
 
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation()
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation()
 
       const result = await sendTemplateDeliveryEmail(baseParams)
 

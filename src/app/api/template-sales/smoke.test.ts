@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import type { NextRequest } from 'next/server'
 
 // Mock NextResponse to work within Jest environment
-jest.mock('next/server', () => {
+vi.mock('next/server', () => {
   class MockNextResponse {
     body: unknown
     status: number
@@ -35,8 +35,8 @@ jest.mock('next/server', () => {
     }
   }
 
-  const json = jest.fn((data: unknown, init: { status?: number } = {}) => ({
-    json: jest.fn().mockResolvedValue(data),
+  const json = vi.fn((data: unknown, init: { status?: number } = {}) => ({
+    json: vi.fn().mockResolvedValue(data),
     status: init.status ?? 200,
     headers: new Map<string, string>(),
   }))
@@ -89,14 +89,14 @@ type PrismaMock = {
   templateSale: typeof import('@/lib/prisma').prisma.templateSale
   templateSaleCustomer: typeof import('@/lib/prisma').prisma.templateSaleCustomer
   templateDownloadAudit: typeof import('@/lib/prisma').prisma.templateDownloadAudit
-  $transaction: jest.Mock
+  $transaction: vi.Mock
 }
 
-jest.mock('@/lib/prisma', () => {
+vi.mock('@/lib/prisma', () => {
   const prisma = {} as any
 
   prisma.templateSale = {
-    create: jest.fn(async ({ data }: any) => {
+    create: vi.fn(async ({ data }: any) => {
       const record: TemplateSaleRecord = {
         id: randomUUID(),
         sessionId: data.sessionId!,
@@ -118,7 +118,7 @@ jest.mock('@/lib/prisma', () => {
       saleStoreById.set(record.id, record)
       return clone(record)
     }) as any,
-    findUnique: jest.fn(async ({ where }: any) => {
+    findUnique: vi.fn(async ({ where }: any) => {
       const record = where.sessionId
         ? saleStoreBySession.get(where.sessionId)
         : where.id
@@ -126,7 +126,7 @@ jest.mock('@/lib/prisma', () => {
           : undefined
       return record ? clone(record) : null
     }) as any,
-    update: jest.fn(async ({ where, data }: any) => {
+    update: vi.fn(async ({ where, data }: any) => {
       const existing = where.sessionId
         ? saleStoreBySession.get(where.sessionId)
         : where.id
@@ -160,7 +160,7 @@ jest.mock('@/lib/prisma', () => {
   }
 
   prisma.templateSaleCustomer = {
-    upsert: jest.fn(async ({ where, update, create }: any) => {
+    upsert: vi.fn(async ({ where, update, create }: any) => {
       const existing = customerStore.get(where.saleId)
       if (existing) {
         const updated: TemplateSaleCustomerRecord = {
@@ -200,7 +200,7 @@ jest.mock('@/lib/prisma', () => {
       customerStore.set(where.saleId, newRecord)
       return clone(newRecord)
     }) as any,
-    findUnique: jest.fn(async ({ where }: any) => {
+    findUnique: vi.fn(async ({ where }: any) => {
       if (where.downloadToken) {
         const customer = [...customerStore.values()].find(
           (c) => c.downloadToken === where.downloadToken
@@ -219,13 +219,13 @@ jest.mock('@/lib/prisma', () => {
   }
 
   prisma.templateDownloadAudit = {
-    create: jest.fn(async ({ data }: any) => {
+    create: vi.fn(async ({ data }: any) => {
       downloadAudits.push(data)
       return clone(data)
     }) as any,
   }
 
-  prisma.$transaction = jest.fn(
+  prisma.$transaction = vi.fn(
     async (
       cb: (ctx: {
         templateSale: PrismaMock['templateSale']
@@ -264,13 +264,13 @@ const clone = <T>(value: T): T => {
   return structured ? structured(value) : JSON.parse(JSON.stringify(value))
 }
 
-jest.mock('@/lib/stripe', () => {
+vi.mock('@/lib/stripe', () => {
   let counter = 0
   return {
     getStripeClient: () => ({
       checkout: {
         sessions: {
-          create: jest.fn(async (params: Record<string, unknown>) => {
+          create: vi.fn(async (params: Record<string, unknown>) => {
             counter += 1
             const id = `cs_test_${counter}`
             const session = {
@@ -283,7 +283,7 @@ jest.mock('@/lib/stripe', () => {
             })
             return session
           }),
-          retrieve: jest.fn(async (sessionId: string) => {
+          retrieve: vi.fn(async (sessionId: string) => {
             const stored = stripeSessions.get(sessionId)
             if (!stored) {
               throw new Error(`Session ${sessionId} not found`)
@@ -319,26 +319,26 @@ jest.mock('@/lib/stripe', () => {
   }
 })
 
-jest.mock('@/lib/email/template-delivery', () => ({
-  sendTemplateDeliveryEmail: jest.fn().mockResolvedValue({ success: true, messageId: 'msg_123' }),
+vi.mock('@/lib/email/template-delivery', () => ({
+  sendTemplateDeliveryEmail: vi.fn().mockResolvedValue({ success: true, messageId: 'msg_123' }),
 }))
 
-jest.mock('@/lib/github/access-management', () => {
-  const actual = jest.requireActual('@/lib/github/access-management')
+vi.mock('@/lib/github/access-management', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/github/access-management')>()
   return {
     ...actual,
-    grantGitHubAccess: jest.fn().mockResolvedValue({ success: true, teamId: 'team-pro' }),
+    grantGitHubAccess: vi.fn().mockResolvedValue({ success: true, teamId: 'team-pro' }),
   }
 })
 
-jest.mock('@/lib/auth/api-protection', () => ({
-  rateLimit: jest.fn(() => true),
+vi.mock('@/lib/auth/api-protection', () => ({
+  rateLimit: vi.fn(() => true),
 }))
 
 const loggedErrors: Error[] = []
 
-jest.mock('@/lib/error-logging', () => ({
-  logError: jest.fn((error: Error) => {
+vi.mock('@/lib/error-logging', () => ({
+  logError: vi.fn((error: Error) => {
     loggedErrors.push(error)
   }),
   ErrorType: { SYSTEM: 'SYSTEM', PAYMENT: 'PAYMENT' },
@@ -363,14 +363,14 @@ describe('Template sales smoke test', () => {
     customerStore.clear()
     downloadAudits.length = 0
     stripeSessions.clear()
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     loggedErrors.length = 0
   })
 
   const createCheckoutRequest = (payload: Record<string, unknown>): NextRequest => {
     const body = JSON.stringify(payload)
     return {
-      json: jest.fn().mockResolvedValue(JSON.parse(body)),
+      json: vi.fn().mockResolvedValue(JSON.parse(body)),
     } as unknown as NextRequest
   }
 

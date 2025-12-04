@@ -2,20 +2,20 @@
  * Tests for Error Logging
  */
 
-jest.mock('@sentry/nextjs', () => ({
-  withScope: jest.fn((callback) => {
+vi.mock('@sentry/nextjs', () => ({
+  withScope: vi.fn((callback) => {
     const mockScope = {
-      setTag: jest.fn(),
-      setLevel: jest.fn(),
-      setUser: jest.fn(),
-      setContext: jest.fn(),
+      setTag: vi.fn(),
+      setLevel: vi.fn(),
+      setUser: vi.fn(),
+      setContext: vi.fn(),
     }
     callback(mockScope)
   }),
-  captureMessage: jest.fn(),
-  captureException: jest.fn(),
-  addBreadcrumb: jest.fn(),
-  setUser: jest.fn(),
+  captureMessage: vi.fn(),
+  captureException: vi.fn(),
+  addBreadcrumb: vi.fn(),
+  setUser: vi.fn(),
 }))
 
 import * as Sentry from '@sentry/nextjs'
@@ -39,7 +39,7 @@ describe('Error Logging', () => {
   const originalEnv = process.env.NODE_ENV
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     process.env.NODE_ENV = 'test'
   })
 
@@ -81,7 +81,7 @@ describe('Error Logging', () => {
 
     it('logs to console in development', () => {
       process.env.NODE_ENV = 'development'
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation()
 
       logError(new Error('Test error'), ErrorType.DATABASE, ErrorSeverity.HIGH)
 
@@ -142,7 +142,7 @@ describe('Error Logging', () => {
 
     it('logs to console in development', () => {
       process.env.NODE_ENV = 'development'
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
 
       trackUserAction('test_action', { key: 'value' })
 

@@ -2,7 +2,7 @@ import { render, screen, resetMocks } from '@/lib/test-utils'
 import Home from './page'
 
 // Mock next-auth
-jest.mock('next-auth/react', () => ({
+vi.mock('next-auth/react', () => ({
   useSession: () => ({ data: null }),
 }))
 

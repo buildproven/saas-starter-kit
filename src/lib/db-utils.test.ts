@@ -2,37 +2,37 @@
  * Tests for Database Utilities
  */
 
-jest.mock('./prisma', () => ({
+vi.mock('./prisma', () => ({
   prisma: {
     organization: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
     },
     organizationMember: {
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
     },
     subscription: {
-      create: jest.fn(),
-      update: jest.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
     },
     usageRecord: {
-      create: jest.fn(),
-      groupBy: jest.fn(),
+      create: vi.fn(),
+      groupBy: vi.fn(),
     },
     apiKey: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
     },
     project: {
-      create: jest.fn(),
-      findMany: jest.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
     },
     plan: {
-      findMany: jest.fn(),
-      findUnique: jest.fn(),
+      findMany: vi.fn(),
+      findUnique: vi.fn(),
     },
   },
 }))
@@ -58,11 +58,11 @@ import {
   getPlanByPriceId,
 } from './db-utils'
 
-const mockPrisma = prisma as jest.Mocked<typeof prisma>
+const mockPrisma = prisma as vi.Mocked<typeof prisma>
 
 describe('Database Utilities', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('Organization utilities', () => {

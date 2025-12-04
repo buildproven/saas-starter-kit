@@ -2,8 +2,8 @@
  * Tests for Subscriptions Action API Routes
  */
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -15,31 +15,31 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('next-auth/next', () => ({
-  getServerSession: jest.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }))
 
-jest.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     organization: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
   },
 }))
 
-jest.mock('@/lib/subscription', () => ({
+vi.mock('@/lib/subscription', () => ({
   SubscriptionService: {
-    getSubscription: jest.fn(),
-    cancelSubscription: jest.fn(),
-    reactivateSubscription: jest.fn(),
-    getCurrentUsage: jest.fn(),
-    checkLimits: jest.fn(),
-    getPlanFeatures: jest.fn(),
-    getPlanByPriceId: jest.fn(),
+    getSubscription: vi.fn(),
+    cancelSubscription: vi.fn(),
+    reactivateSubscription: vi.fn(),
+    getCurrentUsage: vi.fn(),
+    checkLimits: vi.fn(),
+    getPlanFeatures: vi.fn(),
+    getPlanByPriceId: vi.fn(),
   },
 }))
 
@@ -49,9 +49,9 @@ import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { POST } from './route'
 
-const mockGetServerSession = getServerSession as jest.Mock
-const mockPrisma = prisma as jest.Mocked<typeof prisma>
-const mockSubscriptionService = SubscriptionService as jest.Mocked<typeof SubscriptionService>
+const mockGetServerSession = getServerSession as vi.Mock
+const mockPrisma = prisma as vi.Mocked<typeof prisma>
+const mockSubscriptionService = SubscriptionService as vi.Mocked<typeof SubscriptionService>
 
 describe('Subscriptions Action API', () => {
   const mockSession = {
@@ -65,13 +65,13 @@ describe('Subscriptions Action API', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockGetServerSession.mockResolvedValue(mockSession)
   })
 
   const createRequest = (body: object): NextRequest => {
     return {
-      json: jest.fn().mockResolvedValue(body),
+      json: vi.fn().mockResolvedValue(body),
     } as unknown as NextRequest
   }
 

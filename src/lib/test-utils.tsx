@@ -1,6 +1,7 @@
 import React, { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { vi } from 'vitest'
 
 // Mock the Zustand store for testing
 export const mockStore = {
@@ -8,10 +9,10 @@ export const mockStore = {
   isAuthenticated: false,
   sidebarOpen: false,
   theme: 'light' as 'light' | 'dark',
-  setUser: jest.fn(),
-  toggleSidebar: jest.fn(),
-  setTheme: jest.fn(),
-  reset: jest.fn(),
+  setUser: vi.fn(),
+  toggleSidebar: vi.fn(),
+  setTheme: vi.fn(),
+  reset: vi.fn(),
 }
 
 // Mock session data for testing
@@ -27,16 +28,16 @@ export const mockSession = {
 }
 
 // Mock the store module
-jest.mock('@/lib/store', () => ({
+vi.mock('@/lib/store', () => ({
   useAppStore: () => mockStore,
 }))
 
 // Mock NextAuth
-jest.mock('next-auth/react', () => ({
-  useSession: jest.fn(() => ({
+vi.mock('next-auth/react', () => ({
+  useSession: vi.fn(() => ({
     data: mockSession,
     status: 'authenticated',
-    update: jest.fn(),
+    update: vi.fn(),
   })),
   SessionProvider: ({ children }: { children: React.ReactNode }) => children,
 }))
@@ -59,15 +60,15 @@ export const user = userEvent.setup()
 
 // Test helpers
 export const mockFetch = (response: unknown, status = 200) => {
-  global.fetch = jest.fn().mockResolvedValueOnce({
+  global.fetch = vi.fn().mockResolvedValueOnce({
     ok: status >= 200 && status < 300,
     status,
-    json: jest.fn().mockResolvedValueOnce(response),
+    json: vi.fn().mockResolvedValueOnce(response),
   })
 }
 
 export const mockFetchError = (error = 'Network error') => {
-  global.fetch = jest.fn().mockRejectedValueOnce(new Error(error))
+  global.fetch = vi.fn().mockRejectedValueOnce(new Error(error))
 }
 
 // Reset mocks helper
@@ -76,7 +77,7 @@ export const resetMocks = () => {
   mockStore.toggleSidebar.mockClear()
   mockStore.setTheme.mockClear()
   mockStore.reset.mockClear()
-  jest.clearAllMocks()
+  vi.clearAllMocks()
 }
 
 // Helper to mock different session states
@@ -87,6 +88,6 @@ export const mockUseSession = (sessionData: any = mockSession, status = 'authent
   useSession.mockReturnValue({
     data: sessionData,
     status,
-    update: jest.fn(),
+    update: vi.fn(),
   })
 }

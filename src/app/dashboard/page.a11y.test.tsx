@@ -1,25 +1,27 @@
 import React from 'react'
 import { render } from '@testing-library/react'
-import { axe } from 'jest-axe'
+import { axe, toHaveNoViolations } from 'vitest-axe'
+
+expect.extend(toHaveNoViolations)
 
 import DashboardPage from './page'
 
-jest.mock('next-auth/react', () => ({
+vi.mock('next-auth/react', () => ({
   __esModule: true,
   useSession: () => ({
     data: { user: { name: 'Test User', email: 'test@example.com' } },
     status: 'authenticated',
   }),
   SessionProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  signIn: jest.fn(),
-  signOut: jest.fn(),
+  signIn: vi.fn(),
+  signOut: vi.fn(),
 }))
 
-jest.mock('@/lib/hooks/useAuth', () => ({
+vi.mock('@/lib/hooks/useAuth', () => ({
   useAuth: () => ({ user: { name: 'Test User', email: 'test@example.com' }, isLoading: false }),
 }))
 
-jest.mock('@/lib/hooks/useStore', () => ({
+vi.mock('@/lib/hooks/useStore', () => ({
   useCurrentOrganization: () => ({
     organization: { id: 'org_1', name: 'Acme Inc', role: 'ADMIN' },
     hasActiveSubscription: true,

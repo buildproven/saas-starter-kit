@@ -2,19 +2,19 @@
  * Tests for Redis Cache Client
  */
 
-const mockFetch = jest.fn()
+const mockFetch = vi.fn()
 global.fetch = mockFetch
 
 // Must mock before importing
-jest.mock('@/lib/prisma', () => ({ prisma: {} }))
+vi.mock('@/lib/prisma', () => ({ prisma: {} }))
 
 describe('RedisCache', () => {
   let RedisCache: typeof import('./redis').RedisCache
   let cache: import('./redis').RedisCache
 
   beforeEach(async () => {
-    jest.clearAllMocks()
-    jest.resetModules()
+    vi.clearAllMocks()
+    vi.resetModules()
 
     // Reset env vars
     delete process.env.UPSTASH_REDIS_REST_URL
@@ -44,7 +44,7 @@ describe('RedisCache', () => {
     })
 
     it('handles missing configuration gracefully', () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation()
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation()
 
       cache = new RedisCache()
       expect(cache.isAvailable()).toBe(false)
@@ -57,7 +57,7 @@ describe('RedisCache', () => {
       process.env.UPSTASH_REDIS_REST_URL = 'https://redis.example.com'
       process.env.UPSTASH_REDIS_REST_TOKEN = 'test_token'
 
-      const infoSpy = jest.spyOn(console, 'info').mockImplementation()
+      const infoSpy = vi.spyOn(console, 'info').mockImplementation()
 
       cache = new RedisCache()
       expect(cache.isAvailable()).toBe(false)
@@ -117,7 +117,7 @@ describe('RedisCache', () => {
       it('handles fetch errors gracefully', async () => {
         mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
-        const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation()
         const result = await cache.get('error_key')
 
         expect(result).toBeNull()
@@ -189,7 +189,7 @@ describe('RedisCache', () => {
             json: async () => [{ result: 2 }],
           })
 
-        const infoSpy = jest.spyOn(console, 'info').mockImplementation()
+        const infoSpy = vi.spyOn(console, 'info').mockImplementation()
         const count = await cache.purgeByPattern('prefix:')
 
         expect(count).toBe(2)
@@ -281,7 +281,7 @@ describe('RedisCache', () => {
 
   describe('with unconfigured cache', () => {
     beforeEach(() => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation()
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation()
       cache = new RedisCache()
       warnSpy.mockRestore()
     })

@@ -4,8 +4,8 @@
 
 import { GET } from './route'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -17,21 +17,21 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
-    $queryRaw: jest.fn(),
+    $queryRaw: vi.fn(),
   },
 }))
 
 import { prisma } from '@/lib/prisma'
 
-const mockQueryRaw = prisma.$queryRaw as jest.Mock
+const mockQueryRaw = prisma.$queryRaw as vi.Mock
 
 describe('GET /api/health', () => {
   const originalEnv = process.env
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     process.env = { ...originalEnv }
   })
 

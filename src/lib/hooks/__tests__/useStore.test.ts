@@ -14,8 +14,8 @@ import {
 } from '../useStore'
 
 // Mock next-auth/react
-const mockUseSession = jest.fn()
-jest.mock('next-auth/react', () => ({
+const mockUseSession = vi.fn()
+vi.mock('next-auth/react', () => ({
   useSession: () => mockUseSession(),
 }))
 

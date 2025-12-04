@@ -2,22 +2,22 @@
  * Tests for Logger
  */
 
-jest.mock('pino', () => {
+vi.mock('pino', () => {
   const mockLogger = {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-    child: jest.fn().mockReturnThis(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    child: vi.fn().mockReturnThis(),
   }
-  const pino = jest.fn().mockReturnValue(mockLogger)
+  const pino = vi.fn().mockReturnValue(mockLogger)
   // Add serializers
   pino.stdSerializers = {
-    err: jest.fn(),
-    req: jest.fn(),
-    res: jest.fn(),
+    err: vi.fn(),
+    req: vi.fn(),
+    res: vi.fn(),
   }
-  return pino
+  return { default: pino }
 })
 
 import pino from 'pino'
@@ -32,11 +32,11 @@ import {
   security,
 } from './logger'
 
-const mockLogger = pino() as jest.Mocked<ReturnType<typeof pino>>
+const mockLogger = pino() as vi.Mocked<ReturnType<typeof pino>>
 
 describe('Logger', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('logger instance', () => {

@@ -1,30 +1,29 @@
-/* eslint-disable jest/valid-expect */
 import { withRetry, makeRetryable, withTimeout, withRetryAndTimeout } from './retry'
 import { logger } from './logger'
 
-jest.mock('./logger', () => ({
+vi.mock('./logger', () => ({
   logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
   },
 }))
 
 describe('retry', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-    jest.useFakeTimers()
+    vi.clearAllMocks()
+    vi.useFakeTimers()
   })
 
   afterEach(() => {
-    jest.useRealTimers()
+    vi.useRealTimers()
   })
 
   describe('withRetry', () => {
     describe('TEST-001-01: Exponential backoff with jitter', () => {
       it('calculates exponential backoff correctly', async () => {
         let attempts = 0
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           attempts++
           if (attempts < 4) {
             throw new Error('ECONNRESET')
@@ -41,16 +40,16 @@ describe('retry', () => {
         })
 
         // First attempt fails immediately
-        await jest.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(0)
 
         // Second attempt after 1000ms (baseDelay * 2^0)
-        await jest.advanceTimersByTimeAsync(1000)
+        await vi.advanceTimersByTimeAsync(1000)
 
         // Third attempt after 2000ms (baseDelay * 2^1)
-        await jest.advanceTimersByTimeAsync(2000)
+        await vi.advanceTimersByTimeAsync(2000)
 
         // Fourth attempt after 4000ms (baseDelay * 2^2)
-        await jest.advanceTimersByTimeAsync(4000)
+        await vi.advanceTimersByTimeAsync(4000)
 
         const result = await promise
         expect(result).toBe('success')
@@ -59,15 +58,15 @@ describe('retry', () => {
 
       it('applies jitter to delay calculations', async () => {
         const delays: number[] = []
-        jest.useRealTimers() // Use real timers to test jitter randomness
+        vi.useRealTimers() // Use real timers to test jitter randomness
 
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           throw new Error('ECONNRESET')
         })
 
         // Spy on setTimeout to capture actual delays
         const originalSetTimeout = global.setTimeout
-        global.setTimeout = jest.fn((callback, delay) => {
+        global.setTimeout = vi.fn((callback, delay) => {
           if (typeof delay === 'number') {
             delays.push(delay)
           }
@@ -99,7 +98,7 @@ describe('retry', () => {
       })
 
       it('respects maxDelay ceiling', async () => {
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           throw new Error('ECONNRESET')
         })
 
@@ -114,12 +113,12 @@ describe('retry', () => {
           /* Expected to fail */
         })
 
-        await jest.advanceTimersByTimeAsync(0) // 1st attempt
-        await jest.advanceTimersByTimeAsync(1000) // 2nd: 1000ms
-        await jest.advanceTimersByTimeAsync(2000) // 3rd: 2000ms
-        await jest.advanceTimersByTimeAsync(3000) // 4th: 3000ms (capped)
-        await jest.advanceTimersByTimeAsync(3000) // 5th: 3000ms (capped)
-        await jest.advanceTimersByTimeAsync(3000) // 6th: 3000ms (capped)
+        await vi.advanceTimersByTimeAsync(0) // 1st attempt
+        await vi.advanceTimersByTimeAsync(1000) // 2nd: 1000ms
+        await vi.advanceTimersByTimeAsync(2000) // 3rd: 2000ms
+        await vi.advanceTimersByTimeAsync(3000) // 4th: 3000ms (capped)
+        await vi.advanceTimersByTimeAsync(3000) // 5th: 3000ms (capped)
+        await vi.advanceTimersByTimeAsync(3000) // 6th: 3000ms (capped)
 
         await promise
         expect(fn).toHaveBeenCalledTimes(6)
@@ -129,7 +128,7 @@ describe('retry', () => {
     describe('TEST-001-02: Retryable vs non-retryable error classification', () => {
       it('retries network errors (ECONNRESET)', async () => {
         let attempts = 0
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           attempts++
           if (attempts < 3) {
             const error = new Error('Connection reset by peer')
@@ -141,9 +140,9 @@ describe('retry', () => {
 
         const promise = withRetry(fn, { maxRetries: 3, baseDelay: 100, jitter: false })
 
-        await jest.advanceTimersByTimeAsync(0)
-        await jest.advanceTimersByTimeAsync(100)
-        await jest.advanceTimersByTimeAsync(200)
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(200)
 
         const result = await promise
         expect(result).toBe('success')
@@ -152,7 +151,7 @@ describe('retry', () => {
 
       it('retries timeout errors', async () => {
         let attempts = 0
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           attempts++
           if (attempts < 2) {
             throw new Error('Request timed out')
@@ -162,8 +161,8 @@ describe('retry', () => {
 
         const promise = withRetry(fn, { maxRetries: 2, baseDelay: 100, jitter: false })
 
-        await jest.advanceTimersByTimeAsync(0)
-        await jest.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(100)
 
         const result = await promise
         expect(result).toBe('success')
@@ -171,7 +170,7 @@ describe('retry', () => {
 
       it('retries 5xx server errors', async () => {
         let attempts = 0
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           attempts++
           if (attempts < 2) {
             const error = new Error('Internal Server Error') as Error & { statusCode: number }
@@ -183,8 +182,8 @@ describe('retry', () => {
 
         const promise = withRetry(fn, { maxRetries: 2, baseDelay: 100, jitter: false })
 
-        await jest.advanceTimersByTimeAsync(0)
-        await jest.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(100)
 
         const result = await promise
         expect(result).toBe('success')
@@ -192,7 +191,7 @@ describe('retry', () => {
 
       it('retries Stripe connection errors', async () => {
         let attempts = 0
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           attempts++
           if (attempts < 2) {
             const error = new Error('Stripe connection failed') as Error & { type: string }
@@ -204,8 +203,8 @@ describe('retry', () => {
 
         const promise = withRetry(fn, { maxRetries: 2, baseDelay: 100, jitter: false })
 
-        await jest.advanceTimersByTimeAsync(0)
-        await jest.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(100)
 
         const result = await promise
         expect(result).toBe('success')
@@ -213,7 +212,7 @@ describe('retry', () => {
 
       it('retries GitHub rate limit errors (429)', async () => {
         let attempts = 0
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           attempts++
           if (attempts < 2) {
             const error = new Error('Rate limit exceeded') as Error & { status: number }
@@ -225,22 +224,22 @@ describe('retry', () => {
 
         const promise = withRetry(fn, { maxRetries: 2, baseDelay: 100, jitter: false })
 
-        await jest.advanceTimersByTimeAsync(0)
-        await jest.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(100)
 
         const result = await promise
         expect(result).toBe('success')
       })
 
       it('does not retry non-retryable errors (validation)', async () => {
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           throw new Error('Invalid email format')
         })
 
         const promise = withRetry(fn, { maxRetries: 3, baseDelay: 100 })
 
         const expectation = expect(promise).rejects.toThrow('Invalid email format')
-        await jest.runAllTimersAsync()
+        await vi.runAllTimersAsync()
         await expectation
         expect(fn).toHaveBeenCalledTimes(1) // No retries
         expect(logger.warn).toHaveBeenCalledWith(
@@ -250,7 +249,7 @@ describe('retry', () => {
       })
 
       it('does not retry 4xx client errors', async () => {
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           const error = new Error('Bad Request') as Error & { statusCode: number }
           error.statusCode = 400
           throw error
@@ -259,14 +258,14 @@ describe('retry', () => {
         const promise = withRetry(fn, { maxRetries: 3, baseDelay: 100 })
 
         const expectation = expect(promise).rejects.toThrow('Bad Request')
-        await jest.runAllTimersAsync()
+        await vi.runAllTimersAsync()
         await expectation
         expect(fn).toHaveBeenCalledTimes(1)
       })
 
       it('respects custom isRetryable function', async () => {
         let attempts = 0
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           attempts++
           if (attempts < 2) {
             throw new Error('CUSTOM_RETRYABLE')
@@ -283,8 +282,8 @@ describe('retry', () => {
           isRetryable,
         })
 
-        await jest.advanceTimersByTimeAsync(0)
-        await jest.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(100)
 
         const result = await promise
         expect(result).toBe('success')
@@ -293,7 +292,7 @@ describe('retry', () => {
 
     describe('TEST-001-03: Max retry exhaustion', () => {
       it('fails after maxRetries attempts', async () => {
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           throw new Error('ECONNRESET')
         })
 
@@ -305,10 +304,10 @@ describe('retry', () => {
         })
 
         const expectation = expect(promise).rejects.toThrow('ECONNRESET')
-        await jest.advanceTimersByTimeAsync(0)
-        await jest.advanceTimersByTimeAsync(100)
-        await jest.advanceTimersByTimeAsync(200)
-        await jest.advanceTimersByTimeAsync(400)
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(200)
+        await vi.advanceTimersByTimeAsync(400)
 
         await expectation
         expect(fn).toHaveBeenCalledTimes(4) // 1 initial + 3 retries
@@ -324,7 +323,7 @@ describe('retry', () => {
 
       it('logs success on retry after initial failure', async () => {
         let attempts = 0
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           attempts++
           if (attempts < 2) {
             throw new Error('ECONNRESET')
@@ -339,8 +338,8 @@ describe('retry', () => {
           operationName: 'test_success_after_retry',
         })
 
-        await jest.advanceTimersByTimeAsync(0)
-        await jest.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(100)
 
         await promise
         expect(logger.info).toHaveBeenCalledWith(
@@ -356,7 +355,7 @@ describe('retry', () => {
 
     describe('TEST-001-04: Success after N retries', () => {
       it('succeeds on first attempt without logging', async () => {
-        const fn = jest.fn(async () => 'success')
+        const fn = vi.fn(async () => 'success')
 
         const result = await withRetry(fn, { maxRetries: 3 })
 
@@ -367,7 +366,7 @@ describe('retry', () => {
 
       it('succeeds on second attempt after one retry', async () => {
         let attempts = 0
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           attempts++
           if (attempts === 1) {
             throw new Error('ETIMEDOUT')
@@ -377,8 +376,8 @@ describe('retry', () => {
 
         const promise = withRetry(fn, { maxRetries: 3, baseDelay: 100, jitter: false })
 
-        await jest.advanceTimersByTimeAsync(0)
-        await jest.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(100)
 
         const result = await promise
         expect(result).toBe('success')
@@ -387,7 +386,7 @@ describe('retry', () => {
 
       it('succeeds on final retry attempt', async () => {
         let attempts = 0
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           attempts++
           if (attempts < 4) {
             throw new Error('ECONNRESET')
@@ -397,10 +396,10 @@ describe('retry', () => {
 
         const promise = withRetry(fn, { maxRetries: 3, baseDelay: 100, jitter: false })
 
-        await jest.advanceTimersByTimeAsync(0)
-        await jest.advanceTimersByTimeAsync(100)
-        await jest.advanceTimersByTimeAsync(200)
-        await jest.advanceTimersByTimeAsync(400)
+        await vi.advanceTimersByTimeAsync(0)
+        await vi.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(200)
+        await vi.advanceTimersByTimeAsync(400)
 
         const result = await promise
         expect(result).toBe('success')
@@ -411,7 +410,7 @@ describe('retry', () => {
 
   describe('makeRetryable', () => {
     it('creates a retryable function wrapper', async () => {
-      const originalFn = jest.fn(async (value: number) => value * 2)
+      const originalFn = vi.fn(async (value: number) => value * 2)
 
       const retryableFn = makeRetryable(originalFn, {
         maxRetries: 2,
@@ -427,7 +426,7 @@ describe('retry', () => {
 
     it('retries wrapped function on failure', async () => {
       let attempts = 0
-      const originalFn = jest.fn(async (value: number) => {
+      const originalFn = vi.fn(async (value: number) => {
         attempts++
         if (attempts < 2) {
           throw new Error('ECONNRESET')
@@ -443,8 +442,8 @@ describe('retry', () => {
 
       const promise = retryableFn(5)
 
-      await jest.advanceTimersByTimeAsync(0)
-      await jest.advanceTimersByTimeAsync(100)
+      await vi.advanceTimersByTimeAsync(0)
+      await vi.advanceTimersByTimeAsync(100)
 
       const result = await promise
       expect(result).toBe(10)
@@ -455,14 +454,14 @@ describe('retry', () => {
   describe('withTimeout', () => {
     describe('TEST-001-05: Timeout functionality', () => {
       it('completes successfully before timeout', async () => {
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           await new Promise((resolve) => setTimeout(resolve, 500))
           return 'success'
         })
 
         const promise = withTimeout(fn, 1000, 'test_timeout')
 
-        await jest.advanceTimersByTimeAsync(500)
+        await vi.advanceTimersByTimeAsync(500)
 
         const result = await promise
         expect(result).toBe('success')
@@ -470,7 +469,7 @@ describe('retry', () => {
       })
 
       it('throws TimeoutError when operation exceeds timeout', async () => {
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           await new Promise((resolve) => setTimeout(resolve, 2000))
           return 'success'
         })
@@ -478,7 +477,7 @@ describe('retry', () => {
         const promise = withTimeout(fn, 1000, 'test_timeout')
 
         const expectation = expect(promise).rejects.toThrow('test_timeout timed out after 1000ms')
-        await jest.advanceTimersByTimeAsync(1000)
+        await vi.advanceTimersByTimeAsync(1000)
 
         await expectation
 
@@ -493,7 +492,7 @@ describe('retry', () => {
       })
 
       it('creates error with TimeoutError name', async () => {
-        const fn = jest.fn(
+        const fn = vi.fn(
           async () =>
             new Promise((resolve) => {
               setTimeout(resolve, 2000)
@@ -505,15 +504,15 @@ describe('retry', () => {
         const expectation = expect(promise).rejects.toMatchObject({
           name: 'TimeoutError',
         })
-        await jest.advanceTimersByTimeAsync(1000)
+        await vi.advanceTimersByTimeAsync(1000)
 
         await expectation
       })
 
       it('clears timeout on successful completion', async () => {
-        const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout')
+        const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout')
 
-        const fn = jest.fn(async () => 'success')
+        const fn = vi.fn(async () => 'success')
 
         await withTimeout(fn, 1000, 'test')
 
@@ -522,9 +521,9 @@ describe('retry', () => {
       })
 
       it('clears timeout on error', async () => {
-        const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout')
+        const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout')
 
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           throw new Error('Immediate failure')
         })
 
@@ -543,7 +542,7 @@ describe('retry', () => {
   describe('withRetryAndTimeout', () => {
     describe('TEST-001-06: Combined retry + timeout behavior', () => {
       it('succeeds within timeout on first attempt', async () => {
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           await new Promise((resolve) => setTimeout(resolve, 100))
           return 'success'
         })
@@ -555,7 +554,7 @@ describe('retry', () => {
           operationName: 'combined_test',
         })
 
-        await jest.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(100)
 
         const result = await promise
         expect(result).toBe('success')
@@ -564,7 +563,7 @@ describe('retry', () => {
 
       it('retries on timeout and succeeds', async () => {
         let attempts = 0
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           attempts++
           if (attempts === 1) {
             // First attempt times out
@@ -584,13 +583,13 @@ describe('retry', () => {
         })
 
         // First attempt times out after 1000ms
-        await jest.advanceTimersByTimeAsync(1000)
+        await vi.advanceTimersByTimeAsync(1000)
 
         // Retry delay of 100ms
-        await jest.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(100)
 
         // Second attempt completes in 100ms
-        await jest.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(100)
 
         const result = await promise
         expect(result).toBe('success')
@@ -598,7 +597,7 @@ describe('retry', () => {
       })
 
       it('fails after all retries timeout', async () => {
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           await new Promise((resolve) => setTimeout(resolve, 2000))
           return 'success'
         })
@@ -612,22 +611,22 @@ describe('retry', () => {
 
         const expectation = expect(promise).rejects.toThrow('all_timeout timed out after 1000ms')
         // First attempt timeout
-        await jest.advanceTimersByTimeAsync(1000)
+        await vi.advanceTimersByTimeAsync(1000)
         // First retry delay
-        await jest.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(100)
         // Second attempt timeout
-        await jest.advanceTimersByTimeAsync(1000)
+        await vi.advanceTimersByTimeAsync(1000)
         // Second retry delay
-        await jest.advanceTimersByTimeAsync(200)
+        await vi.advanceTimersByTimeAsync(200)
         // Third attempt timeout
-        await jest.advanceTimersByTimeAsync(1000)
+        await vi.advanceTimersByTimeAsync(1000)
 
         await expectation
         expect(fn).toHaveBeenCalledTimes(3)
       })
 
       it('uses operation name from retry options', async () => {
-        const fn = jest.fn(async () => {
+        const fn = vi.fn(async () => {
           await new Promise((resolve) => setTimeout(resolve, 2000))
         })
 
@@ -639,9 +638,9 @@ describe('retry', () => {
         })
 
         const expectation = expect(promise).rejects.toThrow('custom_op_name timed out after 1000ms')
-        await jest.advanceTimersByTimeAsync(1000)
-        await jest.advanceTimersByTimeAsync(100)
-        await jest.advanceTimersByTimeAsync(1000)
+        await vi.advanceTimersByTimeAsync(1000)
+        await vi.advanceTimersByTimeAsync(100)
+        await vi.advanceTimersByTimeAsync(1000)
 
         await expectation
       })

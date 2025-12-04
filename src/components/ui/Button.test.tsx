@@ -3,7 +3,7 @@ import { Button } from './Button'
 
 describe('Button Component', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('renders with default props', () => {
@@ -33,7 +33,7 @@ describe('Button Component', () => {
   })
 
   it('handles click events', async () => {
-    const handleClick = jest.fn()
+    const handleClick = vi.fn()
     render(<Button onClick={handleClick}>Click me</Button>)
 
     const button = screen.getByRole('button', { name: /click me/i })
@@ -43,7 +43,7 @@ describe('Button Component', () => {
   })
 
   it('does not handle clicks when disabled', async () => {
-    const handleClick = jest.fn()
+    const handleClick = vi.fn()
     render(
       <Button onClick={handleClick} disabled>
         Disabled

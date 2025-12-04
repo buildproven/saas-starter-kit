@@ -4,8 +4,8 @@ import { useSession } from 'next-auth/react'
 import { ProtectedRoute } from '../ProtectedRoute'
 
 // Mock next-auth
-jest.mock('next-auth/react')
-const mockUseSession = useSession as jest.MockedFunction<typeof useSession>
+vi.mock('next-auth/react')
+const mockUseSession = useSession as vi.MockedFunction<typeof useSession>
 const authenticatedSession = (overrides: Partial<Session['user']> = {}): Session => ({
   user: {
     id: '1',
@@ -23,19 +23,19 @@ const withStatus = <TStatus extends ReturnType<typeof useSession>['status']>(
 ) => ({
   data: session,
   status,
-  update: jest.fn(),
+  update: vi.fn(),
 })
 
 // Mock next/navigation
-const mockPush = jest.fn()
-jest.mock('next/navigation', () => ({
+const mockPush = vi.fn()
+vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
+    back: vi.fn(),
+    forward: vi.fn(),
+    refresh: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
   }),
 }))
 

@@ -2,14 +2,14 @@
  * Tests for GitHub Access Management
  */
 
-const mockGetMembershipForUserInOrg = jest.fn()
-const mockGetByName = jest.fn()
-const mockListPendingInvitations = jest.fn()
-const mockCreateInvitation = jest.fn()
-const mockGetByUsername = jest.fn()
+const mockGetMembershipForUserInOrg = vi.fn()
+const mockGetByName = vi.fn()
+const mockListPendingInvitations = vi.fn()
+const mockCreateInvitation = vi.fn()
+const mockGetByUsername = vi.fn()
 
-jest.mock('@octokit/rest', () => ({
-  Octokit: jest.fn().mockImplementation(() => ({
+vi.mock('@octokit/rest', () => ({
+  Octokit: vi.fn().mockImplementation(() => ({
     rest: {
       teams: {
         getMembershipForUserInOrg: mockGetMembershipForUserInOrg,
@@ -35,7 +35,7 @@ import {
 
 describe('GitHub Access Management', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     process.env.GITHUB_ACCESS_TOKEN = 'test_token'
     process.env.GITHUB_ORG = 'test-org'
   })
@@ -89,8 +89,8 @@ describe('GitHub Access Management', () => {
       mockGetByUsername.mockResolvedValueOnce({ data: { id: 67890 } })
       mockCreateInvitation.mockResolvedValueOnce({ data: { id: 11111 } })
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation()
 
       const result = await grantGitHubAccess({
         email: 'test@example.com',
@@ -112,7 +112,7 @@ describe('GitHub Access Management', () => {
       mockGetByName.mockResolvedValueOnce({ data: { id: 12345 } })
       mockCreateInvitation.mockResolvedValueOnce({ data: { id: 11111 } })
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
 
       const result = await grantGitHubAccess({
         email: 'test@example.com',
@@ -170,7 +170,7 @@ describe('GitHub Access Management', () => {
     it('handles missing GitHub config', async () => {
       delete process.env.GITHUB_ACCESS_TOKEN
 
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation()
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation()
 
       const result = await grantGitHubAccess({
         email: 'test@example.com',
@@ -191,8 +191,8 @@ describe('GitHub Access Management', () => {
       // Need to also mock the team creation path to trigger error
       mockGetByName.mockRejectedValueOnce(new Error('API rate limit exceeded'))
 
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation()
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation()
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation()
 
       const result = await grantGitHubAccess({
         email: 'test@example.com',
@@ -211,7 +211,7 @@ describe('GitHub Access Management', () => {
 
   describe('revokeGitHubAccess', () => {
     it('logs revocation and returns success', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
 
       const result = await revokeGitHubAccess({
         email: 'test@example.com',
@@ -235,7 +235,7 @@ describe('GitHub Access Management', () => {
 
   describe('setupGitHubTeamsAndRepos', () => {
     it('logs team setup', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
 
       await setupGitHubTeamsAndRepos()
 

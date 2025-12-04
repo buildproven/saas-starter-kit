@@ -2,31 +2,31 @@ import { postGithubOverrideHandler } from './route'
 import { grantGitHubAccess } from '@/lib/github/access-management'
 import type { AuthenticatedUser } from '@/lib/auth/api-protection'
 
-jest.mock('@/lib/prisma', () => ({
+vi.mock('@/lib/prisma', () => ({
   prisma: {
     templateSale: {
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
     },
     templateSaleCustomer: {
-      update: jest.fn(),
+      update: vi.fn(),
     },
   },
 }))
 
-jest.mock('@/lib/github/access-management', () => {
-  const actual = jest.requireActual('@/lib/github/access-management')
+vi.mock('@/lib/github/access-management', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/github/access-management')>()
   return {
     ...actual,
-    grantGitHubAccess: jest.fn(),
+    grantGitHubAccess: vi.fn(),
   }
 })
 
-jest.mock('next/server', () => ({
+vi.mock('next/server', () => ({
   NextResponse: {
-    json: jest.fn((data, init = {}) => ({
-      json: jest.fn().mockResolvedValue(data),
+    json: vi.fn((data, init = {}) => ({
+      json: vi.fn().mockResolvedValue(data),
       status: init.status || 200,
       headers: new Map(),
     })),
@@ -35,21 +35,22 @@ jest.mock('next/server', () => ({
 
 type PrismaMockShape = {
   templateSale: {
-    findUnique: jest.Mock
-    findFirst: jest.Mock
-    update: jest.Mock
+    findUnique: ReturnType<typeof vi.fn>
+    findFirst: ReturnType<typeof vi.fn>
+    update: ReturnType<typeof vi.fn>
   }
   templateSaleCustomer: {
-    update: jest.Mock
+    update: ReturnType<typeof vi.fn>
   }
 }
 
-const { prisma: prismaMock } = jest.requireMock('@/lib/prisma') as { prisma: PrismaMockShape }
-const grantGitHubAccessMock = grantGitHubAccess as jest.MockedFunction<typeof grantGitHubAccess>
+import { prisma } from '@/lib/prisma'
+const prismaMock = prisma as unknown as PrismaMockShape
+const grantGitHubAccessMock = grantGitHubAccess as vi.MockedFunction<typeof grantGitHubAccess>
 
 const mockRequest = (body: unknown): NextRequest =>
   ({
-    json: jest.fn().mockResolvedValue(body),
+    json: vi.fn().mockResolvedValue(body),
   }) as unknown as NextRequest
 
 const createSale = (overrides: Partial<TemplateSale> = {}): TemplateSale =>
@@ -103,7 +104,7 @@ const authContext = {
 
 describe('POST /api/admin/template-sales/github-access', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('updates username and retries invitation', async () => {
@@ -187,6 +188,6 @@ describe('POST /api/admin/template-sales/github-access', () => {
 })
 import type { NextRequest } from 'next/server'
 import type { TemplateSale, TemplateSaleCustomer } from '@prisma/client'
-jest.mock('@/lib/auth/api-protection', () => ({
+vi.mock('@/lib/auth/api-protection', () => ({
   withSuperAdminAuth: (handler: unknown) => handler,
 }))

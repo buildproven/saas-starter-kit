@@ -5,12 +5,12 @@ import type { SessionContextValue } from 'next-auth/react'
 import { useAuth, usePermissions, useOrganizationPermissions } from '../useAuth'
 
 // Mock next-auth
-jest.mock('next-auth/react')
-const mockUseSession = useSession as jest.MockedFunction<typeof useSession>
+vi.mock('next-auth/react')
+const mockUseSession = useSession as vi.MockedFunction<typeof useSession>
 const asAuthenticated = (session: Session): SessionContextValue => ({
   data: session,
   status: 'authenticated',
-  update: jest.fn(),
+  update: vi.fn(),
 })
 
 const asStatus = (
@@ -18,12 +18,12 @@ const asStatus = (
 ): SessionContextValue => ({
   data: null,
   status,
-  update: jest.fn(),
+  update: vi.fn(),
 })
 
 describe('useAuth', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should return loading state when session is loading', () => {
@@ -233,7 +233,7 @@ describe('usePermissions', () => {
 
 describe('useOrganizationPermissions', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should return false for membership when not authenticated', () => {

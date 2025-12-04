@@ -5,8 +5,8 @@
 import { GET, POST } from './route'
 import type { NextRequest } from 'next/server'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
@@ -18,17 +18,17 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('next-auth/next', () => ({
-  getServerSession: jest.fn(),
+vi.mock('next-auth/next', () => ({
+  getServerSession: vi.fn(),
 }))
 
-jest.mock('@/lib/auth', () => ({
+vi.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
 import { getServerSession } from 'next-auth/next'
 
-const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
+const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
 
 describe('GET /api/admin/users', () => {
   const createRequest = (params: Record<string, string> = {}): NextRequest => {
@@ -38,7 +38,7 @@ describe('GET /api/admin/users', () => {
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {
@@ -68,7 +68,7 @@ describe('GET /api/admin/users', () => {
       user: { id: 'admin_123', email: 'admin@example.com', role: 'ADMIN' },
     })
 
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
     const response = await GET(createRequest())
     const json = await response.json()
 
@@ -85,7 +85,7 @@ describe('GET /api/admin/users', () => {
       user: { id: 'admin_123', email: 'admin@example.com', role: 'ADMIN' },
     })
 
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
     const response = await GET(createRequest({ page: '2', limit: '5' }))
     const json = await response.json()
 
@@ -99,11 +99,11 @@ describe('GET /api/admin/users', () => {
 describe('POST /api/admin/users', () => {
   const createRequest = (body: Record<string, unknown>): NextRequest =>
     ({
-      json: jest.fn().mockResolvedValue(body),
+      json: vi.fn().mockResolvedValue(body),
     }) as unknown as NextRequest
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('returns 401 when not authenticated', async () => {

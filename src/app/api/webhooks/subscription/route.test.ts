@@ -1,12 +1,12 @@
 import { POST } from './route'
 
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
+vi.mock('next/server', () => {
+  const actual = vi.importActual('next/server')
   return {
     ...actual,
     NextResponse: {
-      json: jest.fn((data, init = {}) => ({
-        json: jest.fn().mockResolvedValue(data),
+      json: vi.fn((data, init = {}) => ({
+        json: vi.fn().mockResolvedValue(data),
         status: init.status || 200,
         headers: new Map(),
       })),
@@ -14,8 +14,8 @@ jest.mock('next/server', () => {
   }
 })
 
-jest.mock('@/lib/stripe', () => {
-  const constructEvent = jest.fn()
+vi.mock('@/lib/stripe', () => {
+  const constructEvent = vi.fn()
   return {
     getStripeClient: () => ({
       webhooks: {
@@ -26,26 +26,26 @@ jest.mock('@/lib/stripe', () => {
   }
 })
 
-jest.mock('@/lib/prisma', () => {
+vi.mock('@/lib/prisma', () => {
   const prismaMock = {
     stripeWebhookEvent: {
-      create: jest.fn(),
+      create: vi.fn(),
     },
     plan: {
-      findUnique: jest.fn(),
+      findUnique: vi.fn(),
     },
     subscription: {
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      upsert: jest.fn(),
-      update: jest.fn(),
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      upsert: vi.fn(),
+      update: vi.fn(),
     },
   }
   return { prisma: prismaMock, __prismaMock: prismaMock }
 })
 
-jest.mock('@/lib/subscription', () => {
-  const updateSubscription = jest.fn()
+vi.mock('@/lib/subscription', () => {
+  const updateSubscription = vi.fn()
   return {
     SubscriptionService: {
       updateSubscription,
@@ -54,23 +54,27 @@ jest.mock('@/lib/subscription', () => {
   }
 })
 
-const { __constructEventMock } = jest.requireMock('@/lib/stripe') as {
-  __constructEventMock: jest.Mock
+import * as stripeModule from '@/lib/stripe'
+import * as prismaModule from '@/lib/prisma'
+import * as subscriptionModule from '@/lib/subscription'
+
+const { __constructEventMock } = stripeModule as unknown as {
+  __constructEventMock: ReturnType<typeof vi.fn>
 }
-const { __prismaMock } = jest.requireMock('@/lib/prisma') as {
+const { __prismaMock } = prismaModule as unknown as {
   __prismaMock: {
-    stripeWebhookEvent: { create: jest.Mock }
-    plan: { findUnique: jest.Mock }
+    stripeWebhookEvent: { create: ReturnType<typeof vi.fn> }
+    plan: { findUnique: ReturnType<typeof vi.fn> }
     subscription: {
-      findUnique: jest.Mock
-      findFirst: jest.Mock
-      upsert: jest.Mock
-      update: jest.Mock
+      findUnique: ReturnType<typeof vi.fn>
+      findFirst: ReturnType<typeof vi.fn>
+      upsert: ReturnType<typeof vi.fn>
+      update: ReturnType<typeof vi.fn>
     }
   }
 }
-const { __updateSubscriptionMock } = jest.requireMock('@/lib/subscription') as {
-  __updateSubscriptionMock: jest.Mock
+const { __updateSubscriptionMock } = subscriptionModule as unknown as {
+  __updateSubscriptionMock: ReturnType<typeof vi.fn>
 }
 
 describe('POST /api/webhooks/subscription', () => {
@@ -79,7 +83,7 @@ describe('POST /api/webhooks/subscription', () => {
   })
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   const createRequest = (payload: unknown, signature: string | null = 'sig_test'): NextRequest => {
@@ -89,7 +93,7 @@ describe('POST /api/webhooks/subscription', () => {
       headers.set('stripe-signature', signature)
     }
     return {
-      text: jest.fn().mockResolvedValue(body),
+      text: vi.fn().mockResolvedValue(body),
       headers: {
         get: (key: string) => headers.get(key) ?? null,
       },
