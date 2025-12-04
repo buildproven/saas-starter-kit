@@ -26,15 +26,9 @@ A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma,
 - **Small teams** who want a production-ready starting point without reinventing auth, billing, and deployment
 - **Agencies** shipping client projects faster with a proven foundation
 
-## Pricing & Licensing
+## Licensing
 
-### Template Pricing
-
-| Package      | Price | What's Included                                              |
-| ------------ | ----- | ------------------------------------------------------------ |
-| **Hobby**    | $99   | Complete template + documentation                            |
-| **Pro**      | $249  | Hobby + white-label rights + video tutorials + GitHub access |
-| **Director** | $399  | Pro + 3 months Vibe Lab Pro access + consultation call       |
+For commercial packages and pricing, visit [vibebuildlab.com](https://vibebuildlab.com).
 
 ### License
 

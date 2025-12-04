@@ -132,6 +132,5 @@ See `prisma/schema.prisma` for the complete schema including enums (`UserRole`, 
 
 ## References
 
-- [API.md](./API.md) – Endpoint specifics.
 - [DEPLOYMENT.md](./DEPLOYMENT.md) – Production readiness checklist.
-- [CONTRIBUTING.md](./CONTRIBUTING.md) – Development workflow standards.
+- [CONTRIBUTING.md](../CONTRIBUTING.md) – Development workflow standards.
