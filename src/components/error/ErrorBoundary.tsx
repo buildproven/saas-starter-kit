@@ -1,13 +1,12 @@
 'use client'
 
 import * as Sentry from '@sentry/nextjs'
-import { Component, ReactNode } from 'react'
+import { Component, ReactNode, ErrorInfo } from 'react'
 
 interface Props {
   children: ReactNode
   fallback?: ReactNode
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onError?: (error: Error, errorInfo: any) => void
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
 }
 
 interface State {
@@ -25,12 +24,11 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  override componentDidCatch(error: Error, errorInfo: any) {
+  override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log to Sentry
     Sentry.withScope((scope) => {
       scope.setTag('component', 'ErrorBoundary')
-      scope.setContext('errorInfo', errorInfo)
+      scope.setContext('errorInfo', { componentStack: errorInfo.componentStack })
       Sentry.captureException(error)
     })
 
@@ -95,8 +93,7 @@ export class ErrorBoundary extends Component<Props, State> {
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
   fallback?: ReactNode,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onError?: (error: Error, errorInfo: any) => void
+  onError?: (error: Error, errorInfo: ErrorInfo) => void
 ) {
   return function WithErrorBoundaryComponent(props: P) {
     return (
