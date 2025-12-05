@@ -22,15 +22,16 @@ export async function GET() {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    const userId = session.user.id
 
     const organizations = await prisma.organization.findMany({
       where: {
         OR: [
-          { ownerId: session.user.id },
+          { ownerId: userId },
           {
             members: {
               some: {
-                userId: session.user.id,
+                userId: userId,
                 status: 'ACTIVE',
               },
             },
@@ -47,7 +48,7 @@ export async function GET() {
         },
         members: {
           where: {
-            userId: session.user.id,
+            userId: userId,
           },
           select: {
             role: true,
@@ -83,8 +84,8 @@ export async function GET() {
     // Transform the data to include user's role
     const transformedOrganizations = organizations.map((org) => ({
       ...org,
-      userRole: org.ownerId === session.user.id ? 'OWNER' : org.members[0]?.role || 'VIEWER',
-      userStatus: org.ownerId === session.user.id ? 'ACTIVE' : org.members[0]?.status || 'PENDING',
+      userRole: org.ownerId === userId ? 'OWNER' : org.members[0]?.role || 'VIEWER',
+      userStatus: org.ownerId === userId ? 'ACTIVE' : org.members[0]?.status || 'PENDING',
       members: undefined, // Remove the filtered members array
     }))
 

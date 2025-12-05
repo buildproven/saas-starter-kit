@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/nextjs'
+import type { SeverityLevel } from '@sentry/nextjs'
 
 // Define custom error types for better categorization
 export enum ErrorType {
@@ -19,6 +20,14 @@ export enum ErrorSeverity {
   CRITICAL = 'critical',
 }
 
+// Map our severity to Sentry's severity levels
+const severityToSentryLevel: Record<ErrorSeverity, SeverityLevel> = {
+  [ErrorSeverity.LOW]: 'info',
+  [ErrorSeverity.MEDIUM]: 'warning',
+  [ErrorSeverity.HIGH]: 'error',
+  [ErrorSeverity.CRITICAL]: 'fatal',
+}
+
 interface ErrorContext {
   userId?: string
   organizationId?: string
@@ -27,8 +36,7 @@ interface ErrorContext {
   url?: string
   method?: string
   ip?: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any
+  [key: string]: string | number | boolean | undefined
 }
 
 // Enhanced error logging with context
@@ -41,8 +49,7 @@ export function logError(
   Sentry.withScope((scope) => {
     // Set error type and severity
     scope.setTag('error_type', type)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    scope.setLevel(severity as any)
+    scope.setLevel(severityToSentryLevel[severity])
 
     // Add user context if available
     if (context.userId) {
@@ -72,8 +79,7 @@ export function logError(
 
     // Capture the error
     if (typeof error === 'string') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      Sentry.captureMessage(error, severity as any)
+      Sentry.captureMessage(error, severityToSentryLevel[severity])
     } else {
       Sentry.captureException(error)
     }
@@ -104,8 +110,7 @@ export const apiError = (error: Error | string, context?: ErrorContext) =>
 // Track user actions for debugging
 export function trackUserAction(
   action: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  data: Record<string, any> = {},
+  data: Record<string, unknown> = {},
   userId?: string
 ) {
   Sentry.addBreadcrumb({
@@ -128,8 +133,7 @@ export function trackUserAction(
 export function trackPerformance(
   operation: string,
   duration: number,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  context: Record<string, any> = {}
+  context: Record<string, unknown> = {}
 ) {
   Sentry.addBreadcrumb({
     message: `${operation} completed in ${duration}ms`,
@@ -154,8 +158,7 @@ export function trackPerformance(
 }
 
 // Async error wrapper for better error handling
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function withErrorHandling<T extends any[], R>(
+export function withErrorHandling<T extends unknown[], R>(
   fn: (...args: T) => Promise<R>,
   errorType: ErrorType = ErrorType.SYSTEM,
   severity: ErrorSeverity = ErrorSeverity.MEDIUM
@@ -166,7 +169,6 @@ export function withErrorHandling<T extends any[], R>(
     } catch (error) {
       logError(error instanceof Error ? error : new Error(String(error)), errorType, severity, {
         function: fn.name,
-        arguments: args,
       })
       throw error
     }

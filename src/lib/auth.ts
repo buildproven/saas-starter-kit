@@ -1,13 +1,13 @@
-// NextAuth types are included from the providers
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
 import GoogleProvider from 'next-auth/providers/google'
 import GitHubProvider from 'next-auth/providers/github'
+import type { AuthOptions } from 'next-auth'
 import { prisma } from './prisma'
 import { getEnv } from './env'
 
 const env = getEnv()
 
-export const authOptions = {
+export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
 
   providers: [
@@ -36,16 +36,14 @@ export const authOptions = {
   },
 
   callbacks: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async session({ session, token }: any) {
+    async session({ session, token }) {
       if (session.user && token) {
         session.user.id = token.id
         session.user.role = token.role
       }
       return session
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async jwt({ token, user }: any) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id
         token.role = user.role
@@ -55,7 +53,7 @@ export const authOptions = {
   },
 
   session: {
-    strategy: 'jwt' as const,
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
 
@@ -64,21 +62,18 @@ export const authOptions = {
   },
 
   events: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async createUser({ user }: any) {
+    async createUser({ user }) {
       const { events } = await import('./logger')
       events.userCreated(user.id, 'oauth')
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async signIn({ user, account }: any) {
+    async signIn({ user, account }) {
       const { events } = await import('./logger')
       events.userSignedIn(user.id, account?.provider || 'unknown')
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async signOut({ session }: any) {
+    async signOut({ token }) {
       const { events } = await import('./logger')
-      if (session?.user?.id) {
-        events.userSignedOut(session.user.id)
+      if (token?.sub) {
+        events.userSignedOut(token.sub)
       }
     },
   },

@@ -22,7 +22,7 @@ export const mockSession = {
     name: 'Test User',
     email: 'test@example.com',
     image: 'https://example.com/avatar.jpg',
-    role: 'USER',
+    role: 'USER' as const,
   },
   expires: '2025-01-01',
 }
@@ -81,13 +81,14 @@ export const resetMocks = () => {
 }
 
 // Helper to mock different session states
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const mockUseSession = (sessionData: any = mockSession, status = 'authenticated') => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { useSession } = require('next-auth/react')
-  useSession.mockReturnValue({
+export const mockUseSession = async (
+  sessionData: typeof mockSession | null = mockSession,
+  status: 'authenticated' | 'loading' | 'unauthenticated' = 'authenticated'
+) => {
+  const nextAuthReact = vi.mocked(await import('next-auth/react'))
+  nextAuthReact.useSession.mockReturnValue({
     data: sessionData,
     status,
     update: vi.fn(),
-  })
+  } as ReturnType<typeof nextAuthReact.useSession>)
 }
