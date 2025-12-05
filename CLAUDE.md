@@ -9,14 +9,6 @@ This file provides guidance to Claude Code when working with the SaaS Starter Ki
 **Maintainer**: Vibe Build Lab LLC
 **Repository**: https://github.com/vibebuildlab/saas-starter-kit
 
-## Pricing (Reference: vibebuildlab/docs/PRICING_STRATEGY.md)
-
-| Package  | Price | Features                               |
-| -------- | ----- | -------------------------------------- |
-| Hobby    | $99   | Complete template + documentation      |
-| Pro      | $249  | + White-label + videos + GitHub access |
-| Director | $399  | + 3 months Vibe Lab Pro + consultation |
-
 ## Key Commands
 
 ```bash

@@ -26,35 +26,7 @@ The MIT License applies to the core template code. See [LICENSE](./LICENSE) for 
 
 ## Commercial Packages
 
-| Package      | Price | Rights Included                                          |
-| ------------ | ----- | -------------------------------------------------------- |
-| **Hobby**    | $99   | 1 commercial project, documentation access               |
-| **Pro**      | $249  | Unlimited projects, white-label rights, video tutorials  |
-| **Director** | $399  | Everything in Pro + 3 months Vibe Lab Pro + consultation |
-
-## What Each Package Includes
-
-### Hobby ($99)
-
-- Complete SaaS Starter Kit template
-- Full documentation
-- Deploy to one commercial project
-- Community support via GitHub Issues
-
-### Pro ($249)
-
-- Everything in Hobby
-- White-label rights (remove Vibe Build Lab branding)
-- Video tutorial access
-- Private GitHub repository access
-- Deploy to unlimited commercial projects
-
-### Director ($399)
-
-- Everything in Pro
-- 3 months of Vibe Lab Pro membership ($147 value)
-- 30-minute consultation call
-- Priority support
+For current pricing and package details, visit [vibebuildlab.com](https://vibebuildlab.com).
 
 ## License Terms
 
