@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -67,14 +66,14 @@ async function checkOrganizationPermission(
 // GET /api/organizations/[id]/members - List organization members
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { organization, hasPermission } = await checkOrganizationPermission(
       params.id,
-      session.user.id,
+      user.id,
       'MEMBER'
     )
 
@@ -138,14 +137,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // POST /api/organizations/[id]/members - Invite new member
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const { organization, hasPermission } = await checkOrganizationPermission(
       params.id,
-      session.user.id,
+      user.id,
       'ADMIN'
     )
 

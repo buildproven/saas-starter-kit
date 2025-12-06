@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -72,12 +71,12 @@ async function checkApiKeyPermission(
 // GET /api/api-keys/[id] - Get API key details
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { apiKey, hasPermission } = await checkApiKeyPermission(params.id, session.user.id)
+    const { apiKey, hasPermission } = await checkApiKeyPermission(params.id, user.id)
 
     if (!apiKey) {
       return NextResponse.json({ error: 'API key not found' }, { status: 404 })
@@ -114,12 +113,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/api-keys/[id] - Update API key
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { apiKey, hasPermission } = await checkApiKeyPermission(params.id, session.user.id)
+    const { apiKey, hasPermission } = await checkApiKeyPermission(params.id, user.id)
 
     if (!apiKey) {
       return NextResponse.json({ error: 'API key not found' }, { status: 404 })
@@ -178,12 +177,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/api-keys/[id] - Delete/revoke API key
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { apiKey, hasPermission } = await checkApiKeyPermission(params.id, session.user.id)
+    const { apiKey, hasPermission } = await checkApiKeyPermission(params.id, user.id)
 
     if (!apiKey) {
       return NextResponse.json({ error: 'API key not found' }, { status: 404 })

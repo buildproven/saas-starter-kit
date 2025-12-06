@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -67,15 +66,12 @@ async function checkUserPermission(
 // GET /api/organizations/[id] - Get organization details
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { organization, hasPermission, userRole } = await checkUserPermission(
-      params.id,
-      session.user.id
-    )
+    const { organization, hasPermission, userRole } = await checkUserPermission(params.id, user.id)
 
     if (!organization) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
@@ -170,16 +166,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/organizations/[id] - Update organization
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { organization, hasPermission } = await checkUserPermission(
-      params.id,
-      session.user.id,
-      'ADMIN'
-    )
+    const { organization, hasPermission } = await checkUserPermission(params.id, user.id, 'ADMIN')
 
     if (!organization) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
@@ -240,8 +232,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/organizations/[id] - Delete organization
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -263,7 +255,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Only owner can delete organization
-    if (organization.ownerId !== session.user.id) {
+    if (organization.ownerId !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

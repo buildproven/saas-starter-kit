@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAdminAuth, type AuthenticatedUser } from '@/lib/auth/api-protection'
+import { prisma } from '@/lib/prisma'
+import { UserRole, Prisma } from '@prisma/client'
 
 interface AuthContext {
   user: AuthenticatedUser | null
@@ -7,44 +9,52 @@ interface AuthContext {
 
 async function getUsersHandler(request: NextRequest, { user }: AuthContext): Promise<NextResponse> {
   // This route requires ADMIN role or higher
-  // TODO: Use user context for admin-specific filtering
   console.log('Admin user:', user?.id, 'accessing users endpoint')
+
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
-    // TODO: Implement search functionality in the future
+    const search = searchParams.get('search') || ''
 
-    // TODO: Implement actual user fetching from database
-    // const users = await getUsersWithPagination({ page, limit, search })
+    const skip = (page - 1) * limit
 
-    // Mock data for now
-    const mockUsers = [
-      {
-        id: '1',
-        email: 'user1@example.com',
-        name: 'John Doe',
-        role: 'USER',
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        email: 'admin@example.com',
-        name: 'Jane Admin',
-        role: 'ADMIN',
-        createdAt: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-      },
-    ]
+    // Build where clause for search
+    const where: Prisma.UserWhereInput = search
+      ? {
+          OR: [
+            { email: { contains: search, mode: 'insensitive' } },
+            { name: { contains: search, mode: 'insensitive' } },
+          ],
+        }
+      : {}
+
+    // Execute query and count in parallel
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          role: true,
+          createdAt: true,
+          // Exclude sensitive fields if any
+        },
+      }),
+      prisma.user.count({ where }),
+    ])
 
     return NextResponse.json({
-      users: mockUsers,
+      users,
       pagination: {
         page,
         limit,
-        total: mockUsers.length,
-        totalPages: Math.ceil(mockUsers.length / limit),
+        total,
+        totalPages: Math.ceil(total / limit),
       },
       message: 'Users retrieved successfully',
     })
@@ -63,12 +73,12 @@ async function createUserHandler(
     const { email, name, role = 'USER' } = body
 
     // Validate input
-    if (!email || !name) {
-      return NextResponse.json({ error: 'Email and name are required' }, { status: 400 })
+    if (!email) {
+      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
     }
 
     // Validate role
-    const validRoles = ['USER', 'ADMIN', 'SUPER_ADMIN']
+    const validRoles = Object.values(UserRole)
     if (!validRoles.includes(role)) {
       return NextResponse.json({ error: 'Invalid role specified' }, { status: 400 })
     }
@@ -81,17 +91,29 @@ async function createUserHandler(
       )
     }
 
-    // TODO: Create user in database
-    // const newUser = await createUser({ email, name, role })
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    })
 
-    const newUser = {
-      id: Date.now().toString(),
-      email,
-      name,
-      role,
-      createdAt: new Date().toISOString(),
-      lastLogin: null,
+    if (existingUser) {
+      return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 })
     }
+
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        name,
+        role: role as UserRole,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        createdAt: true,
+      },
+    })
 
     return NextResponse.json(
       {

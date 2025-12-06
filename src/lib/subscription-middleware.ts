@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 import { SubscriptionService } from '@/lib/subscription'
 import { prisma } from '@/lib/prisma'
 
@@ -45,8 +44,8 @@ export async function withSubscriptionCheck(
 ) {
   return async (request: NextRequest) => {
     try {
-      const session = await getServerSession(authOptions)
-      if (!session?.user?.id) {
+      const user = await getUser()
+      if (!user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
 
@@ -58,7 +57,7 @@ export async function withSubscriptionCheck(
         where: { id: organizationId },
         include: {
           members: {
-            where: { userId: session.user.id, status: 'ACTIVE' },
+            where: { userId: user.id, status: 'ACTIVE' },
             select: { role: true },
           },
         },
@@ -68,7 +67,7 @@ export async function withSubscriptionCheck(
         return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
       }
 
-      const isOwner = organization.ownerId === session.user.id
+      const isOwner = organization.ownerId === user.id
       const member = organization.members[0]
 
       if (!isOwner && !member) {
@@ -152,7 +151,7 @@ export async function withSubscriptionCheck(
       // Call the actual handler with context
       const context: SubscriptionContext = {
         organizationId,
-        userId: session.user.id,
+        userId: user.id,
         features,
         usage,
       }

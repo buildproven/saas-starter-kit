@@ -19,7 +19,18 @@ try {
 
 const configs = [
   {
-    ignores: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.next/**', '**/coverage/**'],
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/build/**',
+      '**/.next/**',
+      '**/coverage/**',
+      '**/examples/**',
+      '**/scripts/**',
+      'jest.setup.ts',
+      'landing-page.html',
+      'landing-page-aibuilderlab.html',
+    ],
   },
   js.configs.recommended,
 ]

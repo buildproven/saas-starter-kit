@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { Session } from 'next-auth'
+import { Session } from '@supabase/supabase-js'
 import { logError, ErrorType } from './error-logging'
 
 // Types for our store
@@ -123,8 +123,8 @@ export const useAppStore = create<AppState>()(
               ? {
                   id: session.user.id || '',
                   email: session.user.email || '',
-                  name: session.user.name || undefined,
-                  image: session.user.image || undefined,
+                  name: session.user.user_metadata?.full_name || undefined,
+                  image: session.user.user_metadata?.avatar_url || undefined,
                 }
               : null,
             isAuthenticated: !!session?.user,

@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { z } from 'zod'
 
-// Input validation schemas
 const createProjectSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().optional(),
@@ -13,7 +11,6 @@ const createProjectSchema = z.object({
   status: z.enum(['DRAFT', 'ACTIVE', 'ARCHIVED']).default('DRAFT'),
 })
 
-// Helper function to check project permissions
 async function checkProjectAccess(organizationId: string, userId: string) {
   const organization = await prisma.organization.findUnique({
     where: { id: organizationId },
@@ -43,11 +40,10 @@ async function checkProjectAccess(organizationId: string, userId: string) {
   return { hasAccess: true, userRole: member.role }
 }
 
-// GET /api/projects - List user's projects
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -58,15 +54,14 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = (page - 1) * limit
 
-    // Build where clause
     const whereClause: Record<string, unknown> = {
       organization: {
         OR: [
-          { ownerId: session.user.id },
+          { ownerId: user.id },
           {
             members: {
               some: {
-                userId: session.user.id,
+                userId: user.id,
                 status: 'ACTIVE',
               },
             },
@@ -119,34 +114,27 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/projects - Create new project
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const validatedData = createProjectSchema.parse(body)
 
-    // Check organization access
-    const { hasAccess, userRole } = await checkProjectAccess(
-      validatedData.organizationId,
-      session.user.id
-    )
+    const { hasAccess, userRole } = await checkProjectAccess(validatedData.organizationId, user.id)
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Check if user can create projects (MEMBER or higher)
     const roleHierarchy = { VIEWER: 1, MEMBER: 2, ADMIN: 3, OWNER: 4 }
     if ((roleHierarchy[userRole as keyof typeof roleHierarchy] || 0) < 2) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
-    // Check subscription limits for project creation
     const projectCount = await prisma.project.count({
       where: { organizationId: validatedData.organizationId },
     })
@@ -168,7 +156,7 @@ export async function POST(request: NextRequest) {
             upgradeRequired: true,
           },
         },
-        { status: 402 } // Payment Required
+        { status: 402 }
       )
     }
 
@@ -189,12 +177,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(
-      {
-        project,
-      },
-      { status: 201 }
-    )
+    return NextResponse.json({ project }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })

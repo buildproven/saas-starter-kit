@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -69,15 +68,12 @@ async function checkProjectPermission(
 // GET /api/projects/[id] - Get project details
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { project, hasPermission, userRole } = await checkProjectPermission(
-      params.id,
-      session.user.id
-    )
+    const { project, hasPermission, userRole } = await checkProjectPermission(params.id, user.id)
 
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
@@ -123,16 +119,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // PUT /api/projects/[id] - Update project
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { project, hasPermission } = await checkProjectPermission(
-      params.id,
-      session.user.id,
-      'MEMBER'
-    )
+    const { project, hasPermission } = await checkProjectPermission(params.id, user.id, 'MEMBER')
 
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
@@ -175,16 +167,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // DELETE /api/projects/[id] - Delete project
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { project, hasPermission } = await checkProjectPermission(
-      params.id,
-      session.user.id,
-      'ADMIN'
-    )
+    const { project, hasPermission } = await checkProjectPermission(params.id, user.id, 'ADMIN')
 
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
