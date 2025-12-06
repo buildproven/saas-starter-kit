@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { z } from 'zod'
 
-// Input validation schemas
 const createSubscriptionSchema = z.object({
   organizationId: z.string(),
   priceId: z.string(),
@@ -32,7 +30,6 @@ const updateSubscriptionSchema = z.object({
   cancelAtPeriodEnd: z.boolean().optional(),
 })
 
-// Helper function to check organization access
 async function checkOrganizationAccess(organizationId: string, userId: string) {
   const organization = await prisma.organization.findUnique({
     where: { id: organizationId },
@@ -62,11 +59,10 @@ async function checkOrganizationAccess(organizationId: string, userId: string) {
   return { hasAccess: true, userRole: member.role, isOwner: false }
 }
 
-// GET /api/subscriptions - Get user's organization subscriptions
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -74,8 +70,7 @@ export async function GET(request: NextRequest) {
     const organizationId = searchParams.get('organizationId')
 
     if (organizationId) {
-      // Get specific organization subscription
-      const { hasAccess } = await checkOrganizationAccess(organizationId, session.user.id)
+      const { hasAccess } = await checkOrganizationAccess(organizationId, user.id)
       if (!hasAccess) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
       }
@@ -92,15 +87,14 @@ export async function GET(request: NextRequest) {
         limits,
       })
     } else {
-      // Get all subscriptions for user's organizations
       const organizations = await prisma.organization.findMany({
         where: {
           OR: [
-            { ownerId: session.user.id },
+            { ownerId: user.id },
             {
               members: {
                 some: {
-                  userId: session.user.id,
+                  userId: user.id,
                   status: 'ACTIVE',
                 },
               },
@@ -147,28 +141,25 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/subscriptions - Create new subscription (webhook/internal use)
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const validatedData = createSubscriptionSchema.parse(body)
 
-    // Check organization access (owner or admin required)
     const { hasAccess, userRole, isOwner } = await checkOrganizationAccess(
       validatedData.organizationId,
-      session.user.id
+      user.id
     )
 
     if (!hasAccess || (!isOwner && userRole !== 'ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Check if organization already has a subscription
     const existingSubscription = await SubscriptionService.getSubscription(
       validatedData.organizationId
     )
@@ -180,7 +171,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verify the plan exists
     const plan = await SubscriptionService.getPlanByPriceId(validatedData.priceId)
     if (!plan) {
       return NextResponse.json({ error: 'Invalid plan selected' }, { status: 400 })
@@ -210,11 +200,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT /api/subscriptions - Update subscription status (webhook use)
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -228,7 +217,6 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const validatedData = updateSubscriptionSchema.parse(body)
 
-    // Get subscription and check access
     const subscription = await prisma.subscription.findUnique({
       where: { subscriptionId },
       include: { organization: true },
@@ -240,14 +228,13 @@ export async function PUT(request: NextRequest) {
 
     const { hasAccess, userRole, isOwner } = await checkOrganizationAccess(
       subscription.organizationId,
-      session.user.id
+      user.id
     )
 
     if (!hasAccess || (!isOwner && userRole !== 'ADMIN')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Prepare update data
     const updateData: {
       status?: unknown
       currentPeriodStart?: Date

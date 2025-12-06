@@ -2,13 +2,16 @@ import type Stripe from 'stripe'
 import { getStripeClient } from '@/lib/stripe'
 import { getPlanNameByPriceId } from '@/lib/billing/plan-definitions'
 
+interface StripeErrorWithStatus {
+  statusCode?: number
+}
+
 const isStripeNotFoundError = (error: unknown): boolean => {
   return (
     !!error &&
     typeof error === 'object' &&
     'statusCode' in error &&
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (error as any).statusCode === 404
+    (error as StripeErrorWithStatus).statusCode === 404
   )
 }
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { randomUUID } from 'node:crypto'
 import type { NextRequest } from 'next/server'
 
@@ -92,11 +91,51 @@ type PrismaMock = {
   $transaction: vi.Mock
 }
 
+interface PrismaCreateInput {
+  data: {
+    sessionId?: string
+    email?: string
+    package: string
+    amount?: number
+    status?: string
+    paymentIntentId?: string
+    companyName?: string
+    useCase?: string
+    githubUsername?: string | null
+    metadata?: Record<string, unknown> | null
+    customerDetails?: Record<string, unknown> | null
+    completedAt?: Date | null
+  }
+}
+
+interface PrismaWhereInput {
+  where: {
+    sessionId?: string
+    id?: string
+    saleId?: string
+    downloadToken?: string
+  }
+}
+
+interface PrismaUpdateInput extends PrismaWhereInput {
+  data: Partial<PrismaCreateInput['data']>
+}
+
+interface PrismaUpsertInput extends PrismaWhereInput {
+  update: Partial<PrismaCreateInput['data']>
+  create: PrismaCreateInput['data']
+}
+
 vi.mock('@/lib/prisma', () => {
-  const prisma = {} as any
+  const prisma = {
+    templateSale: {},
+    templateSaleCustomer: {},
+    templateDownloadAudit: {},
+    $transaction: vi.fn(),
+  }
 
   prisma.templateSale = {
-    create: vi.fn(async ({ data }: any) => {
+    create: vi.fn(async ({ data }: PrismaCreateInput) => {
       const record: TemplateSaleRecord = {
         id: randomUUID(),
         sessionId: data.sessionId!,
@@ -117,16 +156,16 @@ vi.mock('@/lib/prisma', () => {
       saleStoreBySession.set(record.sessionId, record)
       saleStoreById.set(record.id, record)
       return clone(record)
-    }) as any,
-    findUnique: vi.fn(async ({ where }: any) => {
+    }),
+    findUnique: vi.fn(async ({ where }: PrismaWhereInput) => {
       const record = where.sessionId
         ? saleStoreBySession.get(where.sessionId)
         : where.id
           ? saleStoreById.get(where.id)
           : undefined
       return record ? clone(record) : null
-    }) as any,
-    update: vi.fn(async ({ where, data }: any) => {
+    }),
+    update: vi.fn(async ({ where, data }: PrismaUpdateInput) => {
       const existing = where.sessionId
         ? saleStoreBySession.get(where.sessionId)
         : where.id
@@ -156,11 +195,11 @@ vi.mock('@/lib/prisma', () => {
       saleStoreBySession.set(updated.sessionId, updated)
       saleStoreById.set(updated.id, updated)
       return clone(updated)
-    }) as any,
+    }),
   }
 
   prisma.templateSaleCustomer = {
-    upsert: vi.fn(async ({ where, update, create }: any) => {
+    upsert: vi.fn(async ({ where, update, create }: PrismaUpsertInput) => {
       const existing = customerStore.get(where.saleId)
       if (existing) {
         const updated: TemplateSaleCustomerRecord = {
@@ -199,8 +238,8 @@ vi.mock('@/lib/prisma', () => {
       }
       customerStore.set(where.saleId, newRecord)
       return clone(newRecord)
-    }) as any,
-    findUnique: vi.fn(async ({ where }: any) => {
+    }),
+    findUnique: vi.fn(async ({ where }: PrismaWhereInput) => {
       if (where.downloadToken) {
         const customer = [...customerStore.values()].find(
           (c) => c.downloadToken === where.downloadToken
@@ -215,14 +254,14 @@ vi.mock('@/lib/prisma', () => {
           : clone(customer)
       }
       return null
-    }) as any,
+    }),
   }
 
   prisma.templateDownloadAudit = {
-    create: vi.fn(async ({ data }: any) => {
-      downloadAudits.push(data)
+    create: vi.fn(async ({ data }: PrismaCreateInput) => {
+      downloadAudits.push(data as Record<string, unknown>)
       return clone(data)
-    }) as any,
+    }),
   }
 
   prisma.$transaction = vi.fn(
@@ -264,13 +303,32 @@ const clone = <T>(value: T): T => {
   return structured ? structured(value) : JSON.parse(JSON.stringify(value))
 }
 
+interface StripeSessionRetrieveResult {
+  id: string
+  payment_status: string
+  customer_details: {
+    email: string
+    name: string
+    address: null
+    phone: null
+  }
+  metadata: Record<string, unknown>
+  payment_intent: string
+  invoice: null
+  line_items: {
+    data: Array<{
+      price: { id: string }
+    }>
+  }
+}
+
 vi.mock('@/lib/stripe', () => {
   let counter = 0
   return {
     getStripeClient: () => ({
       checkout: {
         sessions: {
-          create: vi.fn(async (params: Record<string, unknown>) => {
+          create: vi.fn(async (params: CheckoutSessionParams) => {
             counter += 1
             const id = `cs_test_${counter}`
             const session = {
@@ -283,7 +341,7 @@ vi.mock('@/lib/stripe', () => {
             })
             return session
           }),
-          retrieve: vi.fn(async (sessionId: string) => {
+          retrieve: vi.fn(async (sessionId: string): Promise<StripeSessionRetrieveResult> => {
             const stored = stripeSessions.get(sessionId)
             if (!stored) {
               throw new Error(`Session ${sessionId} not found`)
@@ -351,9 +409,8 @@ describe('Template sales smoke test', () => {
     process.env.STRIPE_TEMPLATE_HOBBY_PRICE_ID = 'price_hobby'
     process.env.STRIPE_TEMPLATE_PRO_PRICE_ID = 'price_pro'
     process.env.STRIPE_TEMPLATE_DIRECTOR_PRICE_ID = 'price_director'
-    ;({ POST: checkoutPost, GET: checkoutVerify } = await import(
-      '@/app/api/template-sales/checkout/route'
-    ))
+    ;({ POST: checkoutPost, GET: checkoutVerify } =
+      await import('@/app/api/template-sales/checkout/route'))
     ;({ GET: downloadGet } = await import('@/app/template-download/route'))
   })
 

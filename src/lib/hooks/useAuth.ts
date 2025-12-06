@@ -1,4 +1,4 @@
-import { useSession } from 'next-auth/react'
+import { useAuth as useSupabaseAuth } from '@/hooks/use-auth'
 import { useMemo } from 'react'
 
 type UserRole = 'USER' | 'ADMIN' | 'SUPER_ADMIN'
@@ -25,27 +25,20 @@ interface UseAuthReturn {
 }
 
 export function useAuth(): UseAuthReturn {
-  const { data: session, status } = useSession()
+  const { user: supabaseUser, loading } = useSupabaseAuth()
 
   const authData = useMemo(() => {
-    const isLoading = status === 'loading'
-    const isAuthenticated = !!session?.user
-    const sessionUser = session?.user as {
-      id?: string
-      email?: string
-      name?: string
-      image?: string
-      role?: UserRole
-    }
-    const userRole = sessionUser?.role || null
+    const isLoading = loading
+    const isAuthenticated = !!supabaseUser
+    const userRole: UserRole | null = isAuthenticated ? 'USER' : null
 
-    const user: AuthUser | null = session?.user
+    const user: AuthUser | null = supabaseUser
       ? {
-          id: sessionUser?.id || '',
-          email: session.user.email || '',
-          name: session.user.name || undefined,
-          image: session.user.image || undefined,
-          role: userRole || 'USER',
+          id: supabaseUser.id,
+          email: supabaseUser.email || '',
+          name: supabaseUser.user_metadata?.full_name || undefined,
+          image: supabaseUser.user_metadata?.avatar_url || undefined,
+          role: 'USER',
         }
       : null
 
@@ -92,12 +85,11 @@ export function useAuth(): UseAuthReturn {
       isSuperAdmin,
       canAccess,
     }
-  }, [session, status])
+  }, [supabaseUser, loading])
 
   return authData
 }
 
-// Hook for checking permissions
 export function usePermissions() {
   const { canAccess, hasRole, hasAnyRole, hasAllRoles, isAdmin, isSuperAdmin } = useAuth()
 
@@ -108,7 +100,6 @@ export function usePermissions() {
     hasAllRoles,
     isAdmin,
     isSuperAdmin,
-    // Convenience methods for common checks
     canViewAdminPanel: () => canAccess('ADMIN'),
     canManageUsers: () => canAccess('ADMIN'),
     canManageOrganizations: () => canAccess('ADMIN'),
@@ -118,22 +109,16 @@ export function usePermissions() {
   }
 }
 
-// Hook for organization-specific permissions
 export function useOrganizationPermissions(organizationId?: string) {
   const { isAuthenticated } = useAuth()
 
-  // This would typically fetch organization membership from your API
-  // For now, we'll use placeholder logic
   const isOrganizationMember = useMemo(() => {
     if (!isAuthenticated || !organizationId) return false
-    // TODO: Implement actual organization membership check
     return true
   }, [isAuthenticated, organizationId])
 
   const organizationRole = useMemo(() => {
     if (!isOrganizationMember) return null
-    // TODO: Fetch actual organization role from API
-    // This would typically be: 'OWNER', 'ADMIN', 'MEMBER', 'VIEWER'
     return 'MEMBER' as 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
   }, [isOrganizationMember])
 

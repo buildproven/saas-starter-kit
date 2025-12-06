@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
-// Input validation schemas
 const updateProfileSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   email: z.string().email().optional(),
@@ -24,14 +22,13 @@ const updateProfileSchema = z.object({
     .optional(),
 })
 
-// GET /api/user/profile - Get current user's profile
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await getUser()
+    if (!authUser?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    const userId = session.user.id
+    const userId = authUser.id
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -42,7 +39,6 @@ export async function GET() {
         image: true,
         createdAt: true,
         updatedAt: true,
-        emailVerified: true,
         _count: {
           select: {
             ownedOrganizations: true,
@@ -60,7 +56,6 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Get user's organizations
     const organizations = await prisma.organization.findMany({
       where: {
         OR: [
@@ -87,11 +82,10 @@ export async function GET() {
       },
     })
 
-    // Transform organizations to include user's role
     const userOrganizations = organizations.map((org) => ({
       ...org,
       userRole: org.ownerId === userId ? 'OWNER' : org.members[0]?.role || 'VIEWER',
-      members: undefined, // Remove the members array
+      members: undefined,
     }))
 
     return NextResponse.json({
@@ -106,23 +100,21 @@ export async function GET() {
   }
 }
 
-// PUT /api/user/profile - Update current user's profile
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await getUser()
+    if (!authUser?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const validatedData = updateProfileSchema.parse(body)
 
-    // Check if email is being changed and if it's already in use
     if (validatedData.email) {
       const existingUser = await prisma.user.findFirst({
         where: {
           email: validatedData.email,
-          id: { not: session.user.id },
+          id: { not: authUser.id },
         },
       })
 
@@ -131,28 +123,18 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Prepare update data
     const updateData: {
       name?: string
       email?: string
-      emailVerified?: Date | null
       image?: string | null
-      bio?: string | null
-      location?: string | null
-      website?: string | null
-      preferences?: Record<string, unknown>
     } = {}
 
     if (validatedData.name !== undefined) updateData.name = validatedData.name
-    if (validatedData.email !== undefined) {
-      updateData.email = validatedData.email
-      updateData.emailVerified = null // Reset email verification when email changes
-    }
+    if (validatedData.email !== undefined) updateData.email = validatedData.email
     if (validatedData.image !== undefined) updateData.image = validatedData.image
-    // Note: bio, location, website, and preferences fields are not available in the current User model
 
     const updatedUser = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
       data: updateData,
       select: {
         id: true,
@@ -160,7 +142,6 @@ export async function PUT(request: NextRequest) {
         email: true,
         image: true,
         updatedAt: true,
-        emailVerified: true,
       },
     })
 
@@ -180,17 +161,15 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE /api/user/profile - Delete current user's account
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const authUser = await getUser()
+    if (!authUser?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user owns any organizations
     const ownedOrganizations = await prisma.organization.count({
-      where: { ownerId: session.user.id },
+      where: { ownerId: authUser.id },
     })
 
     if (ownedOrganizations > 0) {
@@ -204,7 +183,6 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Check for confirmation in request body
     const body = await request.json()
     if (!body.confirmDelete || body.confirmDelete !== true) {
       return NextResponse.json(
@@ -213,14 +191,12 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    // Remove user from all organization memberships
     await prisma.organizationMember.deleteMany({
-      where: { userId: session.user.id },
+      where: { userId: authUser.id },
     })
 
-    // Delete user account (this will cascade to sessions, accounts, etc.)
     await prisma.user.delete({
-      where: { id: session.user.id },
+      where: { id: authUser.id },
     })
 
     return NextResponse.json({

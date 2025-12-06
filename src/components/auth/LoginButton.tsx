@@ -1,6 +1,7 @@
 'use client'
 
-import { signIn, signOut, useSession } from 'next-auth/react'
+import { useAuth } from '@/hooks/use-auth'
+import { signInWithGoogle, signOut } from '@/lib/auth/actions'
 import { Button } from '@/components/ui/Button'
 
 interface LoginButtonProps {
@@ -9,9 +10,9 @@ interface LoginButtonProps {
 }
 
 export function LoginButton({ provider, className }: LoginButtonProps) {
-  const { data: session, status } = useSession()
+  const { user, loading } = useAuth()
 
-  if (status === 'loading') {
+  if (loading) {
     return (
       <Button disabled className={className}>
         Loading...
@@ -19,7 +20,7 @@ export function LoginButton({ provider, className }: LoginButtonProps) {
     )
   }
 
-  if (session) {
+  if (user) {
     return (
       <Button onClick={() => signOut()} variant="outline" className={className}>
         Sign Out
@@ -27,8 +28,12 @@ export function LoginButton({ provider, className }: LoginButtonProps) {
     )
   }
 
-  const handleSignIn = () => {
-    signIn(provider, { callbackUrl: '/' })
+  const handleSignIn = async () => {
+    if (provider === 'google') {
+      await signInWithGoogle('/')
+    } else {
+      window.location.href = '/login'
+    }
   }
 
   return (

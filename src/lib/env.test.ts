@@ -1,14 +1,14 @@
-/* eslint-disable no-undef */
+import { vi } from 'vitest'
 import { validateEnv, isFeatureEnabled, clearEnvCache } from './env'
 
 describe('env validation', () => {
-  const originalEnv = { ...process.env } as NodeJS.ProcessEnv
+  const originalEnv = { ...process.env } as typeof process.env
   const originalExit = process.exit
   let consoleErrorSpy: vi.SpyInstance
 
   beforeEach(() => {
     // Reset environment before each test
-    process.env = { ...originalEnv } as NodeJS.ProcessEnv
+    process.env = { ...originalEnv } as typeof process.env
 
     // Mock process.exit to prevent tests from exiting
     process.exit = vi.fn() as never
@@ -29,7 +29,7 @@ describe('env validation', () => {
   })
 
   afterEach(() => {
-    process.env = { ...originalEnv } as NodeJS.ProcessEnv
+    process.env = { ...originalEnv } as typeof process.env
     process.exit = originalExit
     consoleErrorSpy.mockRestore()
     clearEnvCache()

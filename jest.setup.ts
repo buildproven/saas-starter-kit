@@ -1,7 +1,8 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import '@testing-library/jest-dom'
 import { toHaveNoViolations } from 'jest-axe'
+import { ReadableStream, WritableStream, TransformStream } from 'node:stream/web'
+import { TextEncoder, TextDecoder } from 'node:util'
+import { expect, jest } from '@jest/globals'
 
 expect.extend(toHaveNoViolations)
 
@@ -26,12 +27,10 @@ Object.entries(stripePriceEnvDefaults).forEach(([key, value]) => {
 })
 
 // Mock Next.js router
-jest.mock('next/router', () => require('next-router-mock'))
-jest.mock('next/navigation', () => require('next-router-mock'))
+jest.mock('next/router', async () => import('next-router-mock'))
+jest.mock('next/navigation', async () => import('next-router-mock'))
 
 // Mock Web APIs for Node.js environment
-const { ReadableStream, WritableStream, TransformStream } = require('node:stream/web')
-const { TextEncoder, TextDecoder } = require('node:util')
 
 Object.defineProperties(global, {
   ReadableStream: { value: global.ReadableStream || ReadableStream },
@@ -48,9 +47,9 @@ if (typeof global.Request === 'undefined') {
       url: string
       method: string
       headers: Headers
-      _body: any
+      _body: unknown
 
-      constructor(input: string, init: any = {}) {
+      constructor(input: string, init: globalThis.RequestInit = {}) {
         this.url = input
         this.method = init.method || 'GET'
         this.headers = new Headers(init.headers)
@@ -73,9 +72,9 @@ if (typeof global.Response === 'undefined') {
       status: number
       ok: boolean
       headers: Headers
-      _body: any
+      _body: unknown
 
-      constructor(body: any, init: any = {}) {
+      constructor(body?: globalThis.BodyInit | null, init: globalThis.ResponseInit = {}) {
         this.status = init.status || 200
         this.ok = this.status >= 200 && this.status < 300
         this.headers = new Headers(init.headers)
@@ -89,7 +88,7 @@ if (typeof global.Response === 'undefined') {
         return this._body
       }
 
-      static json(body: any, init: any = {}) {
+      static json(body: unknown, init: globalThis.ResponseInit = {}) {
         const headers = new Headers(init.headers)
         if (!headers.get('content-type')) {
           headers.set('content-type', 'application/json')
@@ -103,13 +102,13 @@ if (typeof global.Response === 'undefined') {
 if (typeof global.Headers === 'undefined') {
   Object.defineProperty(global, 'Headers', {
     value: class Headers {
-      _headers: Map<string, any>
+      _headers: Map<string, string>
 
-      constructor(init: any = {}) {
+      constructor(init?: globalThis.HeadersInit) {
         this._headers = new Map()
         if (init) {
           Object.entries(init).forEach(([key, value]) => {
-            this._headers.set(key.toLowerCase(), value)
+            this._headers.set(key.toLowerCase(), String(value))
           })
         }
       }
@@ -118,7 +117,7 @@ if (typeof global.Headers === 'undefined') {
         return this._headers.get(name.toLowerCase())
       }
 
-      set(name: string, value: any) {
+      set(name: string, value: string) {
         this._headers.set(name.toLowerCase(), value)
       }
     },

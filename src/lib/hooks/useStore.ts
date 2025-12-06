@@ -1,20 +1,31 @@
 import { useAppStore } from '../store'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/hooks/use-auth'
 import { useEffect } from 'react'
 
-// Hook to sync NextAuth session with Zustand store
+// Hook to sync Supabase session with Zustand store
 export function useSessionSync() {
-  const { data: session, status } = useSession()
-  const setSession = useAppStore((state) => state.setSession)
+  const { user, loading } = useAuth()
+  const setUser = useAppStore((state) => state.setUser)
 
   useEffect(() => {
-    if (status !== 'loading') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setSession(session as any)
+    if (!loading) {
+      if (user) {
+        setUser({
+          id: user.id,
+          email: user.email || '',
+          name: user.user_metadata?.full_name,
+          image: user.user_metadata?.avatar_url,
+          // Map role from metadata if available, or default to USER
+          // Note: Real RBAC should probably come from database/claims
+          role: (user.app_metadata?.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN') || 'USER',
+        })
+      } else {
+        setUser(null)
+      }
     }
-  }, [session, status, setSession])
+  }, [user, loading, setUser])
 
-  return { session, status }
+  return { user, loading }
 }
 
 // Hook for current organization with subscription info
@@ -29,15 +40,6 @@ export function useCurrentOrganization() {
     currentOrganization?.subscription?.status || ''
   )
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const canAccess = (_feature: string) => {
-    if (!currentOrganization?.subscription) return false
-
-    // Add feature-based access control logic here
-    // This would typically check the plan features against the feature parameter
-    return hasActiveSubscription || isTrialing
-  }
-
   const isOwnerOrAdmin = ['OWNER', 'ADMIN'].includes(currentOrganization?.role || '')
 
   return {
@@ -47,7 +49,6 @@ export function useCurrentOrganization() {
     hasActiveSubscription,
     isTrialing,
     subscriptionEnded,
-    canAccess,
     isOwnerOrAdmin,
   }
 }

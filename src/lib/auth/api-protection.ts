@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 
 export type UserRole = 'USER' | 'ADMIN' | 'SUPER_ADMIN'
 
@@ -16,7 +15,6 @@ export interface AuthenticatedUser {
   role: UserRole
 }
 
-// Higher-order function to protect API routes
 export function withAuth<T = Record<string, string>>(
   handler: (
     request: NextRequest,
@@ -29,31 +27,21 @@ export function withAuth<T = Record<string, string>>(
     context?: { params?: T }
   ): Promise<NextResponse> {
     try {
-      // Get session from NextAuth
-      const session = await getServerSession(authOptions)
+      const authUser = await getUser()
 
-      // Check if authentication is required
-      if (!options.allowUnauthenticated && !session) {
+      if (!options.allowUnauthenticated && !authUser) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
       }
 
-      // Extract user data from session
-      const sessionUser = session?.user as {
-        id?: string
-        email?: string
-        name?: string
-        role?: UserRole
-      }
-      const user: AuthenticatedUser | null = session?.user
+      const user: AuthenticatedUser | null = authUser
         ? {
-            id: sessionUser?.id || '',
-            email: session.user.email || '',
-            name: session.user.name || undefined,
-            role: sessionUser?.role || 'USER',
+            id: authUser.id,
+            email: authUser.email,
+            name: authUser.name || undefined,
+            role: authUser.role,
           }
         : null
 
-      // Check role-based access
       if (options.requiredRole && user) {
         const hasAccess = checkRoleAccess(user.role, options.requiredRole)
         if (!hasAccess) {
@@ -61,7 +49,6 @@ export function withAuth<T = Record<string, string>>(
         }
       }
 
-      // Call the original handler with authenticated user context
       return await handler(request, { user, params: context?.params })
     } catch (error) {
       console.error('Auth middleware error:', error)
@@ -83,33 +70,24 @@ function checkRoleAccess(userRole: UserRole, requiredRole: UserRole): boolean {
   return userLevel >= requiredLevel
 }
 
-// Utility function to check if user can access resource
 export function canUserAccess(userRole: UserRole | null, requiredRole: UserRole): boolean {
   if (!userRole) return false
   return checkRoleAccess(userRole, requiredRole)
 }
 
-// Utility function to get user from session
 export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
-  const session = await getServerSession(authOptions)
+  const authUser = await getUser()
 
-  if (!session?.user) return null
+  if (!authUser) return null
 
-  const sessionUser = session.user as {
-    id?: string
-    email?: string
-    name?: string
-    role?: UserRole
-  }
   return {
-    id: sessionUser?.id || '',
-    email: session.user.email || '',
-    name: session.user.name || undefined,
-    role: sessionUser?.role || 'USER',
+    id: authUser.id,
+    email: authUser.email,
+    name: authUser.name || undefined,
+    role: authUser.role,
   }
 }
 
-// Convenience functions for common protection levels
 type ApiHandler<T = Record<string, string>> = (
   request: NextRequest,
   context: { user: AuthenticatedUser | null; params?: T }
@@ -122,7 +100,6 @@ export const withAdminAuth = <T = Record<string, string>>(handler: ApiHandler<T>
 export const withSuperAdminAuth = <T = Record<string, string>>(handler: ApiHandler<T>) =>
   withAuth(handler, { requiredRole: 'SUPER_ADMIN' })
 
-// Rate limiting utility (basic implementation)
 const requestCounts = new Map<string, { count: number; resetTime: number }>()
 
 export function rateLimit(ip: string, limit: number = 100, windowMs: number = 60000): boolean {
@@ -144,13 +121,8 @@ export function rateLimit(ip: string, limit: number = 100, windowMs: number = 60
   return true
 }
 
-// CORS utility for API routes
 export function corsHeaders(origin?: string) {
-  const allowedOrigins = [
-    'http://localhost:3000',
-    'https://yourdomain.com',
-    // Add your production domains here
-  ]
+  const allowedOrigins = ['http://localhost:3000', 'https://yourdomain.com']
 
   const isAllowed = !origin || allowedOrigins.includes(origin)
 

@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { BillingService } from '@/lib/billing'
 import { SubscriptionService } from '@/lib/subscription'
 import { z } from 'zod'
 
-// Input validation schema
 const createPortalSchema = z.object({
   organizationId: z.string(),
   returnUrl: z.string().url().optional(),
 })
 
-// Helper function to check organization access
 async function checkOrganizationAccess(organizationId: string, userId: string) {
   const organization = await prisma.organization.findUnique({
     where: { id: organizationId },
@@ -39,7 +36,6 @@ async function checkOrganizationAccess(organizationId: string, userId: string) {
     return { hasAccess: false, userRole: null, isOwner: false }
   }
 
-  // Only owners and admins can manage billing
   const canManageBilling = member.role === 'ADMIN'
   return {
     hasAccess: canManageBilling,
@@ -48,28 +44,22 @@ async function checkOrganizationAccess(organizationId: string, userId: string) {
   }
 }
 
-// POST /api/billing/portal - Create Stripe customer portal session
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const validatedData = createPortalSchema.parse(body)
 
-    // Check organization access
-    const { hasAccess } = await checkOrganizationAccess(
-      validatedData.organizationId,
-      session.user.id
-    )
+    const { hasAccess } = await checkOrganizationAccess(validatedData.organizationId, user.id)
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Get organization subscription
     const subscription = await SubscriptionService.getSubscription(validatedData.organizationId)
 
     if (!subscription) {
@@ -79,7 +69,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get organization details for return URL
     const organization = await prisma.organization.findUnique({
       where: { id: validatedData.organizationId },
       select: { slug: true },
@@ -89,7 +78,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
-    // Create portal session
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
     const returnUrl = validatedData.returnUrl || `${baseUrl}/dashboard/${organization.slug}/billing`
 
@@ -111,12 +99,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// GET /api/billing/portal - Redirect to billing portal (alternative method)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.redirect('/auth/signin')
+    const user = await getUser()
+    if (!user?.id) {
+      return NextResponse.redirect('/login')
     }
 
     const { searchParams } = new URL(request.url)
@@ -127,21 +114,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing organizationId' }, { status: 400 })
     }
 
-    // Check organization access
-    const { hasAccess } = await checkOrganizationAccess(organizationId, session.user.id)
+    const { hasAccess } = await checkOrganizationAccess(organizationId, user.id)
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    // Get organization subscription
     const subscription = await SubscriptionService.getSubscription(organizationId)
 
     if (!subscription) {
       return NextResponse.json({ error: 'No subscription found' }, { status: 404 })
     }
 
-    // Get organization details
     const organization = await prisma.organization.findUnique({
       where: { id: organizationId },
       select: { slug: true },
@@ -151,7 +135,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
     }
 
-    // Create portal session
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
     const defaultReturnUrl = `${baseUrl}/dashboard/${organization.slug}/billing`
 
@@ -160,7 +143,6 @@ export async function GET(request: NextRequest) {
       returnUrl: returnUrl || defaultReturnUrl,
     })
 
-    // Redirect to portal
     return NextResponse.redirect(portalSession.url)
   } catch (error) {
     console.error('Error redirecting to portal:', error)

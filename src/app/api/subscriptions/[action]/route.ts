@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { PlanFeatures } from '@/lib/subscription-middleware'
@@ -56,8 +55,8 @@ async function checkSubscriptionAccess(organizationId: string, userId: string) {
 // POST /api/subscriptions/[action] - Perform subscription actions
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
+    const user = await getUser()
+    if (!user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -66,10 +65,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const validatedData = subscriptionActionSchema.parse(body)
 
     // Check organization access
-    const { hasAccess } = await checkSubscriptionAccess(
-      validatedData.organizationId,
-      session.user.id
-    )
+    const { hasAccess } = await checkSubscriptionAccess(validatedData.organizationId, user.id)
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
