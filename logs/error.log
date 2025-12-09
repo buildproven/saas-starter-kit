@@ -1,2 +1,4 @@
 2025-12-09T03:24:44.358Z [ERROR] [TwitterClient] Twitter bearer client authentication failed {"error":"Cannot read properties of undefined (reading 'id')"}
 2025-12-09T03:24:48.003Z [ERROR] [TwitterClient] Twitter bearer client authentication failed {"error":"Cannot read properties of undefined (reading 'id')"}
+2025-12-09T13:14:41.745Z [ERROR] [TwitterClient] Twitter bearer client authentication failed {"error":"Request failed with code 429"}
+2025-12-09T15:28:07.074Z [ERROR] [TwitterClient] Twitter bearer client authentication failed {"error":"Cannot read properties of undefined (reading 'id')"}

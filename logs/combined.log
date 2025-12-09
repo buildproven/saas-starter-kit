@@ -41,3 +41,45 @@
 2025-12-09T03:24:47.824Z [INFO] [Server] Social Media MCP Server running on stdio
 2025-12-09T03:24:47.981Z [INFO] [TwitterClient] Twitter client authenticated successfully {"userId":"15007277","username":"BrettStark"}
 2025-12-09T03:24:48.003Z [ERROR] [TwitterClient] Twitter bearer client authentication failed {"error":"Cannot read properties of undefined (reading 'id')"}
+2025-12-09T13:14:41.536Z [INFO] [RateLimitManager] Rate limit manager initialized {"enabled":false}
+2025-12-09T13:14:41.538Z [INFO] [ConversationManager] Conversation manager initialized
+2025-12-09T13:14:41.538Z [INFO] [BraveSearchMcpClient] Brave Search MCP client initialized
+2025-12-09T13:14:41.538Z [INFO] [PerplexityMcpClient] Perplexity MCP client initialized
+2025-12-09T13:14:41.538Z [INFO] [OpenAIStrategy] OpenAI strategy initialized {"model":"gpt-4o"}
+2025-12-09T13:14:41.538Z [INFO] [AnthropicStrategy] Anthropic strategy initialized {"model":"claude-3-opus-20240229"}
+2025-12-09T13:14:41.538Z [INFO] [ContentGenerator] Strategy registered {"name":"Anthropic","available":false,"priority":3}
+2025-12-09T13:14:41.538Z [INFO] [ContentGenerator] Strategy registered {"name":"OpenAI","available":true,"priority":2}
+2025-12-09T13:14:41.539Z [INFO] [ContentGenerator] Content generator initialized {"availableStrategies":["OpenAI"],"strategyCount":1}
+2025-12-09T13:14:41.554Z [INFO] [TwitterClient] Debug mode enabled for Twitter client
+2025-12-09T13:14:41.555Z [INFO] [TwitterClient] Twitter client configuration {"apiKey":"AR1cK...","apiSecret":"Provided","accessToken":"15007...","accessSecret":"Provided","bearerToken":"AAAAA..."}
+2025-12-09T13:14:41.580Z [INFO] [TwitterClient] Twitter client initialized
+2025-12-09T13:14:41.592Z [WARN] [MastodonClient] No Mastodon access token provided, will use mock implementation
+2025-12-09T13:14:41.592Z [INFO] [MastodonClient] Mastodon client initialized {"instance":"https://mastodon.social","debug":true,"authenticated":false}
+2025-12-09T13:14:41.592Z [INFO] [MastodonClient] Mastodon client initializing... {"instance":"https://mastodon.social","debug":true}
+2025-12-09T13:14:41.593Z [INFO] [LinkedInClient] LinkedIn client initialized {"debug":true,"accessToken":"AQUBb..."}
+2025-12-09T13:14:41.593Z [INFO] [HistoryManager] History manager initialized {"historyFile":"/Users/brettstark/Projects/saas-starter-kit/data/history/posts.json","postCount":0}
+2025-12-09T13:14:41.593Z [INFO] [Server] Social Media MCP Server initialized
+2025-12-09T13:14:41.594Z [INFO] [Server] Social Media MCP Server running on stdio
+2025-12-09T13:14:41.745Z [ERROR] [TwitterClient] Twitter bearer client authentication failed {"error":"Request failed with code 429"}
+2025-12-09T13:14:41.796Z [INFO] [TwitterClient] Twitter client authenticated successfully {"userId":"15007277","username":"BrettStark"}
+2025-12-09T15:28:06.792Z [INFO] [RateLimitManager] Rate limit manager initialized {"enabled":false}
+2025-12-09T15:28:06.794Z [INFO] [ConversationManager] Conversation manager initialized
+2025-12-09T15:28:06.794Z [INFO] [BraveSearchMcpClient] Brave Search MCP client initialized
+2025-12-09T15:28:06.794Z [INFO] [PerplexityMcpClient] Perplexity MCP client initialized
+2025-12-09T15:28:06.794Z [INFO] [OpenAIStrategy] OpenAI strategy initialized {"model":"gpt-4o"}
+2025-12-09T15:28:06.794Z [INFO] [AnthropicStrategy] Anthropic strategy initialized {"model":"claude-3-opus-20240229"}
+2025-12-09T15:28:06.795Z [INFO] [ContentGenerator] Strategy registered {"name":"Anthropic","available":false,"priority":3}
+2025-12-09T15:28:06.795Z [INFO] [ContentGenerator] Strategy registered {"name":"OpenAI","available":true,"priority":2}
+2025-12-09T15:28:06.795Z [INFO] [ContentGenerator] Content generator initialized {"availableStrategies":["OpenAI"],"strategyCount":1}
+2025-12-09T15:28:06.812Z [INFO] [TwitterClient] Debug mode enabled for Twitter client
+2025-12-09T15:28:06.812Z [INFO] [TwitterClient] Twitter client configuration {"apiKey":"AR1cK...","apiSecret":"Provided","accessToken":"15007...","accessSecret":"Provided","bearerToken":"AAAAA..."}
+2025-12-09T15:28:06.840Z [INFO] [TwitterClient] Twitter client initialized
+2025-12-09T15:28:06.857Z [WARN] [MastodonClient] No Mastodon access token provided, will use mock implementation
+2025-12-09T15:28:06.857Z [INFO] [MastodonClient] Mastodon client initialized {"instance":"https://mastodon.social","debug":true,"authenticated":false}
+2025-12-09T15:28:06.857Z [INFO] [MastodonClient] Mastodon client initializing... {"instance":"https://mastodon.social","debug":true}
+2025-12-09T15:28:06.858Z [INFO] [LinkedInClient] LinkedIn client initialized {"debug":true,"accessToken":"AQUBb..."}
+2025-12-09T15:28:06.858Z [INFO] [HistoryManager] History manager initialized {"historyFile":"/Users/brettstark/Projects/saas-starter-kit/data/history/posts.json","postCount":0}
+2025-12-09T15:28:06.858Z [INFO] [Server] Social Media MCP Server initialized
+2025-12-09T15:28:06.859Z [INFO] [Server] Social Media MCP Server running on stdio
+2025-12-09T15:28:07.059Z [INFO] [TwitterClient] Twitter client authenticated successfully {"userId":"15007277","username":"BrettStark"}
+2025-12-09T15:28:07.074Z [ERROR] [TwitterClient] Twitter bearer client authentication failed {"error":"Cannot read properties of undefined (reading 'id')"}
