@@ -78,14 +78,16 @@ describe('GET /api/health', () => {
 
   it('includes environment information', async () => {
     mockQueryRaw.mockResolvedValueOnce([{ '?column?': 1 }])
-    process.env.NODE_ENV = 'production'
-    process.env.NEXT_PUBLIC_APP_VERSION = '1.0.0'
+    vi.stubEnv('NODE_ENV', 'production')
+    vi.stubEnv('NEXT_PUBLIC_APP_VERSION', '1.0.0')
 
     const response = await GET()
     const json = await response.json()
 
     expect(json.environment).toBe('production')
     expect(json.version).toBe('1.0.0')
+
+    vi.unstubAllEnvs()
   })
 
   it('includes response time', async () => {

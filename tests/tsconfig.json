@@ -3,7 +3,17 @@
   "compilerOptions": {
     "rootDir": "..",
     "noEmit": true,
-    "types": ["vitest/globals", "node", "@types/jest"]
+    "types": ["vitest/globals", "node", "@testing-library/jest-dom"],
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/hooks/*": ["./src/hooks/*", "./src/lib/hooks/*"],
+      "@/utils/*": ["./src/lib/utils/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/styles/*": ["./src/styles/*"],
+      "@test/*": ["./tests/*"]
+    }
   },
   "include": ["../src/**/*", "../tests/**/*", "../*.ts", "../*.js"],
   "exclude": ["../node_modules", "../dist", "../build"]

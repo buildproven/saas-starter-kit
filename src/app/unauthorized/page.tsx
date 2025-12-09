@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
 export default function UnauthorizedPage() {
-  const { data: session, status } = useSession()
+  const sessionResult = useSession()
+  const session = sessionResult?.data
+  const status = sessionResult?.status ?? 'loading'
   const router = useRouter()
 
   useEffect(() => {

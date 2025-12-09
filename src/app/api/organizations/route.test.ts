@@ -18,12 +18,8 @@ vi.mock('next/server', () => {
   }
 })
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
-}))
-
-vi.mock('@/lib/auth', () => ({
-  authOptions: {},
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 vi.mock('@/lib/prisma', () => ({
@@ -36,10 +32,10 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-import { getServerSession } from 'next-auth/next'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 
-const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockGetUser = getUser as vi.Mock
 const mockPrismaOrgFindMany = prisma.organization.findMany as vi.Mock
 const mockPrismaOrgFindUnique = prisma.organization.findUnique as vi.Mock
 const mockPrismaOrgCreate = prisma.organization.create as vi.Mock
@@ -50,7 +46,7 @@ describe('GET /api/organizations', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await GET()
     const json = await response.json()
@@ -60,9 +56,7 @@ describe('GET /api/organizations', () => {
   })
 
   it('returns user organizations', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrgFindMany.mockResolvedValueOnce([
       {
         id: 'org_1',
@@ -87,9 +81,7 @@ describe('GET /api/organizations', () => {
   })
 
   it('sets userRole to member role for non-owners', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrgFindMany.mockResolvedValueOnce([
       {
         id: 'org_1',
@@ -112,12 +104,10 @@ describe('GET /api/organizations', () => {
   })
 
   it('handles internal errors', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrgFindMany.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const response = await GET()
     const json = await response.json()
 
@@ -139,7 +129,7 @@ describe('POST /api/organizations', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await POST(createRequest({}))
     const json = await response.json()
@@ -149,9 +139,7 @@ describe('POST /api/organizations', () => {
   })
 
   it('returns 400 for invalid input', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
 
     const response = await POST(createRequest({ name: '', slug: 'INVALID_SLUG!' }))
     const json = await response.json()
@@ -162,9 +150,7 @@ describe('POST /api/organizations', () => {
   })
 
   it('returns 409 when slug already exists', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrgFindUnique.mockResolvedValueOnce({ id: 'existing_org' })
 
     const response = await POST(
@@ -180,9 +166,7 @@ describe('POST /api/organizations', () => {
   })
 
   it('creates organization successfully', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrgFindUnique.mockResolvedValueOnce(null)
     mockPrismaOrgCreate.mockResolvedValueOnce({
       id: 'new_org',
@@ -209,9 +193,7 @@ describe('POST /api/organizations', () => {
   })
 
   it('validates slug format', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
 
     const response = await POST(
       createRequest({
@@ -226,13 +208,11 @@ describe('POST /api/organizations', () => {
   })
 
   it('handles internal errors', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrgFindUnique.mockResolvedValueOnce(null)
     mockPrismaOrgCreate.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const response = await POST(
       createRequest({
         name: 'New Org',

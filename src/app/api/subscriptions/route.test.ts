@@ -14,8 +14,8 @@ vi.mock('next/server', () => {
   }
 })
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -45,14 +45,14 @@ vi.mock('@/lib/subscription', () => ({
   },
 }))
 
-import { getServerSession } from 'next-auth/next'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 
-const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
-const mockPrismaOrg = prisma.organization.findUnique as vi.Mock
-const mockPrismaOrgMany = prisma.organization.findMany as vi.Mock
-const mockPrismaSub = prisma.subscription.findUnique as vi.Mock
+const mockGetUser = vi.mocked(getUser)
+const mockPrismaOrg = vi.mocked(prisma.organization.findUnique, true)
+const mockPrismaOrgMany = vi.mocked(prisma.organization.findMany, true)
+const mockPrismaSub = vi.mocked(prisma.subscription.findUnique, true)
 const mockSubscriptionService = SubscriptionService as vi.Mocked<typeof SubscriptionService>
 
 describe('GET /api/subscriptions', () => {
@@ -67,7 +67,7 @@ describe('GET /api/subscriptions', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await GET(createGetRequest())
     const json = await response.json()
@@ -77,29 +77,35 @@ describe('GET /api/subscriptions', () => {
   })
 
   it('returns specific organization subscription', async () => {
-    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'user_123' } })
+    mockGetUser.mockResolvedValueOnce({
+      id: 'user_123',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+      role: 'USER',
+    })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
       members: [],
-    })
+    } as never)
     mockSubscriptionService.getSubscription.mockResolvedValueOnce({
       id: 'sub_123',
       status: 'ACTIVE',
-    } as Awaited<ReturnType<typeof SubscriptionService.getSubscription>>)
+    } as never)
     mockSubscriptionService.getCurrentUsage.mockResolvedValueOnce({
       users: 5,
       projects: 3,
       apiKeys: 2,
       apiCallsThisPeriod: 1000,
       storageGB: 1,
-    })
+    } as never)
     mockSubscriptionService.checkLimits.mockResolvedValueOnce({
       hasViolations: false,
       violations: [],
       usage: {},
       limits: {},
-    })
+    } as never)
 
     const response = await GET(createGetRequest({ organizationId: 'org_123' }))
     const json = await response.json()
@@ -110,8 +116,14 @@ describe('GET /api/subscriptions', () => {
   })
 
   it('returns 403 when user lacks access to organization', async () => {
-    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'user_123' } })
-    mockPrismaOrg.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce({
+      id: 'user_123',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+      role: 'USER',
+    })
+    mockPrismaOrg.mockResolvedValueOnce(null as never)
 
     const response = await GET(createGetRequest({ organizationId: 'org_other' }))
     const json = await response.json()
@@ -121,7 +133,13 @@ describe('GET /api/subscriptions', () => {
   })
 
   it('returns all organization subscriptions when no orgId', async () => {
-    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'user_123' } })
+    mockGetUser.mockResolvedValueOnce({
+      id: 'user_123',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+      role: 'USER',
+    })
     mockPrismaOrgMany.mockResolvedValueOnce([
       {
         id: 'org_1',
@@ -129,9 +147,9 @@ describe('GET /api/subscriptions', () => {
         slug: 'org-1',
         subscription: { id: 'sub_1', plan: { name: 'Pro' } },
       },
-    ])
-    mockSubscriptionService.getCurrentUsage.mockResolvedValue({ users: 1 })
-    mockSubscriptionService.checkLimits.mockResolvedValue({ hasViolations: false })
+    ] as never)
+    mockSubscriptionService.getCurrentUsage.mockResolvedValue({ users: 1 } as never)
+    mockSubscriptionService.checkLimits.mockResolvedValue({ hasViolations: false } as never)
 
     const response = await GET(createGetRequest())
     const json = await response.json()
@@ -151,7 +169,7 @@ describe('POST /api/subscriptions', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await POST(createPostRequest({}))
 
@@ -159,7 +177,13 @@ describe('POST /api/subscriptions', () => {
   })
 
   it('returns 400 for invalid input', async () => {
-    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'user_123' } })
+    mockGetUser.mockResolvedValueOnce({
+      id: 'user_123',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+      role: 'USER',
+    })
 
     const response = await POST(createPostRequest({ invalid: 'data' }))
     const json = await response.json()
@@ -169,12 +193,18 @@ describe('POST /api/subscriptions', () => {
   })
 
   it('returns 403 when user lacks owner/admin access', async () => {
-    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'user_123' } })
+    mockGetUser.mockResolvedValueOnce({
+      id: 'user_123',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+      role: 'USER',
+    })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'other_user',
       members: [{ role: 'USER' }],
-    })
+    } as never)
 
     const response = await POST(
       createPostRequest({
@@ -191,15 +221,21 @@ describe('POST /api/subscriptions', () => {
   })
 
   it('returns 409 when subscription already exists', async () => {
-    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'user_123' } })
+    mockGetUser.mockResolvedValueOnce({
+      id: 'user_123',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+      role: 'USER',
+    })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
       members: [],
-    })
+    } as never)
     mockSubscriptionService.getSubscription.mockResolvedValueOnce({
       id: 'existing_sub',
-    } as Awaited<ReturnType<typeof SubscriptionService.getSubscription>>)
+    } as never)
 
     const response = await POST(
       createPostRequest({
@@ -218,21 +254,27 @@ describe('POST /api/subscriptions', () => {
   })
 
   it('creates subscription successfully', async () => {
-    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'user_123' } })
+    mockGetUser.mockResolvedValueOnce({
+      id: 'user_123',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+      role: 'USER',
+    })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
       members: [],
-    })
+    } as never)
     mockSubscriptionService.getSubscription.mockResolvedValueOnce(null)
     mockSubscriptionService.getPlanByPriceId.mockResolvedValueOnce({
       id: 'plan_123',
       name: 'Pro',
-    })
+    } as never)
     mockSubscriptionService.createSubscription.mockResolvedValueOnce({
       id: 'new_sub',
       status: 'ACTIVE',
-    })
+    } as never)
 
     const response = await POST(
       createPostRequest({
@@ -269,14 +311,20 @@ describe('PUT /api/subscriptions', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await PUT(createPutRequest({}, {}))
     expect(response.status).toBe(401)
   })
 
   it('returns 400 when subscriptionId missing', async () => {
-    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'user_123' } })
+    mockGetUser.mockResolvedValueOnce({
+      id: 'user_123',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+      role: 'USER',
+    })
 
     const response = await PUT(createPutRequest({}, {}))
     const json = await response.json()
@@ -286,8 +334,14 @@ describe('PUT /api/subscriptions', () => {
   })
 
   it('returns 404 when subscription not found', async () => {
-    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'user_123' } })
-    mockPrismaSub.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce({
+      id: 'user_123',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+      role: 'USER',
+    })
+    mockPrismaSub.mockResolvedValueOnce(null as never)
 
     const response = await PUT(createPutRequest({ subscriptionId: 'sub_123' }, {}))
 
@@ -295,21 +349,27 @@ describe('PUT /api/subscriptions', () => {
   })
 
   it('updates subscription successfully', async () => {
-    mockGetServerSession.mockResolvedValueOnce({ user: { id: 'user_123' } })
+    mockGetUser.mockResolvedValueOnce({
+      id: 'user_123',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+      role: 'USER',
+    })
     mockPrismaSub.mockResolvedValueOnce({
       subscriptionId: 'sub_123',
       organizationId: 'org_123',
       organization: { id: 'org_123' },
-    })
+    } as never)
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
       members: [],
-    })
+    } as never)
     mockSubscriptionService.updateSubscription.mockResolvedValueOnce({
       subscriptionId: 'sub_123',
       status: 'PAST_DUE',
-    })
+    } as never)
 
     const response = await PUT(
       createPutRequest({ subscriptionId: 'sub_123' }, { status: 'PAST_DUE' })

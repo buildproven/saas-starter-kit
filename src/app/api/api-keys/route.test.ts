@@ -1,7 +1,5 @@
 import { GET, POST } from './route'
 import type { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import type { Session } from 'next-auth'
 
 vi.mock('next/server', () => {
   const actual = vi.importActual('next/server')
@@ -18,8 +16,8 @@ vi.mock('next/server', () => {
 })
 
 // Mock dependencies
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -39,7 +37,9 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
+
 const prismaMock = prisma as unknown as {
   apiKey: {
     findMany: vi.Mock
@@ -51,7 +51,7 @@ const prismaMock = prisma as unknown as {
   }
 }
 
-const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockGetUser = getUser as vi.Mock
 
 const createRequest = (url: string, body?: unknown): NextRequest => {
   return {
@@ -67,7 +67,7 @@ describe('/api/api-keys', () => {
 
   describe('GET', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
       const response = await GET(createRequest('http://localhost:3000/api/api-keys'))
       const data = await response.json()
@@ -77,9 +77,11 @@ describe('/api/api-keys', () => {
     })
 
     it('returns API keys for authenticated user', async () => {
-      mockGetServerSession.mockResolvedValueOnce({
-        user: { id: 'user_1', email: 'test@example.com' },
-      } as Session)
+      mockGetUser.mockResolvedValueOnce({
+        id: 'user_1',
+        email: 'test@example.com',
+        role: 'USER',
+      })
 
       prismaMock.apiKey.findMany.mockResolvedValueOnce([
         {
@@ -108,9 +110,11 @@ describe('/api/api-keys', () => {
     })
 
     it('filters API keys by organization when organizationId provided', async () => {
-      mockGetServerSession.mockResolvedValueOnce({
-        user: { id: 'user_1', email: 'test@example.com' },
-      } as Session)
+      mockGetUser.mockResolvedValueOnce({
+        id: 'user_1',
+        email: 'test@example.com',
+        role: 'USER',
+      })
 
       prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',
@@ -135,9 +139,11 @@ describe('/api/api-keys', () => {
     })
 
     it('returns 403 when user lacks access to organization', async () => {
-      mockGetServerSession.mockResolvedValueOnce({
-        user: { id: 'user_1', email: 'test@example.com' },
-      } as Session)
+      mockGetUser.mockResolvedValueOnce({
+        id: 'user_1',
+        email: 'test@example.com',
+        role: 'USER',
+      })
 
       prismaMock.organization.findUnique.mockResolvedValueOnce(null)
 
@@ -151,9 +157,11 @@ describe('/api/api-keys', () => {
     })
 
     it('marks expired API keys with status', async () => {
-      mockGetServerSession.mockResolvedValueOnce({
-        user: { id: 'user_1', email: 'test@example.com' },
-      } as Session)
+      mockGetUser.mockResolvedValueOnce({
+        id: 'user_1',
+        email: 'test@example.com',
+        role: 'USER',
+      })
 
       const pastDate = new Date('2020-01-01')
       prismaMock.apiKey.findMany.mockResolvedValueOnce([
@@ -181,7 +189,7 @@ describe('/api/api-keys', () => {
 
   describe('POST', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
       const response = await POST(
         createRequest('http://localhost:3000/api/api-keys', {
@@ -196,9 +204,11 @@ describe('/api/api-keys', () => {
     })
 
     it('returns 400 for invalid input', async () => {
-      mockGetServerSession.mockResolvedValueOnce({
-        user: { id: 'user_1', email: 'test@example.com' },
-      } as Session)
+      mockGetUser.mockResolvedValueOnce({
+        id: 'user_1',
+        email: 'test@example.com',
+        role: 'USER',
+      })
 
       const response = await POST(
         createRequest('http://localhost:3000/api/api-keys', {
@@ -213,9 +223,11 @@ describe('/api/api-keys', () => {
     })
 
     it('returns 403 when user lacks access to organization', async () => {
-      mockGetServerSession.mockResolvedValueOnce({
-        user: { id: 'user_1', email: 'test@example.com' },
-      } as Session)
+      mockGetUser.mockResolvedValueOnce({
+        id: 'user_1',
+        email: 'test@example.com',
+        role: 'USER',
+      })
 
       prismaMock.organization.findUnique.mockResolvedValueOnce(null)
 
@@ -233,9 +245,11 @@ describe('/api/api-keys', () => {
     })
 
     it('returns 403 when user is not ADMIN or higher', async () => {
-      mockGetServerSession.mockResolvedValueOnce({
-        user: { id: 'user_1', email: 'test@example.com' },
-      } as Session)
+      mockGetUser.mockResolvedValueOnce({
+        id: 'user_1',
+        email: 'test@example.com',
+        role: 'USER',
+      })
 
       prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',
@@ -257,9 +271,11 @@ describe('/api/api-keys', () => {
     })
 
     it('returns 409 when API key limit reached', async () => {
-      mockGetServerSession.mockResolvedValueOnce({
-        user: { id: 'user_1', email: 'test@example.com' },
-      } as Session)
+      mockGetUser.mockResolvedValueOnce({
+        id: 'user_1',
+        email: 'test@example.com',
+        role: 'USER',
+      })
 
       prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',
@@ -283,9 +299,11 @@ describe('/api/api-keys', () => {
     })
 
     it('creates API key successfully with scopes', async () => {
-      mockGetServerSession.mockResolvedValueOnce({
-        user: { id: 'user_1', email: 'test@example.com' },
-      } as Session)
+      mockGetUser.mockResolvedValueOnce({
+        id: 'user_1',
+        email: 'test@example.com',
+        role: 'USER',
+      })
 
       prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',
@@ -326,9 +344,11 @@ describe('/api/api-keys', () => {
     })
 
     it('creates API key with default scopes when not provided', async () => {
-      mockGetServerSession.mockResolvedValueOnce({
-        user: { id: 'user_1', email: 'test@example.com' },
-      } as Session)
+      mockGetUser.mockResolvedValueOnce({
+        id: 'user_1',
+        email: 'test@example.com',
+        role: 'USER',
+      })
 
       prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',
@@ -365,9 +385,11 @@ describe('/api/api-keys', () => {
     })
 
     it('creates API key with expiration date', async () => {
-      mockGetServerSession.mockResolvedValueOnce({
-        user: { id: 'user_1', email: 'test@example.com' },
-      } as Session)
+      mockGetUser.mockResolvedValueOnce({
+        id: 'user_1',
+        email: 'test@example.com',
+        role: 'USER',
+      })
 
       prismaMock.organization.findUnique.mockResolvedValueOnce({
         id: 'org_1',

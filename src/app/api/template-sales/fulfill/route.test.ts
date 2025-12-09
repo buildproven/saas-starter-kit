@@ -31,9 +31,7 @@ vi.mock('@/lib/error-logging', () => ({
 
 import { fulfillTemplateSale } from '@/lib/template-sales/fulfillment'
 
-const mockFulfillTemplateSale = fulfillTemplateSale as vi.MockedFunction<
-  typeof fulfillTemplateSale
->
+const mockFulfillTemplateSale = fulfillTemplateSale as vi.MockedFunction<typeof fulfillTemplateSale>
 
 describe('POST /api/template-sales/fulfill', () => {
   const createRequest = (
@@ -77,7 +75,9 @@ describe('POST /api/template-sales/fulfill', () => {
   it('returns 401 when secret not configured', async () => {
     delete process.env.TEMPLATE_FULFILLMENT_SECRET
 
-    const response = await POST(createRequest({}, { 'x-template-fulfillment-token': 'test_secret' }))
+    const response = await POST(
+      createRequest({}, { 'x-template-fulfillment-token': 'test_secret' })
+    )
     const json = await response.json()
 
     expect(response.status).toBe(401)
@@ -88,7 +88,7 @@ describe('POST /api/template-sales/fulfill', () => {
     mockFulfillTemplateSale.mockResolvedValueOnce({
       success: true,
       licenseKey: 'LIC-123',
-    } as Awaited<ReturnType<typeof fulfillTemplateSale>>)
+    } as never)
 
     const response = await POST(
       createRequest(
@@ -156,7 +156,7 @@ describe('POST /api/template-sales/fulfill', () => {
       success: true,
       licenseKey: 'HOB-123',
       downloadUrl: 'https://example.com/download',
-    } as Awaited<ReturnType<typeof fulfillTemplateSale>>)
+    } as never)
 
     const response = await POST(
       createRequest(
@@ -186,7 +186,7 @@ describe('POST /api/template-sales/fulfill', () => {
     mockFulfillTemplateSale.mockResolvedValueOnce({
       success: true,
       licenseKey: 'PRO-456',
-    } as Awaited<ReturnType<typeof fulfillTemplateSale>>)
+    } as never)
 
     const response = await POST(
       createRequest(
@@ -215,7 +215,7 @@ describe('POST /api/template-sales/fulfill', () => {
     mockFulfillTemplateSale.mockResolvedValueOnce({
       success: true,
       licenseKey: 'DIR-789',
-    } as Awaited<ReturnType<typeof fulfillTemplateSale>>)
+    } as never)
 
     const response = await POST(
       createRequest(

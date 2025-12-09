@@ -2,15 +2,15 @@
  * Tests for GitHub Access Management
  */
 
-const mockGetMembershipForUserInOrg = vi.fn()
-const mockGetByName = vi.fn()
-const mockListPendingInvitations = vi.fn()
-const mockCreateInvitation = vi.fn()
-const mockGetByUsername = vi.fn()
+const mocks = vi.hoisted(() => {
+  const mockGetMembershipForUserInOrg = vi.fn()
+  const mockGetByName = vi.fn()
+  const mockListPendingInvitations = vi.fn()
+  const mockCreateInvitation = vi.fn()
+  const mockGetByUsername = vi.fn()
 
-vi.mock('@octokit/rest', () => ({
-  Octokit: vi.fn().mockImplementation(() => ({
-    rest: {
+  class MockOctokit {
+    rest = {
       teams: {
         getMembershipForUserInOrg: mockGetMembershipForUserInOrg,
         getByName: mockGetByName,
@@ -22,9 +22,48 @@ vi.mock('@octokit/rest', () => ({
       users: {
         getByUsername: mockGetByUsername,
       },
-    },
-  })),
-}))
+    }
+  }
+
+  return {
+    mockGetMembershipForUserInOrg,
+    mockGetByName,
+    mockListPendingInvitations,
+    mockCreateInvitation,
+    mockGetByUsername,
+    MockOctokit,
+  }
+})
+
+const {
+  mockGetMembershipForUserInOrg,
+  mockGetByName,
+  mockListPendingInvitations,
+  mockCreateInvitation,
+  mockGetByUsername,
+} = mocks
+
+vi.mock('@octokit/rest', () => {
+  class MockOctokit {
+    rest = {
+      teams: {
+        getMembershipForUserInOrg: mockGetMembershipForUserInOrg,
+        getByName: mockGetByName,
+      },
+      orgs: {
+        listPendingInvitations: mockListPendingInvitations,
+        createInvitation: mockCreateInvitation,
+      },
+      users: {
+        getByUsername: mockGetByUsername,
+      },
+    }
+  }
+
+  return {
+    Octokit: MockOctokit,
+  }
+})
 
 import {
   grantGitHubAccess,
@@ -89,8 +128,8 @@ describe('GitHub Access Management', () => {
       mockGetByUsername.mockResolvedValueOnce({ data: { id: 67890 } })
       mockCreateInvitation.mockResolvedValueOnce({ data: { id: 11111 } })
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       const result = await grantGitHubAccess({
         email: 'test@example.com',
@@ -112,7 +151,7 @@ describe('GitHub Access Management', () => {
       mockGetByName.mockResolvedValueOnce({ data: { id: 12345 } })
       mockCreateInvitation.mockResolvedValueOnce({ data: { id: 11111 } })
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       const result = await grantGitHubAccess({
         email: 'test@example.com',
@@ -170,7 +209,7 @@ describe('GitHub Access Management', () => {
     it('handles missing GitHub config', async () => {
       delete process.env.GITHUB_ACCESS_TOKEN
 
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const result = await grantGitHubAccess({
         email: 'test@example.com',
@@ -191,8 +230,8 @@ describe('GitHub Access Management', () => {
       // Need to also mock the team creation path to trigger error
       mockGetByName.mockRejectedValueOnce(new Error('API rate limit exceeded'))
 
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation()
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation()
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       const result = await grantGitHubAccess({
         email: 'test@example.com',
@@ -211,7 +250,7 @@ describe('GitHub Access Management', () => {
 
   describe('revokeGitHubAccess', () => {
     it('logs revocation and returns success', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       const result = await revokeGitHubAccess({
         email: 'test@example.com',
@@ -235,7 +274,7 @@ describe('GitHub Access Management', () => {
 
   describe('setupGitHubTeamsAndRepos', () => {
     it('logs team setup', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       await setupGitHubTeamsAndRepos()
 

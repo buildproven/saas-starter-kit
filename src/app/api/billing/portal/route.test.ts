@@ -19,8 +19,8 @@ vi.mock('next/server', () => {
   }
 })
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -47,12 +47,12 @@ vi.mock('@/lib/subscription', () => ({
   },
 }))
 
-import { getServerSession } from 'next-auth/next'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { BillingService } from '@/lib/billing'
 import { SubscriptionService } from '@/lib/subscription'
 
-const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockGetUser = getUser as vi.Mock
 const mockPrismaOrg = prisma.organization.findUnique as vi.Mock
 const mockBillingService = BillingService as vi.Mocked<typeof BillingService>
 const mockSubscriptionService = SubscriptionService as vi.Mocked<typeof SubscriptionService>
@@ -69,7 +69,7 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await POST(createRequest({}))
     const json = await response.json()
@@ -79,9 +79,7 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('returns 400 for invalid input', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
 
     const response = await POST(createRequest({ invalid: 'data' }))
     const json = await response.json()
@@ -91,9 +89,7 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('returns 403 when user lacks access', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg.mockResolvedValueOnce(null)
 
     const response = await POST(createRequest({ organizationId: 'org_123' }))
@@ -104,9 +100,7 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('returns 404 when no subscription exists', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
@@ -122,9 +116,7 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('creates portal session successfully', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg
       .mockResolvedValueOnce({
         id: 'org_123',
@@ -150,9 +142,7 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('allows admin to create portal session', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg
       .mockResolvedValueOnce({
         id: 'org_123',
@@ -176,9 +166,7 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('returns 403 for non-admin member', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'other_user',
@@ -193,9 +181,7 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('returns 404 when organization not found in second lookup', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg
       .mockResolvedValueOnce({
         id: 'org_123',
@@ -215,9 +201,7 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('uses custom return URL', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg
       .mockResolvedValueOnce({
         id: 'org_123',
@@ -249,9 +233,7 @@ describe('POST /api/billing/portal', () => {
   })
 
   it('returns 500 for unexpected errors', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg.mockRejectedValueOnce(new Error('Database error'))
 
     const response = await POST(createRequest({ organizationId: 'org_123' }))
@@ -277,16 +259,14 @@ describe('GET /api/billing/portal', () => {
   })
 
   it('redirects to signin when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await GET(createGetRequest({}))
-    expect(response.url).toContain('/auth/signin')
+    expect(response.url).toBe('/login')
   })
 
   it('returns 400 when organizationId missing', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
 
     const response = await GET(createGetRequest({}))
     const json = await response.json()
@@ -296,9 +276,7 @@ describe('GET /api/billing/portal', () => {
   })
 
   it('returns 403 when user lacks access', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg.mockResolvedValueOnce(null)
 
     const response = await GET(createGetRequest({ organizationId: 'org_123' }))
@@ -307,9 +285,7 @@ describe('GET /api/billing/portal', () => {
   })
 
   it('redirects to portal on success', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg
       .mockResolvedValueOnce({
         id: 'org_123',
@@ -333,9 +309,7 @@ describe('GET /api/billing/portal', () => {
   })
 
   it('returns 404 when no subscription found', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
@@ -351,9 +325,7 @@ describe('GET /api/billing/portal', () => {
   })
 
   it('returns 404 when organization not found', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg
       .mockResolvedValueOnce({
         id: 'org_123',
@@ -373,9 +345,7 @@ describe('GET /api/billing/portal', () => {
   })
 
   it('uses custom return URL when provided', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg
       .mockResolvedValueOnce({
         id: 'org_123',
@@ -407,9 +377,7 @@ describe('GET /api/billing/portal', () => {
   })
 
   it('returns 500 for unexpected errors', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrg.mockRejectedValueOnce(new Error('Database error'))
 
     const response = await GET(createGetRequest({ organizationId: 'org_123' }))

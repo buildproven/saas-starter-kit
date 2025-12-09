@@ -7,7 +7,9 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
 
 export default function SignOutPage() {
-  const { data: session, status } = useSession()
+  const sessionResult = useSession()
+  const session = sessionResult?.data
+  const status = sessionResult?.status ?? 'loading'
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 

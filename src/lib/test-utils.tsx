@@ -2,6 +2,7 @@ import React, { ReactElement } from 'react'
 import { render, RenderOptions } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
+import { NextRequest } from 'next/server'
 
 // Mock the Zustand store for testing
 export const mockStore = {
@@ -91,4 +92,40 @@ export const mockUseSession = async (
     status,
     update: vi.fn(),
   } as ReturnType<typeof nextAuthReact.useSession>)
+}
+
+// Mock user, organization, and request objects for API route testing
+export const createMockUser = (overrides?: Partial<(typeof mockSession)['user']>) => ({
+  ...mockSession.user,
+  ...overrides,
+})
+
+export const createMockOrganization = (overrides?: {
+  id?: string
+  name?: string
+  slug?: string
+  ownerId?: string
+}) => ({
+  id: 'org_1',
+  name: 'Test Organization',
+  slug: 'test-org',
+  ownerId: 'user_1',
+  ...overrides,
+})
+
+export const createMockNextRequest = <T = unknown,>(method: string, url: string, body?: T) => {
+  const absoluteUrl = url.startsWith('http') ? url : `http://localhost:3000${url}`
+  const request = new NextRequest(absoluteUrl, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  }) as NextRequest & { json: () => Promise<T> }
+
+  if (body) {
+    request.json = () => Promise.resolve(body)
+  }
+
+  return request
 }

@@ -128,13 +128,13 @@ interface PrismaUpsertInput extends PrismaWhereInput {
 
 vi.mock('@/lib/prisma', () => {
   const prisma = {
-    templateSale: {},
-    templateSaleCustomer: {},
-    templateDownloadAudit: {},
+    templateSale: {} as PrismaMock['templateSale'],
+    templateSaleCustomer: {} as PrismaMock['templateSaleCustomer'],
+    templateDownloadAudit: {} as PrismaMock['templateDownloadAudit'],
     $transaction: vi.fn(),
   }
 
-  prisma.templateSale = {
+  ;(prisma as Record<string, unknown>).templateSale = {
     create: vi.fn(async ({ data }: PrismaCreateInput) => {
       const record: TemplateSaleRecord = {
         id: randomUUID(),
@@ -174,7 +174,7 @@ vi.mock('@/lib/prisma', () => {
       if (!existing) throw new Error('Sale not found for update')
       const updated: TemplateSaleRecord = {
         ...existing,
-        ...data,
+        ...(data as Partial<TemplateSaleRecord>),
         githubUsername:
           data.githubUsername !== undefined
             ? (data.githubUsername as string | null)
@@ -197,46 +197,53 @@ vi.mock('@/lib/prisma', () => {
       return clone(updated)
     }),
   }
-
-  prisma.templateSaleCustomer = {
+  ;(prisma as Record<string, unknown>).templateSaleCustomer = {
     upsert: vi.fn(async ({ where, update, create }: PrismaUpsertInput) => {
-      const existing = customerStore.get(where.saleId)
+      const saleId = where.saleId!
+      const existing = customerStore.get(saleId)
       if (existing) {
+        const updateData = update as Partial<TemplateSaleCustomerRecord>
         const updated: TemplateSaleCustomerRecord = {
           ...existing,
-          ...update,
-          githubTeamId: update.githubTeamId ?? existing.githubTeamId ?? null,
+          ...updateData,
+          githubTeamId: (updateData.githubTeamId ?? existing.githubTeamId ?? null) as string | null,
           githubUsername:
-            update.githubUsername !== undefined
-              ? (update.githubUsername as string | null)
+            updateData.githubUsername !== undefined
+              ? (updateData.githubUsername as string | null)
               : (existing.githubUsername ?? null),
-          accessExpiresAt: update.accessExpiresAt ?? existing.accessExpiresAt ?? null,
+          accessExpiresAt: (updateData.accessExpiresAt ??
+            existing.accessExpiresAt ??
+            null) as Date | null,
           metadata:
-            update.metadata !== undefined
-              ? (update.metadata as Record<string, unknown> | null)
+            updateData.metadata !== undefined
+              ? (updateData.metadata as Record<string, unknown> | null)
               : (existing.metadata ?? null),
           updatedAt: new Date(),
         }
-        customerStore.set(where.saleId, updated)
+        customerStore.set(saleId, updated)
         return clone(updated)
       }
 
+      const createData = create as Partial<TemplateSaleCustomerRecord> & {
+        email: string
+        package: string
+      }
       const newRecord: TemplateSaleCustomerRecord = {
         id: randomUUID(),
-        saleId: where.saleId,
-        email: create.email!,
-        package: create.package ?? 'basic',
-        licenseKey: create.licenseKey ?? 'LIC-UNKNOWN',
-        downloadToken: create.downloadToken ?? 'token-unknown',
-        githubTeamId: create.githubTeamId ?? null,
-        githubUsername: (create.githubUsername as string | undefined) ?? null,
-        supportTier: create.supportTier ?? 'email',
-        accessExpiresAt: create.accessExpiresAt ?? null,
-        metadata: (create.metadata as Record<string, unknown>) ?? null,
+        saleId: saleId,
+        email: createData.email!,
+        package: createData.package ?? 'basic',
+        licenseKey: (createData.licenseKey ?? 'LIC-UNKNOWN') as string,
+        downloadToken: (createData.downloadToken ?? 'token-unknown') as string,
+        githubTeamId: (createData.githubTeamId ?? null) as string | null,
+        githubUsername: (createData.githubUsername as string | undefined) ?? null,
+        supportTier: (createData.supportTier ?? 'email') as string,
+        accessExpiresAt: (createData.accessExpiresAt ?? null) as Date | null,
+        metadata: (createData.metadata as Record<string, unknown>) ?? null,
         createdAt: new Date(),
         updatedAt: new Date(),
       }
-      customerStore.set(where.saleId, newRecord)
+      customerStore.set(saleId, newRecord)
       return clone(newRecord)
     }),
     findUnique: vi.fn(async ({ where }: PrismaWhereInput) => {
@@ -256,8 +263,7 @@ vi.mock('@/lib/prisma', () => {
       return null
     }),
   }
-
-  prisma.templateDownloadAudit = {
+  ;(prisma as Record<string, unknown>).templateDownloadAudit = {
     create: vi.fn(async ({ data }: PrismaCreateInput) => {
       downloadAudits.push(data as Record<string, unknown>)
       return clone(data)

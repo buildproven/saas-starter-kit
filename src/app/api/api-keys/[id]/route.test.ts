@@ -15,8 +15,8 @@ vi.mock('next/server', () => {
   }
 })
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -34,16 +34,20 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth/next'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { GET, PUT, DELETE } from './route'
 
-const mockGetServerSession = getServerSession as vi.Mock
-const mockPrisma = prisma as vi.Mocked<typeof prisma>
+const mockGetUser = vi.mocked(getUser)
+const mockPrismaApiKey = vi.mocked(prisma.apiKey, true)
 
 describe('API Keys [id] API', () => {
-  const mockSession = {
-    user: { id: 'user_123', email: 'test@example.com' },
+  const mockUser = {
+    id: 'user_123',
+    email: 'test@example.com',
+    name: 'Test User',
+    image: null,
+    role: 'USER' as const,
   }
 
   const mockApiKey = {
@@ -64,7 +68,7 @@ describe('API Keys [id] API', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetServerSession.mockResolvedValue(mockSession)
+    mockGetUser.mockResolvedValue(mockUser)
   })
 
   const createRequest = (body?: object): NextRequest => {
@@ -75,7 +79,7 @@ describe('API Keys [id] API', () => {
 
   describe('GET /api/api-keys/[id]', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'key_123' } })
@@ -86,7 +90,7 @@ describe('API Keys [id] API', () => {
     })
 
     it('returns 404 when API key not found', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValueOnce(null)
+      mockPrismaApiKey.findUnique.mockResolvedValueOnce(null)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'nonexistent' } })
@@ -97,7 +101,7 @@ describe('API Keys [id] API', () => {
     })
 
     it('returns 404 when API key has no organization', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValueOnce({
+      mockPrismaApiKey.findUnique.mockResolvedValueOnce({
         ...mockApiKey,
         organization: null,
       } as never)
@@ -111,7 +115,7 @@ describe('API Keys [id] API', () => {
     })
 
     it('returns 403 when user is not admin', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValueOnce({
+      mockPrismaApiKey.findUnique.mockResolvedValueOnce({
         ...mockApiKey,
         organization: {
           ...mockApiKey.organization,
@@ -129,7 +133,7 @@ describe('API Keys [id] API', () => {
     })
 
     it('returns API key details for owner', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValue(mockApiKey as never)
+      mockPrismaApiKey.findUnique.mockResolvedValue(mockApiKey as never)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'key_123' } })
@@ -152,7 +156,7 @@ describe('API Keys [id] API', () => {
           members: [{ role: 'ADMIN' }],
         },
       }
-      mockPrisma.apiKey.findUnique.mockResolvedValue(adminApiKey as never)
+      mockPrismaApiKey.findUnique.mockResolvedValue(adminApiKey as never)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'key_123' } })
@@ -167,7 +171,7 @@ describe('API Keys [id] API', () => {
         ...mockApiKey,
         expiresAt: new Date('2020-01-01'),
       }
-      mockPrisma.apiKey.findUnique.mockResolvedValue(expiredApiKey as never)
+      mockPrismaApiKey.findUnique.mockResolvedValue(expiredApiKey as never)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'key_123' } })
@@ -182,7 +186,7 @@ describe('API Keys [id] API', () => {
         ...mockApiKey,
         expiresAt: null,
       }
-      mockPrisma.apiKey.findUnique.mockResolvedValue(noExpiryApiKey as never)
+      mockPrismaApiKey.findUnique.mockResolvedValue(noExpiryApiKey as never)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'key_123' } })
@@ -195,7 +199,7 @@ describe('API Keys [id] API', () => {
 
   describe('PUT /api/api-keys/[id]', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
       const request = createRequest({ name: 'New Name' })
       const response = await PUT(request, { params: { id: 'key_123' } })
@@ -206,7 +210,7 @@ describe('API Keys [id] API', () => {
     })
 
     it('returns 404 when API key not found', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValueOnce(null)
+      mockPrismaApiKey.findUnique.mockResolvedValueOnce(null)
 
       const request = createRequest({ name: 'New Name' })
       const response = await PUT(request, { params: { id: 'nonexistent' } })
@@ -217,7 +221,7 @@ describe('API Keys [id] API', () => {
     })
 
     it('returns 403 when user is not admin', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValueOnce({
+      mockPrismaApiKey.findUnique.mockResolvedValueOnce({
         ...mockApiKey,
         organization: {
           ...mockApiKey.organization,
@@ -239,7 +243,7 @@ describe('API Keys [id] API', () => {
         ...mockApiKey,
         expiresAt: new Date('2020-01-01'),
       }
-      mockPrisma.apiKey.findUnique.mockResolvedValue(expiredApiKey as never)
+      mockPrismaApiKey.findUnique.mockResolvedValue(expiredApiKey as never)
 
       const request = createRequest({ name: 'New Name' })
       const response = await PUT(request, { params: { id: 'key_123' } })
@@ -250,8 +254,8 @@ describe('API Keys [id] API', () => {
     })
 
     it('updates API key name', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValue(mockApiKey as never)
-      mockPrisma.apiKey.update.mockResolvedValue({
+      mockPrismaApiKey.findUnique.mockResolvedValue(mockApiKey as never)
+      mockPrismaApiKey.update.mockResolvedValue({
         ...mockApiKey,
         name: 'Updated Key',
       } as never)
@@ -265,8 +269,8 @@ describe('API Keys [id] API', () => {
     })
 
     it('updates API key scopes', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValue(mockApiKey as never)
-      mockPrisma.apiKey.update.mockResolvedValue({
+      mockPrismaApiKey.findUnique.mockResolvedValue(mockApiKey as never)
+      mockPrismaApiKey.update.mockResolvedValue({
         ...mockApiKey,
         scopes: ['read', 'write'],
       } as never)
@@ -275,11 +279,11 @@ describe('API Keys [id] API', () => {
       const response = await PUT(request, { params: { id: 'key_123' } })
 
       expect(response.status).toBe(200)
-      expect(mockPrisma.apiKey.update).toHaveBeenCalled()
+      expect(mockPrismaApiKey.update).toHaveBeenCalled()
     })
 
     it('returns 400 for invalid input', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValue(mockApiKey as never)
+      mockPrismaApiKey.findUnique.mockResolvedValue(mockApiKey as never)
 
       const request = createRequest({ name: '' })
       const response = await PUT(request, { params: { id: 'key_123' } })
@@ -292,7 +296,7 @@ describe('API Keys [id] API', () => {
 
   describe('DELETE /api/api-keys/[id]', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
       const request = createRequest()
       const response = await DELETE(request, { params: { id: 'key_123' } })
@@ -303,7 +307,7 @@ describe('API Keys [id] API', () => {
     })
 
     it('returns 404 when API key not found', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValueOnce(null)
+      mockPrismaApiKey.findUnique.mockResolvedValueOnce(null)
 
       const request = createRequest()
       const response = await DELETE(request, { params: { id: 'nonexistent' } })
@@ -314,7 +318,7 @@ describe('API Keys [id] API', () => {
     })
 
     it('returns 403 when user is not admin', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValueOnce({
+      mockPrismaApiKey.findUnique.mockResolvedValueOnce({
         ...mockApiKey,
         organization: {
           ...mockApiKey.organization,
@@ -332,8 +336,8 @@ describe('API Keys [id] API', () => {
     })
 
     it('deletes API key for owner', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValue(mockApiKey as never)
-      mockPrisma.apiKey.delete.mockResolvedValue(mockApiKey as never)
+      mockPrismaApiKey.findUnique.mockResolvedValue(mockApiKey as never)
+      mockPrismaApiKey.delete.mockResolvedValue(mockApiKey as never)
 
       const request = createRequest()
       const response = await DELETE(request, { params: { id: 'key_123' } })
@@ -342,7 +346,7 @@ describe('API Keys [id] API', () => {
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
       expect(data.message).toContain('revoked')
-      expect(mockPrisma.apiKey.delete).toHaveBeenCalledWith({
+      expect(mockPrismaApiKey.delete).toHaveBeenCalledWith({
         where: { id: 'key_123' },
       })
     })
@@ -356,8 +360,8 @@ describe('API Keys [id] API', () => {
           members: [{ role: 'ADMIN' }],
         },
       }
-      mockPrisma.apiKey.findUnique.mockResolvedValue(adminApiKey as never)
-      mockPrisma.apiKey.delete.mockResolvedValue(mockApiKey as never)
+      mockPrismaApiKey.findUnique.mockResolvedValue(adminApiKey as never)
+      mockPrismaApiKey.delete.mockResolvedValue(mockApiKey as never)
 
       const request = createRequest()
       const response = await DELETE(request, { params: { id: 'key_123' } })

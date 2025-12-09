@@ -6,15 +6,36 @@ import { GET } from './route'
 import type { NextRequest } from 'next/server'
 
 vi.mock('next/server', () => {
-  const actual = vi.importActual('next/server')
+  // Create a mock NextResponse class that can be instantiated
+  class MockNextResponse {
+    body: string | null
+    status: number
+    headers: Map<string, string>
+
+    constructor(
+      body?: string | null,
+      init?: { status?: number; headers?: Record<string, string> }
+    ) {
+      this.body = body ?? null
+      this.status = init?.status ?? 200
+      this.headers = new Map(Object.entries(init?.headers || {}))
+    }
+
+    async text() {
+      return this.body ?? ''
+    }
+
+    async json() {
+      return JSON.parse(this.body ?? '{}')
+    }
+
+    static json(data: unknown, init?: { status?: number }) {
+      return new MockNextResponse(JSON.stringify(data), init)
+    }
+  }
+
   return {
-    ...actual,
-    NextResponse: {
-      json: (data: unknown, init?: { status?: number }) => ({
-        json: async () => data,
-        status: init?.status ?? 200,
-      }),
-    },
+    NextResponse: MockNextResponse,
   }
 })
 
@@ -57,7 +78,7 @@ http_requests_total{method="GET",status="200"} 100
   it('handles metrics generation failure', async () => {
     mockMetrics.mockRejectedValueOnce(new Error('Metrics collection failed'))
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const response = await GET(createRequest())
     const json = await response.json()
 

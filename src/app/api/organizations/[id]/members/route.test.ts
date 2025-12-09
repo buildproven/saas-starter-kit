@@ -15,8 +15,8 @@ vi.mock('next/server', () => {
   }
 })
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -41,19 +41,19 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth/next'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { GET, POST } from './route'
 
-const mockGetServerSession = getServerSession as vi.Mock
-const mockPrisma = prisma as vi.Mocked<typeof prisma>
+const mockGetUser = getUser as vi.Mock
+const mockOrganization = vi.mocked(prisma.organization, true)
+const mockOrganizationMember = vi.mocked(prisma.organizationMember, true)
+const mockUser = vi.mocked(prisma.user, true)
 
 describe('Organization Members API', () => {
-  const mockSession = {
-    user: { id: 'user_123', email: 'test@example.com' },
-  }
+  const mockUserData = { id: 'user_123', email: 'test@example.com' }
 
-  const mockOrganization = {
+  const mockOrganizationData = {
     id: 'org_123',
     name: 'Test Org',
     ownerId: 'user_123',
@@ -61,7 +61,7 @@ describe('Organization Members API', () => {
     members: [{ role: 'OWNER', status: 'ACTIVE' }],
   }
 
-  const mockOwner = {
+  const mockOwnerData = {
     id: 'user_123',
     name: 'Owner User',
     email: 'owner@example.com',
@@ -70,7 +70,7 @@ describe('Organization Members API', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetServerSession.mockResolvedValue(mockSession)
+    mockGetUser.mockResolvedValue(mockUserData)
   })
 
   const createRequest = (body?: object): NextRequest => {
@@ -81,7 +81,7 @@ describe('Organization Members API', () => {
 
   describe('GET /api/organizations/[id]/members', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'org_123' } })
@@ -92,7 +92,7 @@ describe('Organization Members API', () => {
     })
 
     it('returns 404 when organization not found', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue(null)
+      mockOrganization.findUnique.mockResolvedValue(null)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'nonexistent' } })
@@ -103,8 +103,8 @@ describe('Organization Members API', () => {
     })
 
     it('returns 403 when user is not a member', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue({
-        ...mockOrganization,
+      mockOrganization.findUnique.mockResolvedValue({
+        ...mockOrganizationData,
         ownerId: 'other_user',
         members: [],
       } as never)
@@ -118,11 +118,11 @@ describe('Organization Members API', () => {
     })
 
     it('returns members list for owner', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
-      mockPrisma.organizationMember.findMany.mockResolvedValue([
+      mockOrganization.findUnique.mockResolvedValue(mockOrganizationData as never)
+      mockOrganizationMember.findMany.mockResolvedValue([
         { id: 'member_1', role: 'MEMBER', status: 'ACTIVE', user: { id: 'user_456' } },
       ] as never)
-      mockPrisma.user.findUnique.mockResolvedValue(mockOwner as never)
+      mockUser.findUnique.mockResolvedValue(mockOwnerData as never)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'org_123' } })
@@ -135,13 +135,13 @@ describe('Organization Members API', () => {
     })
 
     it('returns members for regular member', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue({
-        ...mockOrganization,
+      mockOrganization.findUnique.mockResolvedValue({
+        ...mockOrganizationData,
         ownerId: 'other_user',
         members: [{ role: 'MEMBER', status: 'ACTIVE' }],
       } as never)
-      mockPrisma.organizationMember.findMany.mockResolvedValue([] as never)
-      mockPrisma.user.findUnique.mockResolvedValue(mockOwner as never)
+      mockOrganizationMember.findMany.mockResolvedValue([] as never)
+      mockUser.findUnique.mockResolvedValue(mockOwnerData as never)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'org_123' } })
@@ -154,7 +154,7 @@ describe('Organization Members API', () => {
 
   describe('POST /api/organizations/[id]/members', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
       const request = createRequest({ email: 'new@example.com' })
       const response = await POST(request, { params: { id: 'org_123' } })
@@ -165,7 +165,7 @@ describe('Organization Members API', () => {
     })
 
     it('returns 404 when organization not found', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue(null)
+      mockOrganization.findUnique.mockResolvedValue(null)
 
       const request = createRequest({ email: 'new@example.com' })
       const response = await POST(request, { params: { id: 'nonexistent' } })
@@ -176,8 +176,8 @@ describe('Organization Members API', () => {
     })
 
     it('returns 403 when user is not admin', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue({
-        ...mockOrganization,
+      mockOrganization.findUnique.mockResolvedValue({
+        ...mockOrganizationData,
         ownerId: 'other_user',
         members: [{ role: 'MEMBER', status: 'ACTIVE' }],
       } as never)
@@ -191,8 +191,8 @@ describe('Organization Members API', () => {
     })
 
     it('returns 404 when invitee user does not exist', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
-      mockPrisma.user.findUnique.mockResolvedValue(null)
+      mockOrganization.findUnique.mockResolvedValue(mockOrganizationData as never)
+      mockUser.findUnique.mockResolvedValue(null)
 
       const request = createRequest({ email: 'nonexistent@example.com' })
       const response = await POST(request, { params: { id: 'org_123' } })
@@ -203,8 +203,11 @@ describe('Organization Members API', () => {
     })
 
     it('returns 409 when inviting the owner', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user_123', email: 'owner@example.com' } as never)
+      mockOrganization.findUnique.mockResolvedValue(mockOrganizationData as never)
+      mockUser.findUnique.mockResolvedValue({
+        id: 'user_123',
+        email: 'owner@example.com',
+      } as never)
 
       const request = createRequest({ email: 'owner@example.com' })
       const response = await POST(request, { params: { id: 'org_123' } })
@@ -215,9 +218,12 @@ describe('Organization Members API', () => {
     })
 
     it('returns 409 when user is already a member', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user_456', email: 'member@example.com' } as never)
-      mockPrisma.organizationMember.findUnique.mockResolvedValue({ id: 'existing_member' } as never)
+      mockOrganization.findUnique.mockResolvedValue(mockOrganizationData as never)
+      mockUser.findUnique.mockResolvedValue({
+        id: 'user_456',
+        email: 'member@example.com',
+      } as never)
+      mockOrganizationMember.findUnique.mockResolvedValue({ id: 'existing_member' } as never)
 
       const request = createRequest({ email: 'member@example.com' })
       const response = await POST(request, { params: { id: 'org_123' } })
@@ -228,10 +234,13 @@ describe('Organization Members API', () => {
     })
 
     it('returns 409 when member limit reached', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user_456', email: 'new@example.com' } as never)
-      mockPrisma.organizationMember.findUnique.mockResolvedValue(null)
-      mockPrisma.organizationMember.count.mockResolvedValue(10)
+      mockOrganization.findUnique.mockResolvedValue(mockOrganizationData as never)
+      mockUser.findUnique.mockResolvedValue({
+        id: 'user_456',
+        email: 'new@example.com',
+      } as never)
+      mockOrganizationMember.findUnique.mockResolvedValue(null)
+      mockOrganizationMember.count.mockResolvedValue(10)
 
       const request = createRequest({ email: 'new@example.com' })
       const response = await POST(request, { params: { id: 'org_123' } })
@@ -242,11 +251,14 @@ describe('Organization Members API', () => {
     })
 
     it('creates member successfully', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user_456', email: 'new@example.com' } as never)
-      mockPrisma.organizationMember.findUnique.mockResolvedValue(null)
-      mockPrisma.organizationMember.count.mockResolvedValue(5)
-      mockPrisma.organizationMember.create.mockResolvedValue({
+      mockOrganization.findUnique.mockResolvedValue(mockOrganizationData as never)
+      mockUser.findUnique.mockResolvedValue({
+        id: 'user_456',
+        email: 'new@example.com',
+      } as never)
+      mockOrganizationMember.findUnique.mockResolvedValue(null)
+      mockOrganizationMember.count.mockResolvedValue(5)
+      mockOrganizationMember.create.mockResolvedValue({
         id: 'member_new',
         userId: 'user_456',
         organizationId: 'org_123',
@@ -265,11 +277,14 @@ describe('Organization Members API', () => {
     })
 
     it('creates admin member', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user_456', email: 'admin@example.com' } as never)
-      mockPrisma.organizationMember.findUnique.mockResolvedValue(null)
-      mockPrisma.organizationMember.count.mockResolvedValue(3)
-      mockPrisma.organizationMember.create.mockResolvedValue({
+      mockOrganization.findUnique.mockResolvedValue(mockOrganizationData as never)
+      mockUser.findUnique.mockResolvedValue({
+        id: 'user_456',
+        email: 'admin@example.com',
+      } as never)
+      mockOrganizationMember.findUnique.mockResolvedValue(null)
+      mockOrganizationMember.count.mockResolvedValue(3)
+      mockOrganizationMember.create.mockResolvedValue({
         id: 'member_admin',
         role: 'ADMIN',
         status: 'PENDING',
@@ -280,7 +295,7 @@ describe('Organization Members API', () => {
       const response = await POST(request, { params: { id: 'org_123' } })
 
       expect(response.status).toBe(201)
-      expect(mockPrisma.organizationMember.create).toHaveBeenCalledWith(
+      expect(mockOrganizationMember.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ role: 'ADMIN' }),
         })
@@ -288,7 +303,7 @@ describe('Organization Members API', () => {
     })
 
     it('returns 400 for invalid email', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
+      mockOrganization.findUnique.mockResolvedValue(mockOrganizationData as never)
 
       const request = createRequest({ email: 'invalid-email' })
       const response = await POST(request, { params: { id: 'org_123' } })

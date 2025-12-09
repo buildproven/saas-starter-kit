@@ -13,59 +13,61 @@ import {
   useSessionSync,
 } from '../useStore'
 
-// Mock next-auth/react
-const mockUseSession = vi.fn()
-vi.mock('next-auth/react', () => ({
-  useSession: () => mockUseSession(),
+const mockUseSupabaseAuth = vi.fn()
+vi.mock('@/hooks/use-auth', () => ({
+  useAuth: () => mockUseSupabaseAuth(),
 }))
 
 // Reset store before each test
 beforeEach(() => {
   const { reset } = useAppStore.getState()
   reset()
-  mockUseSession.mockReturnValue({
-    data: null,
-    status: 'unauthenticated',
+  mockUseSupabaseAuth.mockReturnValue({
+    user: null,
+    loading: false,
   })
 })
 
 describe('useSessionSync', () => {
   it('syncs session to store when authenticated', () => {
-    mockUseSession.mockReturnValue({
-      data: {
-        user: { id: 'user_1', email: 'test@example.com', name: 'Test User' },
-        expires: '2099-12-31',
+    mockUseSupabaseAuth.mockReturnValue({
+      user: {
+        id: 'user_1',
+        email: 'test@example.com',
+        user_metadata: { full_name: 'Test User', avatar_url: 'https://example.com/avatar.png' },
+        app_metadata: { role: 'ADMIN' },
       },
-      status: 'authenticated',
+      loading: false,
     })
 
     const { result } = renderHook(() => useSessionSync())
 
-    expect(result.current.status).toBe('authenticated')
-    expect(result.current.session?.user?.email).toBe('test@example.com')
+    expect(result.current.loading).toBe(false)
+    expect(result.current.user?.email).toBe('test@example.com')
+    expect(useAppStore.getState().user?.role).toBe('ADMIN')
   })
 
   it('returns unauthenticated when no session', () => {
-    mockUseSession.mockReturnValue({
-      data: null,
-      status: 'unauthenticated',
+    mockUseSupabaseAuth.mockReturnValue({
+      user: null,
+      loading: false,
     })
 
     const { result } = renderHook(() => useSessionSync())
 
-    expect(result.current.status).toBe('unauthenticated')
-    expect(result.current.session).toBeNull()
+    expect(result.current.user).toBeNull()
+    expect(useAppStore.getState().user).toBeNull()
   })
 
   it('returns loading status when loading', () => {
-    mockUseSession.mockReturnValue({
-      data: null,
-      status: 'loading',
+    mockUseSupabaseAuth.mockReturnValue({
+      user: null,
+      loading: true,
     })
 
     const { result } = renderHook(() => useSessionSync())
 
-    expect(result.current.status).toBe('loading')
+    expect(result.current.loading).toBe(true)
   })
 })
 
@@ -210,9 +212,9 @@ describe('useCurrentOrganization', () => {
 
   it('updates organization through hook', () => {
     act(() => {
-      useAppStore.getState().setOrganizations([
-        { id: 'org_1', name: 'Test Org', slug: 'test-org', role: 'OWNER' },
-      ])
+      useAppStore
+        .getState()
+        .setOrganizations([{ id: 'org_1', name: 'Test Org', slug: 'test-org', role: 'OWNER' }])
     })
 
     const { result } = renderHook(() => useCurrentOrganization())
@@ -240,8 +242,8 @@ describe('useNotifications', () => {
     })
 
     expect(result.current.notifications).toHaveLength(1)
-    expect(result.current.notifications[0].type).toBe('success')
-    expect(result.current.notifications[0].title).toBe('Success!')
+    expect(result.current.notifications[0]!.type).toBe('success')
+    expect(result.current.notifications[0]!.title).toBe('Success!')
   })
 
   it('adds error notification', () => {
@@ -251,7 +253,7 @@ describe('useNotifications', () => {
       result.current.showError('Error!', 'Something went wrong')
     })
 
-    expect(result.current.notifications[0].type).toBe('error')
+    expect(result.current.notifications[0]!.type).toBe('error')
   })
 
   it('adds warning notification', () => {
@@ -261,7 +263,7 @@ describe('useNotifications', () => {
       result.current.showWarning('Warning!')
     })
 
-    expect(result.current.notifications[0].type).toBe('warning')
+    expect(result.current.notifications[0]!.type).toBe('warning')
   })
 
   it('adds info notification', () => {
@@ -271,7 +273,7 @@ describe('useNotifications', () => {
       result.current.showInfo('Info')
     })
 
-    expect(result.current.notifications[0].type).toBe('info')
+    expect(result.current.notifications[0]!.type).toBe('info')
   })
 
   it('removes notification by id', () => {
@@ -281,7 +283,7 @@ describe('useNotifications', () => {
       result.current.showInfo('Test')
     })
 
-    const notificationId = result.current.notifications[0].id
+    const notificationId = result.current.notifications[0]!.id
 
     act(() => {
       result.current.removeNotification(notificationId)
@@ -336,7 +338,7 @@ describe('useApiKeys', () => {
     })
 
     expect(result.current.apiKeys).toHaveLength(1)
-    expect(result.current.apiKeys[0].name).toBe('New Key')
+    expect(result.current.apiKeys[0]!.name).toBe('New Key')
   })
 
   it('removes api key', () => {
@@ -354,7 +356,7 @@ describe('useApiKeys', () => {
     })
 
     expect(result.current.apiKeys).toHaveLength(1)
-    expect(result.current.apiKeys[0].id).toBe('key_2')
+    expect(result.current.apiKeys[0]!.id).toBe('key_2')
   })
 
   it('filters active keys', () => {
@@ -390,7 +392,7 @@ describe('useApiKeys', () => {
     })
 
     expect(result.current.expiredKeys).toHaveLength(1)
-    expect(result.current.expiredKeys[0].name).toBe('Expired')
+    expect(result.current.expiredKeys[0]!.name).toBe('Expired')
   })
 })
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,6 +35,14 @@ interface PurchaseData {
 }
 
 export default function TemplatePurchaseSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <TemplatePurchaseSuccessContent />
+    </Suspense>
+  )
+}
+
+function TemplatePurchaseSuccessContent() {
   const searchParams = useSearchParams()
   const [purchaseData, setPurchaseData] = useState<PurchaseData | null>(null)
   const [isLoading, setIsLoading] = useState(true)

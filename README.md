@@ -1,6 +1,6 @@
 # SaaS Starter Kit
 
-A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma, and Stripe-ready billing flows. Launch multi-tenant products with authentication, RBAC, subscriptions, and modern DX defaults already wired together.
+A batteries-included SaaS foundation built with Next.js 16 (App Router), Prisma, and Stripe-ready billing flows. Launch multi-tenant products with authentication, RBAC, subscriptions, and modern DX defaults already wired together.
 
 ---
 
@@ -13,10 +13,10 @@ A batteries-included SaaS foundation built with Next.js 14 (App Router), Prisma,
 ## Features
 
 - **Next.js App Router** with hybrid rendering, server actions, and middleware-driven RBAC
-- **Authentication & Authorization** using NextAuth (JWT strategy), Prisma adapter, and role-aware middleware (`USER`, `ADMIN`, `SUPER_ADMIN`)
+- **Authentication & Authorization** using Supabase Auth (Google/GitHub/email), Prisma for user data, and role-aware middleware (`USER`, `ADMIN`, `SUPER_ADMIN`)
 - **Multi-tenant data model** with Organizations, Projects, API Keys, Plans, and Usage tracking powered by Prisma & PostgreSQL
 - **Billing scaffolding** with Stripe-compatible helpers (checkout, billing portal, subscription enforcement)
-- **Production tooling**: Jest + Testing Library, ESLint (security plugin), Prettier, Tailwind (shadcn/ui tokens), Sentry, Husky + lint-staged, and GitHub Actions
+- **Production tooling**: Vitest + Testing Library + Playwright, ESLint (security plugin), Prettier, Tailwind v4 (shadcn/ui tokens), Sentry, Husky + lint-staged, and GitHub Actions
 - **State management & UI**: Zustand global store, shadcn-style component primitives, and Lucide iconography
 - **Smart Test Strategy**: Intelligent risk-based pre-push validation that adapts to your changes
 
@@ -41,14 +41,14 @@ For commercial packages and pricing, visit [vibebuildlab.com](https://vibebuildl
 
 | Layer          | Technology                                  |
 | -------------- | ------------------------------------------- |
-| **Framework**  | Next.js 14 (App Router)                     |
+| **Framework**  | Next.js 16 (App Router)                     |
 | **Language**   | TypeScript 5+                               |
 | **Database**   | PostgreSQL 14+ via Prisma ORM               |
-| **Auth**       | NextAuth.js with JWT strategy               |
+| **Auth**       | Supabase Auth (OAuth + email)               |
 | **Payments**   | Stripe (checkout, billing portal, webhooks) |
-| **Styling**    | Tailwind CSS + shadcn/ui                    |
+| **Styling**    | Tailwind CSS v4 + shadcn/ui                 |
 | **State**      | Zustand                                     |
-| **Testing**    | Jest + Testing Library                      |
+| **Testing**    | Vitest + Testing Library + Playwright       |
 | **Monitoring** | Sentry                                      |
 | **CI/CD**      | GitHub Actions                              |
 
@@ -71,7 +71,7 @@ npm install
 
 # Configure environment
 cp .env.example .env.local
-# Fill in database, NextAuth, Stripe, and Sentry values
+# Fill in database, Supabase, Stripe, and Sentry values
 
 # Database setup
 npm run db:push        # Apply Prisma schema
@@ -87,7 +87,7 @@ Visit `http://localhost:3000` and sign in with any configured OAuth provider.
 
 Key environment groups to configure:
 
-- **NextAuth** – `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, provider IDs/secrets
+- **Supabase** – `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (required)
 - **Database** – `DATABASE_URL` (required)
 - **Stripe** – `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`
 - **Sentry** – `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`
@@ -97,31 +97,35 @@ Refer to `.env.example` for the full list.
 
 ### Development Commands
 
-| Command                  | Purpose                           |
-| ------------------------ | --------------------------------- |
-| `npm run dev`            | Start dev server with hot reload  |
-| `npm run lint`           | ESLint (including security rules) |
-| `npm run typecheck`      | TypeScript validation             |
-| `npm test`               | Jest + Testing Library            |
-| `npm run test:coverage`  | Enforce 80% coverage threshold    |
-| `npm run db:push`        | Apply Prisma schema               |
-| `npm run db:seed`        | Seed demo data                    |
-| `npm run security:audit` | npm audit high severity gate      |
+| Command                    | Purpose                                     |
+| -------------------------- | ------------------------------------------- |
+| `npm run dev`              | Start dev server with hot reload            |
+| `npm run lint`             | ESLint (including security rules)           |
+| `npm run typecheck`        | TypeScript validation                       |
+| `npm test`                 | Vitest suite (unit/integration)             |
+| `npm run test:coverage`    | Vitest with coverage (80% global threshold) |
+| `npm run test:e2e`         | Playwright end-to-end smoke tests           |
+| `npm run db:push`          | Apply Prisma schema                         |
+| `npm run db:seed`          | Seed demo data                              |
+| `npm run security:audit`   | npm audit high severity gate                |
+| `npm run security:secrets` | Secret scanning via Gitleaks                |
+| `npm run security:config`  | Security configuration lint                 |
+
+See `docs/RELEASE-CHECKLIST.md` for pre-release steps.
 
 ## Usage Examples
 
 ### Protecting an API Route
 
 ```typescript
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getUser } from '@/lib/auth/get-user'
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions)
-  if (!session) {
+  const user = await getUser()
+  if (!user) {
     return new Response('Unauthorized', { status: 401 })
   }
-  // Your protected logic here
+  // Your protected logic here - user has id, email, name, role
 }
 ```
 
@@ -140,7 +144,7 @@ const session = await createCheckoutSession({
 
 ## Roadmap
 
-- [x] Core authentication with NextAuth
+- [x] Core authentication with Supabase
 - [x] Multi-tenant data model
 - [x] Stripe billing integration
 - [x] Smart test strategy
@@ -154,6 +158,7 @@ const session = await createCheckoutSession({
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) – Module boundaries, data flow, and extension points
 - [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) – Production deployment playbook
 - [docs/TESTING.md](./docs/TESTING.md) – Testing strategy and guidelines
+- [docs/RELEASE-CHECKLIST.md](./docs/RELEASE-CHECKLIST.md) – What to verify before shipping or selling
 
 ## License
 

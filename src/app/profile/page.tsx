@@ -75,7 +75,7 @@ export default function ProfilePage() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
       showSuccess('Profile updated successfully')
-    } catch (error) {
+    } catch {
       showError('Failed to update profile')
     } finally {
       setIsLoading(false)
@@ -88,7 +88,7 @@ export default function ProfilePage() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
       showSuccess('Preferences updated successfully')
-    } catch (error) {
+    } catch {
       showError('Failed to update preferences')
     } finally {
       setIsLoading(false)
@@ -101,7 +101,7 @@ export default function ProfilePage() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
       showSuccess('API key created successfully')
-    } catch (error) {
+    } catch {
       showError('Failed to create API key')
     } finally {
       setIsLoading(false)
@@ -114,7 +114,7 @@ export default function ProfilePage() {
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000))
       showSuccess('API key deleted successfully')
-    } catch (error) {
+    } catch {
       showError('Failed to delete API key')
     } finally {
       setIsLoading(false)

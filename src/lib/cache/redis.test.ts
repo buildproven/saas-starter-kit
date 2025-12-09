@@ -44,7 +44,7 @@ describe('RedisCache', () => {
     })
 
     it('handles missing configuration gracefully', () => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation()
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       cache = new RedisCache()
       expect(cache.isAvailable()).toBe(false)
@@ -57,7 +57,7 @@ describe('RedisCache', () => {
       process.env.UPSTASH_REDIS_REST_URL = 'https://redis.example.com'
       process.env.UPSTASH_REDIS_REST_TOKEN = 'test_token'
 
-      const infoSpy = vi.spyOn(console, 'info').mockImplementation()
+      const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
 
       cache = new RedisCache()
       expect(cache.isAvailable()).toBe(false)
@@ -117,7 +117,7 @@ describe('RedisCache', () => {
       it('handles fetch errors gracefully', async () => {
         mockFetch.mockRejectedValueOnce(new Error('Network error'))
 
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
         const result = await cache.get('error_key')
 
         expect(result).toBeNull()
@@ -135,7 +135,7 @@ describe('RedisCache', () => {
         const result = await cache.set('key', { data: 'value' }, 'test_source')
         expect(result).toBe(true)
 
-        const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+        const requestBody = JSON.parse(mockFetch.mock.calls[0]![1].body)
         expect(requestBody[0][0]).toBe('SETEX')
         expect(requestBody[0][1]).toBe('key')
       })
@@ -148,7 +148,7 @@ describe('RedisCache', () => {
 
         await cache.set('key', { data: 'value' }, 'source', 7200)
 
-        const requestBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+        const requestBody = JSON.parse(mockFetch.mock.calls[0]![1].body)
         expect(requestBody[0][2]).toBe('7200')
       })
     })
@@ -189,7 +189,7 @@ describe('RedisCache', () => {
             json: async () => [{ result: 2 }],
           })
 
-        const infoSpy = vi.spyOn(console, 'info').mockImplementation()
+        const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {})
         const count = await cache.purgeByPattern('prefix:')
 
         expect(count).toBe(2)
@@ -281,7 +281,7 @@ describe('RedisCache', () => {
 
   describe('with unconfigured cache', () => {
     beforeEach(() => {
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation()
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       cache = new RedisCache()
       warnSpy.mockRestore()
     })

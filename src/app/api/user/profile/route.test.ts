@@ -18,8 +18,8 @@ vi.mock('next/server', () => {
   }
 })
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -44,10 +44,10 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-import { getServerSession } from 'next-auth/next'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 
-const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockGetUser = getUser as vi.Mock
 const mockPrismaUserFindUnique = prisma.user.findUnique as vi.Mock
 const mockPrismaUserFindFirst = prisma.user.findFirst as vi.Mock
 const mockPrismaUserUpdate = prisma.user.update as vi.Mock
@@ -62,7 +62,7 @@ describe('GET /api/user/profile', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await GET()
     const json = await response.json()
@@ -72,9 +72,7 @@ describe('GET /api/user/profile', () => {
   })
 
   it('returns 404 when user not found', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaUserFindUnique.mockResolvedValueOnce(null)
 
     const response = await GET()
@@ -85,9 +83,7 @@ describe('GET /api/user/profile', () => {
   })
 
   it('returns user profile with organizations', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaUserFindUnique.mockResolvedValueOnce({
       id: 'user_123',
       name: 'Test User',
@@ -126,12 +122,10 @@ describe('GET /api/user/profile', () => {
   })
 
   it('handles internal errors', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaUserFindUnique.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const response = await GET()
     const json = await response.json()
 
@@ -153,7 +147,7 @@ describe('PUT /api/user/profile', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await PUT(createRequest({}))
     const json = await response.json()
@@ -163,9 +157,7 @@ describe('PUT /api/user/profile', () => {
   })
 
   it('returns 400 for invalid input', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
 
     const response = await PUT(createRequest({ email: 'invalid-email' }))
     const json = await response.json()
@@ -175,9 +167,7 @@ describe('PUT /api/user/profile', () => {
   })
 
   it('returns 409 when email already in use', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaUserFindFirst.mockResolvedValueOnce({ id: 'other_user' })
 
     const response = await PUT(createRequest({ email: 'taken@example.com' }))
@@ -188,9 +178,7 @@ describe('PUT /api/user/profile', () => {
   })
 
   it('updates profile successfully', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaUserUpdate.mockResolvedValueOnce({
       id: 'user_123',
       name: 'Updated Name',
@@ -209,9 +197,7 @@ describe('PUT /api/user/profile', () => {
   })
 
   it('resets email verification when email changes', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaUserFindFirst.mockResolvedValueOnce(null)
     mockPrismaUserUpdate.mockResolvedValueOnce({
       id: 'user_123',
@@ -241,7 +227,7 @@ describe('DELETE /api/user/profile', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await DELETE(createRequest({}))
     const json = await response.json()
@@ -251,9 +237,7 @@ describe('DELETE /api/user/profile', () => {
   })
 
   it('returns 409 when user owns organizations', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrgCount.mockResolvedValueOnce(2)
 
     const response = await DELETE(createRequest({ confirmDelete: true }))
@@ -265,9 +249,7 @@ describe('DELETE /api/user/profile', () => {
   })
 
   it('returns 400 without confirmation', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrgCount.mockResolvedValueOnce(0)
 
     const response = await DELETE(createRequest({}))
@@ -278,9 +260,7 @@ describe('DELETE /api/user/profile', () => {
   })
 
   it('deletes account with confirmation', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrgCount.mockResolvedValueOnce(0)
     mockPrismaMemberDeleteMany.mockResolvedValueOnce({ count: 3 })
     mockPrismaUserDelete.mockResolvedValueOnce({ id: 'user_123' })
@@ -294,12 +274,10 @@ describe('DELETE /api/user/profile', () => {
   })
 
   it('handles internal errors', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockPrismaOrgCount.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const response = await DELETE(createRequest({ confirmDelete: true }))
     const json = await response.json()
 

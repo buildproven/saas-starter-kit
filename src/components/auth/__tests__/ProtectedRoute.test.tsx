@@ -6,14 +6,23 @@ import { ProtectedRoute } from '../ProtectedRoute'
 // Mock next-auth
 vi.mock('next-auth/react')
 const mockUseSession = useSession as vi.MockedFunction<typeof useSession>
-const authenticatedSession = (overrides: Partial<Session['user']> = {}): Session => ({
+
+// Extended user type for testing
+interface TestUser extends Record<string, unknown> {
+  id: string
+  email: string
+  name: string
+  role: string
+}
+
+const authenticatedSession = (overrides: Partial<TestUser> = {}): Session => ({
   user: {
     id: '1',
     email: 'user@example.com',
     name: 'Test User',
     role: 'USER',
     ...overrides,
-  },
+  } as TestUser,
   expires: '2025-01-01T00:00:00.000Z',
 })
 

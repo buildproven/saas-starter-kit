@@ -15,9 +15,9 @@ vi.mock('next/server', () => {
   }
 })
 
-// Mock next-auth
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+// Mock auth
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 // Mock auth options
@@ -51,12 +51,12 @@ vi.mock('@/lib/subscription', () => ({
   },
 }))
 
-import { getServerSession } from 'next-auth/next'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { BillingService } from '@/lib/billing'
 import { SubscriptionService } from '@/lib/subscription'
 
-const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockGetUser = getUser as vi.Mock
 const mockPrismaOrg = prisma.organization.findUnique as vi.Mock
 const mockBillingService = BillingService as vi.Mocked<typeof BillingService>
 const mockSubscriptionService = SubscriptionService as vi.Mocked<typeof SubscriptionService>
@@ -73,7 +73,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await POST(createRequest({}))
     const json = await response.json()
@@ -83,9 +83,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('returns 400 for invalid input', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
 
     const response = await POST(createRequest({ invalid: 'data' }))
     const json = await response.json()
@@ -95,9 +93,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('returns 403 when user lacks organization access', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
     mockPrismaOrg.mockResolvedValueOnce(null)
 
     const response = await POST(
@@ -113,9 +109,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('returns 400 for invalid plan', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
@@ -136,9 +130,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('returns 409 when organization has active subscription', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
@@ -168,9 +160,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('creates checkout session successfully', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
     // First call for access check, second for org details
     mockPrismaOrg
       .mockResolvedValueOnce({
@@ -194,7 +184,11 @@ describe('POST /api/billing/checkout', () => {
       interval: 'MONTH',
     } as Awaited<ReturnType<typeof SubscriptionService.getPlanByPriceId>>)
     mockSubscriptionService.getSubscription.mockResolvedValueOnce(null)
-    mockBillingService.createCustomer.mockResolvedValueOnce({ id: 'cus_123', organizationId: 'org_123', email: 'test@example.com' })
+    mockBillingService.createCustomer.mockResolvedValueOnce({
+      id: 'cus_123',
+      organizationId: 'org_123',
+      email: 'test@example.com',
+    })
     mockBillingService.createCheckoutSession.mockResolvedValueOnce({
       url: 'https://checkout.stripe.com/session_123',
     })
@@ -214,9 +208,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('allows admin to create checkout session', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'admin@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'admin@example.com' })
     // User is not owner but is ADMIN member
     mockPrismaOrg
       .mockResolvedValueOnce({
@@ -240,7 +232,11 @@ describe('POST /api/billing/checkout', () => {
       interval: 'MONTH',
     } as Awaited<ReturnType<typeof SubscriptionService.getPlanByPriceId>>)
     mockSubscriptionService.getSubscription.mockResolvedValueOnce(null)
-    mockBillingService.createCustomer.mockResolvedValueOnce({ id: 'cus_123', organizationId: 'org_123', email: 'admin@example.com' })
+    mockBillingService.createCustomer.mockResolvedValueOnce({
+      id: 'cus_123',
+      organizationId: 'org_123',
+      email: 'admin@example.com',
+    })
     mockBillingService.createCheckoutSession.mockResolvedValueOnce({
       url: 'https://checkout.stripe.com/session_123',
     })
@@ -256,9 +252,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('returns 403 for non-admin member', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'member@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'member@example.com' })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'other_user',
@@ -278,9 +272,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('returns 404 when organization not found in second lookup', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
     mockPrismaOrg
       .mockResolvedValueOnce({
         id: 'org_123',
@@ -311,9 +303,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('reuses existing customer ID', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
     mockPrismaOrg
       .mockResolvedValueOnce({
         id: 'org_123',
@@ -360,9 +350,7 @@ describe('POST /api/billing/checkout', () => {
   })
 
   it('uses custom success and cancel URLs', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
     mockPrismaOrg
       .mockResolvedValueOnce({
         id: 'org_123',
@@ -385,7 +373,11 @@ describe('POST /api/billing/checkout', () => {
       interval: 'MONTH',
     } as Awaited<ReturnType<typeof SubscriptionService.getPlanByPriceId>>)
     mockSubscriptionService.getSubscription.mockResolvedValueOnce(null)
-    mockBillingService.createCustomer.mockResolvedValueOnce({ id: 'cus_123', organizationId: 'org_123', email: 'test@example.com' })
+    mockBillingService.createCustomer.mockResolvedValueOnce({
+      id: 'cus_123',
+      organizationId: 'org_123',
+      email: 'test@example.com',
+    })
     mockBillingService.createCheckoutSession.mockResolvedValueOnce({
       url: 'https://checkout.stripe.com/session_123',
     })
@@ -422,7 +414,7 @@ describe('GET /api/billing/checkout', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await GET(createGetRequest({}))
     const json = await response.json()
@@ -432,9 +424,7 @@ describe('GET /api/billing/checkout', () => {
   })
 
   it('returns 400 when missing required params', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
 
     const response = await GET(createGetRequest({}))
     const json = await response.json()
@@ -444,9 +434,7 @@ describe('GET /api/billing/checkout', () => {
   })
 
   it('returns 403 when user has no access', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'other_user',
@@ -466,9 +454,7 @@ describe('GET /api/billing/checkout', () => {
   })
 
   it('returns checkout session details', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
@@ -504,9 +490,7 @@ describe('GET /api/billing/checkout', () => {
   })
 
   it('returns null plan when no priceId in session', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
@@ -533,9 +517,7 @@ describe('GET /api/billing/checkout', () => {
   })
 
   it('returns 500 for unexpected errors', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123', email: 'test@example.com' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', email: 'test@example.com' })
     mockPrismaOrg.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
