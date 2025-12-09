@@ -29,7 +29,6 @@ const configs = [
       '**/scripts/**',
       'jest.setup.ts',
       'landing-page.html',
-      'landing-page-aibuilderlab.html',
     ],
   },
   js.configs.recommended,
