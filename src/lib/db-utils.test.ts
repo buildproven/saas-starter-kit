@@ -58,7 +58,13 @@ import {
   getPlanByPriceId,
 } from './db-utils'
 
-const mockPrisma = prisma as vi.Mocked<typeof prisma>
+const mockOrganization = vi.mocked(prisma.organization, true)
+const mockOrganizationMember = vi.mocked(prisma.organizationMember, true)
+const mockSubscription = vi.mocked(prisma.subscription, true)
+const mockUsageRecord = vi.mocked(prisma.usageRecord, true)
+const mockApiKey = vi.mocked(prisma.apiKey, true)
+const mockProject = vi.mocked(prisma.project, true)
+const mockPlan = vi.mocked(prisma.plan, true)
 
 describe('Database Utilities', () => {
   beforeEach(() => {
@@ -74,7 +80,7 @@ describe('Database Utilities', () => {
         ownerId: 'user_123',
       }
 
-      mockPrisma.organization.create.mockResolvedValueOnce({
+      mockOrganization.create.mockResolvedValueOnce({
         id: 'org_123',
         ...orgData,
         members: [],
@@ -83,7 +89,7 @@ describe('Database Utilities', () => {
 
       await createOrganization(orgData)
 
-      expect(mockPrisma.organization.create).toHaveBeenCalledWith(
+      expect(mockOrganization.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             members: expect.objectContaining({
@@ -97,7 +103,7 @@ describe('Database Utilities', () => {
     })
 
     it('getUserOrganizations returns user memberships', async () => {
-      mockPrisma.organizationMember.findMany.mockResolvedValueOnce([
+      mockOrganizationMember.findMany.mockResolvedValueOnce([
         {
           organizationId: 'org_123',
           organization: { id: 'org_123', name: 'Test Org' },
@@ -107,7 +113,7 @@ describe('Database Utilities', () => {
       const result = await getUserOrganizations('user_123')
 
       expect(result).toHaveLength(1)
-      expect(mockPrisma.organizationMember.findMany).toHaveBeenCalledWith(
+      expect(mockOrganizationMember.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { userId: 'user_123' },
         })
@@ -115,7 +121,7 @@ describe('Database Utilities', () => {
     })
 
     it('getOrganizationWithDetails includes all relations', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce({
+      mockOrganization.findUnique.mockResolvedValueOnce({
         id: 'org_123',
         owner: {},
         members: [],
@@ -126,7 +132,7 @@ describe('Database Utilities', () => {
 
       await getOrganizationWithDetails('org_123')
 
-      expect(mockPrisma.organization.findUnique).toHaveBeenCalledWith(
+      expect(mockOrganization.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({
           include: expect.objectContaining({
             owner: true,
@@ -152,14 +158,14 @@ describe('Database Utilities', () => {
         currentPeriodEnd: new Date(),
       }
 
-      mockPrisma.subscription.create.mockResolvedValueOnce({
+      mockSubscription.create.mockResolvedValueOnce({
         ...subData,
         plan: { name: 'Pro' },
       } as never)
 
       await createSubscription(subData)
 
-      expect(mockPrisma.subscription.create).toHaveBeenCalledWith(
+      expect(mockSubscription.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: subData,
         })
@@ -167,14 +173,14 @@ describe('Database Utilities', () => {
     })
 
     it('updateSubscriptionStatus updates status', async () => {
-      mockPrisma.subscription.update.mockResolvedValueOnce({
+      mockSubscription.update.mockResolvedValueOnce({
         subscriptionId: 'sub_123',
         status: 'CANCELED',
       } as never)
 
       await updateSubscriptionStatus('sub_123', 'CANCELED')
 
-      expect(mockPrisma.subscription.update).toHaveBeenCalledWith(
+      expect(mockSubscription.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { subscriptionId: 'sub_123' },
           data: expect.objectContaining({ status: 'CANCELED' }),
@@ -184,14 +190,14 @@ describe('Database Utilities', () => {
 
     it('updateSubscriptionStatus updates period end', async () => {
       const newEnd = new Date()
-      mockPrisma.subscription.update.mockResolvedValueOnce({
+      mockSubscription.update.mockResolvedValueOnce({
         subscriptionId: 'sub_123',
         currentPeriodEnd: newEnd,
       } as never)
 
       await updateSubscriptionStatus('sub_123', 'ACTIVE', newEnd)
 
-      expect(mockPrisma.subscription.update).toHaveBeenCalledWith(
+      expect(mockSubscription.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ currentPeriodEnd: newEnd }),
         })
@@ -201,7 +207,7 @@ describe('Database Utilities', () => {
 
   describe('Usage tracking utilities', () => {
     it('recordUsage creates usage record', async () => {
-      mockPrisma.usageRecord.create.mockResolvedValueOnce({
+      mockUsageRecord.create.mockResolvedValueOnce({
         id: 'usage_123',
         metric: 'api_calls',
         quantity: 100,
@@ -209,7 +215,7 @@ describe('Database Utilities', () => {
 
       await recordUsage({ metric: 'api_calls', quantity: 100, projectId: 'proj_123' })
 
-      expect(mockPrisma.usageRecord.create).toHaveBeenCalledWith(
+      expect(mockUsageRecord.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             metric: 'api_calls',
@@ -220,8 +226,8 @@ describe('Database Utilities', () => {
     })
 
     it('getUsageStats aggregates by project', async () => {
-      mockPrisma.project.findMany.mockResolvedValueOnce([{ id: 'proj_1' }, { id: 'proj_2' }] as never)
-      mockPrisma.usageRecord.groupBy.mockResolvedValueOnce([
+      mockProject.findMany.mockResolvedValueOnce([{ id: 'proj_1' }, { id: 'proj_2' }] as never)
+      mockUsageRecord.groupBy.mockResolvedValueOnce([
         { projectId: 'proj_1', _sum: { quantity: 500 } },
       ] as never)
 
@@ -230,7 +236,7 @@ describe('Database Utilities', () => {
 
       await getUsageStats('org_123', 'api_calls', startDate, endDate)
 
-      expect(mockPrisma.usageRecord.groupBy).toHaveBeenCalledWith(
+      expect(mockUsageRecord.groupBy).toHaveBeenCalledWith(
         expect.objectContaining({
           by: ['projectId'],
           where: expect.objectContaining({
@@ -243,7 +249,7 @@ describe('Database Utilities', () => {
 
   describe('API Key utilities', () => {
     it('createApiKey creates key', async () => {
-      mockPrisma.apiKey.create.mockResolvedValueOnce({
+      mockApiKey.create.mockResolvedValueOnce({
         id: 'key_123',
         name: 'Test Key',
         keyHash: 'hash123',
@@ -251,11 +257,11 @@ describe('Database Utilities', () => {
 
       await createApiKey({ name: 'Test Key', keyHash: 'hash123', organizationId: 'org_123' })
 
-      expect(mockPrisma.apiKey.create).toHaveBeenCalled()
+      expect(mockApiKey.create).toHaveBeenCalled()
     })
 
     it('getApiKeyByHash finds key with relations', async () => {
-      mockPrisma.apiKey.findUnique.mockResolvedValueOnce({
+      mockApiKey.findUnique.mockResolvedValueOnce({
         id: 'key_123',
         user: {},
         organization: {},
@@ -263,7 +269,7 @@ describe('Database Utilities', () => {
 
       await getApiKeyByHash('hash123')
 
-      expect(mockPrisma.apiKey.findUnique).toHaveBeenCalledWith(
+      expect(mockApiKey.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { keyHash: 'hash123' },
           include: expect.objectContaining({
@@ -275,14 +281,14 @@ describe('Database Utilities', () => {
     })
 
     it('updateApiKeyLastUsed updates timestamp', async () => {
-      mockPrisma.apiKey.update.mockResolvedValueOnce({
+      mockApiKey.update.mockResolvedValueOnce({
         keyHash: 'hash123',
         lastUsedAt: new Date(),
       } as never)
 
       await updateApiKeyLastUsed('hash123')
 
-      expect(mockPrisma.apiKey.update).toHaveBeenCalledWith(
+      expect(mockApiKey.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { keyHash: 'hash123' },
           data: expect.objectContaining({
@@ -295,7 +301,7 @@ describe('Database Utilities', () => {
 
   describe('Project utilities', () => {
     it('createProject creates project', async () => {
-      mockPrisma.project.create.mockResolvedValueOnce({
+      mockProject.create.mockResolvedValueOnce({
         id: 'proj_123',
         name: 'Test Project',
         organizationId: 'org_123',
@@ -303,18 +309,18 @@ describe('Database Utilities', () => {
 
       await createProject({ name: 'Test Project', organizationId: 'org_123' })
 
-      expect(mockPrisma.project.create).toHaveBeenCalled()
+      expect(mockProject.create).toHaveBeenCalled()
     })
 
     it('getProjectsByOrganization returns sorted projects', async () => {
-      mockPrisma.project.findMany.mockResolvedValueOnce([
+      mockProject.findMany.mockResolvedValueOnce([
         { id: 'proj_1', name: 'Project 1' },
         { id: 'proj_2', name: 'Project 2' },
       ] as never)
 
       await getProjectsByOrganization('org_123')
 
-      expect(mockPrisma.project.findMany).toHaveBeenCalledWith(
+      expect(mockProject.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { organizationId: 'org_123' },
           orderBy: { createdAt: 'desc' },
@@ -325,7 +331,7 @@ describe('Database Utilities', () => {
 
   describe('Member management utilities', () => {
     it('addOrganizationMember creates pending member', async () => {
-      mockPrisma.organizationMember.create.mockResolvedValueOnce({
+      mockOrganizationMember.create.mockResolvedValueOnce({
         organizationId: 'org_123',
         userId: 'user_456',
         role: 'MEMBER',
@@ -338,7 +344,7 @@ describe('Database Utilities', () => {
         role: 'MEMBER',
       })
 
-      expect(mockPrisma.organizationMember.create).toHaveBeenCalledWith(
+      expect(mockOrganizationMember.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             status: 'PENDING',
@@ -348,13 +354,13 @@ describe('Database Utilities', () => {
     })
 
     it('updateMemberRole updates role', async () => {
-      mockPrisma.organizationMember.update.mockResolvedValueOnce({
+      mockOrganizationMember.update.mockResolvedValueOnce({
         role: 'ADMIN',
       } as never)
 
       await updateMemberRole('org_123', 'user_456', 'ADMIN')
 
-      expect(mockPrisma.organizationMember.update).toHaveBeenCalledWith(
+      expect(mockOrganizationMember.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: { role: 'ADMIN' },
         })
@@ -362,13 +368,13 @@ describe('Database Utilities', () => {
     })
 
     it('activateMember sets status to ACTIVE', async () => {
-      mockPrisma.organizationMember.update.mockResolvedValueOnce({
+      mockOrganizationMember.update.mockResolvedValueOnce({
         status: 'ACTIVE',
       } as never)
 
       await activateMember('org_123', 'user_456')
 
-      expect(mockPrisma.organizationMember.update).toHaveBeenCalledWith(
+      expect(mockOrganizationMember.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: { status: 'ACTIVE' },
         })
@@ -378,14 +384,14 @@ describe('Database Utilities', () => {
 
   describe('Plan utilities', () => {
     it('getAllPlans returns active plans sorted', async () => {
-      mockPrisma.plan.findMany.mockResolvedValueOnce([
+      mockPlan.findMany.mockResolvedValueOnce([
         { id: 'plan_1', name: 'Starter', amount: 900 },
         { id: 'plan_2', name: 'Pro', amount: 2900 },
       ] as never)
 
       await getAllPlans()
 
-      expect(mockPrisma.plan.findMany).toHaveBeenCalledWith(
+      expect(mockPlan.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { isActive: true },
           orderBy: { amount: 'asc' },
@@ -394,14 +400,14 @@ describe('Database Utilities', () => {
     })
 
     it('getPlanByPriceId finds plan by price ID', async () => {
-      mockPrisma.plan.findUnique.mockResolvedValueOnce({
+      mockPlan.findUnique.mockResolvedValueOnce({
         id: 'plan_pro',
         priceId: 'price_pro',
       } as never)
 
       await getPlanByPriceId('price_pro')
 
-      expect(mockPrisma.plan.findUnique).toHaveBeenCalledWith(
+      expect(mockPlan.findUnique).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { priceId: 'price_pro' },
         })

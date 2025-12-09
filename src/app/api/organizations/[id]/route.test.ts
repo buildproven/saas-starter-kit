@@ -15,8 +15,8 @@ vi.mock('next/server', () => {
   }
 })
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -34,19 +34,17 @@ vi.mock('@/lib/prisma', () => ({
 }))
 
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth/next'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { GET, PUT, DELETE } from './route'
 
-const mockGetServerSession = getServerSession as vi.Mock
-const mockPrisma = prisma as vi.Mocked<typeof prisma>
+const mockGetUser = getUser as vi.Mock
+const mockOrganizationModel = vi.mocked(prisma.organization, true)
 
 describe('Organizations [id] API', () => {
-  const mockSession = {
-    user: { id: 'user_123', email: 'test@example.com' },
-  }
+  const mockUser = { id: 'user_123', email: 'test@example.com' }
 
-  const mockOrganization = {
+  const mockOrganizationData = {
     id: 'org_123',
     name: 'Test Org',
     slug: 'test-org',
@@ -61,7 +59,7 @@ describe('Organizations [id] API', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetServerSession.mockResolvedValue(mockSession)
+    mockGetUser.mockResolvedValue(mockUser)
   })
 
   const createRequest = (body?: object): NextRequest => {
@@ -72,7 +70,7 @@ describe('Organizations [id] API', () => {
 
   describe('GET /api/organizations/[id]', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'org_123' } })
@@ -83,7 +81,7 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns 404 when organization not found', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce(null)
+      mockOrganizationModel.findUnique.mockResolvedValueOnce(null)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'nonexistent' } })
@@ -94,7 +92,7 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns 403 when user is not a member', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce({
+      mockOrganizationModel.findUnique.mockResolvedValueOnce({
         id: 'org_123',
         ownerId: 'other_user',
         members: [],
@@ -109,9 +107,9 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns organization details for owner', async () => {
-      mockPrisma.organization.findUnique
-        .mockResolvedValueOnce(mockOrganization as never)
-        .mockResolvedValueOnce(mockOrganization as never)
+      mockOrganizationModel.findUnique
+        .mockResolvedValueOnce(mockOrganizationData as never)
+        .mockResolvedValueOnce(mockOrganizationData as never)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'org_123' } })
@@ -123,13 +121,13 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns organization details for active member', async () => {
-      mockPrisma.organization.findUnique
+      mockOrganizationModel.findUnique
         .mockResolvedValueOnce({
-          ...mockOrganization,
+          ...mockOrganizationData,
           ownerId: 'other_user',
           members: [{ role: 'MEMBER', status: 'ACTIVE' }],
         } as never)
-        .mockResolvedValueOnce(mockOrganization as never)
+        .mockResolvedValueOnce(mockOrganizationData as never)
 
       const request = createRequest()
       const response = await GET(request, { params: { id: 'org_123' } })
@@ -140,8 +138,8 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns 403 for inactive member', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce({
-        ...mockOrganization,
+      mockOrganizationModel.findUnique.mockResolvedValueOnce({
+        ...mockOrganizationData,
         ownerId: 'other_user',
         members: [{ role: 'MEMBER', status: 'PENDING' }],
       } as never)
@@ -157,7 +155,7 @@ describe('Organizations [id] API', () => {
 
   describe('PUT /api/organizations/[id]', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
       const request = createRequest({ name: 'New Name' })
       const response = await PUT(request, { params: { id: 'org_123' } })
@@ -168,7 +166,7 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns 404 when organization not found', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce(null)
+      mockOrganizationModel.findUnique.mockResolvedValueOnce(null)
 
       const request = createRequest({ name: 'New Name' })
       const response = await PUT(request, { params: { id: 'nonexistent' } })
@@ -179,7 +177,7 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns 403 when user is not admin', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce({
+      mockOrganizationModel.findUnique.mockResolvedValueOnce({
         id: 'org_123',
         ownerId: 'other_user',
         members: [{ role: 'MEMBER', status: 'ACTIVE' }],
@@ -194,9 +192,9 @@ describe('Organizations [id] API', () => {
     })
 
     it('updates organization name for owner', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce(mockOrganization as never)
-      mockPrisma.organization.update.mockResolvedValueOnce({
-        ...mockOrganization,
+      mockOrganizationModel.findUnique.mockResolvedValueOnce(mockOrganizationData as never)
+      mockOrganizationModel.update.mockResolvedValueOnce({
+        ...mockOrganizationData,
         name: 'Updated Org',
       } as never)
 
@@ -209,13 +207,13 @@ describe('Organizations [id] API', () => {
     })
 
     it('updates organization for admin', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce({
-        ...mockOrganization,
+      mockOrganizationModel.findUnique.mockResolvedValueOnce({
+        ...mockOrganizationData,
         ownerId: 'other_user',
         members: [{ role: 'ADMIN', status: 'ACTIVE' }],
       } as never)
-      mockPrisma.organization.update.mockResolvedValueOnce({
-        ...mockOrganization,
+      mockOrganizationModel.update.mockResolvedValueOnce({
+        ...mockOrganizationData,
         name: 'Admin Updated',
       } as never)
 
@@ -228,8 +226,8 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns 409 when slug already exists', async () => {
-      mockPrisma.organization.findUnique
-        .mockResolvedValueOnce(mockOrganization as never)
+      mockOrganizationModel.findUnique
+        .mockResolvedValueOnce(mockOrganizationData as never)
         .mockResolvedValueOnce({ id: 'other_org' } as never)
 
       const request = createRequest({ slug: 'existing-slug' })
@@ -241,8 +239,8 @@ describe('Organizations [id] API', () => {
     })
 
     it('allows updating to same slug', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce(mockOrganization as never)
-      mockPrisma.organization.update.mockResolvedValueOnce(mockOrganization as never)
+      mockOrganizationModel.findUnique.mockResolvedValueOnce(mockOrganizationData as never)
+      mockOrganizationModel.update.mockResolvedValueOnce(mockOrganizationData as never)
 
       const request = createRequest({ slug: 'test-org' })
       const response = await PUT(request, { params: { id: 'org_123' } })
@@ -251,7 +249,7 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns 400 for invalid input', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce(mockOrganization as never)
+      mockOrganizationModel.findUnique.mockResolvedValueOnce(mockOrganizationData as never)
 
       const request = createRequest({ slug: 'Invalid Slug!' })
       const response = await PUT(request, { params: { id: 'org_123' } })
@@ -264,7 +262,7 @@ describe('Organizations [id] API', () => {
 
   describe('DELETE /api/organizations/[id]', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
       const request = createRequest()
       const response = await DELETE(request, { params: { id: 'org_123' } })
@@ -275,7 +273,7 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns 404 when organization not found', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce(null)
+      mockOrganizationModel.findUnique.mockResolvedValueOnce(null)
 
       const request = createRequest()
       const response = await DELETE(request, { params: { id: 'nonexistent' } })
@@ -286,8 +284,8 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns 403 when user is not owner', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce({
-        ...mockOrganization,
+      mockOrganizationModel.findUnique.mockResolvedValueOnce({
+        ...mockOrganizationData,
         ownerId: 'other_user',
         _count: { members: 1, projects: 0, apiKeys: 0 },
       } as never)
@@ -301,8 +299,8 @@ describe('Organizations [id] API', () => {
     })
 
     it('returns 409 when organization has projects', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce({
-        ...mockOrganization,
+      mockOrganizationModel.findUnique.mockResolvedValueOnce({
+        ...mockOrganizationData,
         _count: { members: 1, projects: 2, apiKeys: 0 },
       } as never)
 
@@ -315,11 +313,11 @@ describe('Organizations [id] API', () => {
     })
 
     it('deletes organization successfully', async () => {
-      mockPrisma.organization.findUnique.mockResolvedValueOnce({
-        ...mockOrganization,
+      mockOrganizationModel.findUnique.mockResolvedValueOnce({
+        ...mockOrganizationData,
         _count: { members: 1, projects: 0, apiKeys: 0 },
       } as never)
-      mockPrisma.organization.delete.mockResolvedValueOnce(mockOrganization as never)
+      mockOrganizationModel.delete.mockResolvedValueOnce(mockOrganizationData as never)
 
       const request = createRequest()
       const response = await DELETE(request, { params: { id: 'org_123' } })
@@ -327,7 +325,7 @@ describe('Organizations [id] API', () => {
 
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
-      expect(mockPrisma.organization.delete).toHaveBeenCalledWith({
+      expect(mockOrganizationModel.delete).toHaveBeenCalledWith({
         where: { id: 'org_123' },
       })
     })

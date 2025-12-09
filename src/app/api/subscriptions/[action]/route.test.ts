@@ -15,8 +15,8 @@ vi.mock('next/server', () => {
   }
 })
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -44,18 +44,22 @@ vi.mock('@/lib/subscription', () => ({
 }))
 
 import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth/next'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { POST } from './route'
 
-const mockGetServerSession = getServerSession as vi.Mock
-const mockPrisma = prisma as vi.Mocked<typeof prisma>
+const mockGetUser = vi.mocked(getUser)
+const mockOrganizationModel = vi.mocked(prisma.organization, true)
 const mockSubscriptionService = SubscriptionService as vi.Mocked<typeof SubscriptionService>
 
 describe('Subscriptions Action API', () => {
-  const mockSession = {
-    user: { id: 'user_123', email: 'test@example.com' },
+  const mockUser = {
+    id: 'user_123',
+    email: 'test@example.com',
+    name: 'Test User',
+    image: null,
+    role: 'USER' as const,
   }
 
   const mockOrganization = {
@@ -66,7 +70,7 @@ describe('Subscriptions Action API', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetServerSession.mockResolvedValue(mockSession)
+    mockGetUser.mockResolvedValue(mockUser)
   })
 
   const createRequest = (body: object): NextRequest => {
@@ -78,7 +82,7 @@ describe('Subscriptions Action API', () => {
   describe('POST /api/subscriptions/[action]', () => {
     describe('Authentication', () => {
       it('returns 401 when not authenticated', async () => {
-        mockGetServerSession.mockResolvedValueOnce(null)
+        mockGetUser.mockResolvedValueOnce(null)
 
         const request = createRequest({ organizationId: 'org_123' })
         const response = await POST(request, { params: { action: 'cancel' } })
@@ -91,7 +95,7 @@ describe('Subscriptions Action API', () => {
 
     describe('Authorization', () => {
       it('returns 403 when user is not a member', async () => {
-        mockPrisma.organization.findUnique.mockResolvedValueOnce({
+        mockOrganizationModel.findUnique.mockResolvedValueOnce({
           id: 'org_123',
           ownerId: 'other_user',
           members: [],
@@ -106,7 +110,7 @@ describe('Subscriptions Action API', () => {
       })
 
       it('returns 403 when member is not admin', async () => {
-        mockPrisma.organization.findUnique.mockResolvedValueOnce({
+        mockOrganizationModel.findUnique.mockResolvedValueOnce({
           id: 'org_123',
           ownerId: 'other_user',
           members: [{ role: 'MEMBER' }],
@@ -121,7 +125,7 @@ describe('Subscriptions Action API', () => {
       })
 
       it('allows owner to manage subscriptions', async () => {
-        mockPrisma.organization.findUnique.mockResolvedValueOnce(mockOrganization as never)
+        mockOrganizationModel.findUnique.mockResolvedValueOnce(mockOrganization as never)
         mockSubscriptionService.getSubscription.mockResolvedValueOnce({
           id: 'sub_123',
           cancelAtPeriodEnd: false,
@@ -138,7 +142,7 @@ describe('Subscriptions Action API', () => {
       })
 
       it('allows admin to manage subscriptions', async () => {
-        mockPrisma.organization.findUnique.mockResolvedValueOnce({
+        mockOrganizationModel.findUnique.mockResolvedValueOnce({
           id: 'org_123',
           ownerId: 'other_user',
           members: [{ role: 'ADMIN' }],
@@ -161,7 +165,7 @@ describe('Subscriptions Action API', () => {
 
     describe('cancel action', () => {
       beforeEach(() => {
-        mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
+        mockOrganizationModel.findUnique.mockResolvedValue(mockOrganization as never)
       })
 
       it('cancels active subscription', async () => {
@@ -211,7 +215,7 @@ describe('Subscriptions Action API', () => {
 
     describe('reactivate action', () => {
       beforeEach(() => {
-        mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
+        mockOrganizationModel.findUnique.mockResolvedValue(mockOrganization as never)
       })
 
       it('reactivates cancelled subscription', async () => {
@@ -278,7 +282,7 @@ describe('Subscriptions Action API', () => {
 
     describe('usage action', () => {
       beforeEach(() => {
-        mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
+        mockOrganizationModel.findUnique.mockResolvedValue(mockOrganization as never)
       })
 
       it('returns usage and limits', async () => {
@@ -289,16 +293,27 @@ describe('Subscriptions Action API', () => {
           users: 5,
           projects: 3,
           apiKeys: 2,
-        })
+          apiCallsThisPeriod: 1000,
+          storageGB: 1,
+        } as never)
         mockSubscriptionService.checkLimits.mockResolvedValueOnce({
           violations: [],
           hasViolations: false,
-        })
+          usage: {},
+          limits: {},
+        } as never)
         mockSubscriptionService.getPlanFeatures.mockResolvedValueOnce({
           maxUsers: 10,
           maxProjects: 10,
           maxApiKeys: 5,
-        })
+          maxApiCallsPerMonth: 100000,
+          maxStorageGB: 10,
+          prioritySupport: false,
+          customDomain: true,
+          analytics: true,
+          sso: false,
+          webhooks: false,
+        } as never)
 
         const request = createRequest({ organizationId: 'org_123' })
         const response = await POST(request, { params: { action: 'usage' } })
@@ -313,7 +328,7 @@ describe('Subscriptions Action API', () => {
 
     describe('preview-downgrade action', () => {
       beforeEach(() => {
-        mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
+        mockOrganizationModel.findUnique.mockResolvedValue(mockOrganization as never)
       })
 
       it('returns 400 when newPriceId is missing', async () => {
@@ -324,7 +339,9 @@ describe('Subscriptions Action API', () => {
           users: 10,
           projects: 5,
           apiKeys: 3,
-        })
+          apiCallsThisPeriod: 1000,
+          storageGB: 1,
+        } as never)
 
         const request = createRequest({ organizationId: 'org_123' })
         const response = await POST(request, { params: { action: 'preview-downgrade' } })
@@ -342,7 +359,9 @@ describe('Subscriptions Action API', () => {
           users: 10,
           projects: 5,
           apiKeys: 3,
-        })
+          apiCallsThisPeriod: 1000,
+          storageGB: 1,
+        } as never)
         mockSubscriptionService.getPlanByPriceId.mockResolvedValueOnce(null)
 
         const request = createRequest({ organizationId: 'org_123', newPriceId: 'invalid' })
@@ -361,7 +380,9 @@ describe('Subscriptions Action API', () => {
           users: 10,
           projects: 5,
           apiKeys: 3,
-        })
+          apiCallsThisPeriod: 1000,
+          storageGB: 1,
+        } as never)
         mockSubscriptionService.getPlanByPriceId.mockResolvedValueOnce({
           id: 'plan_starter',
           features: { maxUsers: 5, maxProjects: 3, maxApiKeys: 1 },
@@ -384,7 +405,9 @@ describe('Subscriptions Action API', () => {
           users: 2,
           projects: 1,
           apiKeys: 1,
-        })
+          apiCallsThisPeriod: 500,
+          storageGB: 0.5,
+        } as never)
         mockSubscriptionService.getPlanByPriceId.mockResolvedValueOnce({
           id: 'plan_starter',
           features: { maxUsers: 5, maxProjects: 3, maxApiKeys: 2 },
@@ -407,7 +430,9 @@ describe('Subscriptions Action API', () => {
           users: 100,
           projects: 50,
           apiKeys: 25,
-        })
+          apiCallsThisPeriod: 50000,
+          storageGB: 20,
+        } as never)
         mockSubscriptionService.getPlanByPriceId.mockResolvedValueOnce({
           id: 'plan_enterprise',
           features: { maxUsers: -1, maxProjects: -1, maxApiKeys: -1 },
@@ -424,7 +449,7 @@ describe('Subscriptions Action API', () => {
 
     describe('Unknown action', () => {
       it('returns 400 for unknown action', async () => {
-        mockPrisma.organization.findUnique.mockResolvedValue(mockOrganization as never)
+        mockOrganizationModel.findUnique.mockResolvedValue(mockOrganization as never)
         mockSubscriptionService.getSubscription.mockResolvedValueOnce({
           id: 'sub_123',
         } as never)

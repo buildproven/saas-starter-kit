@@ -15,7 +15,11 @@ vi.mock('dns', () => ({
 describe('SSRFProtection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    process.env.NODE_ENV = 'test'
+    vi.stubEnv('NODE_ENV', 'test')
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   describe('validateUrl', () => {
@@ -196,7 +200,7 @@ describe('SSRFProtection', () => {
     }
 
     it('returns 127.0.0.1 in development without headers', () => {
-      process.env.NODE_ENV = 'development'
+      vi.stubEnv('NODE_ENV', 'development')
 
       const ip = ssrfProtection.getClientIP(createRequest())
 
@@ -204,8 +208,8 @@ describe('SSRFProtection', () => {
     })
 
     it('returns unknown in production without headers', () => {
-      process.env.NODE_ENV = 'production'
-      delete process.env.NEXT_TRUST_PROXY
+      vi.stubEnv('NODE_ENV', 'production')
+      vi.stubEnv('NEXT_TRUST_PROXY', '')
 
       const ip = ssrfProtection.getClientIP(createRequest())
 

@@ -1,6 +1,9 @@
 /**
- * Tests for Projects [id] API Routes
+ * Tests for Projects [id] API
  */
+
+import { GET, PUT, DELETE } from './route'
+import type { NextRequest } from 'next/server'
 
 vi.mock('next/server', () => {
   const actual = vi.importActual('next/server')
@@ -15,8 +18,8 @@ vi.mock('next/server', () => {
   }
 })
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -33,329 +36,297 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-import { NextRequest } from 'next/server'
-import { getServerSession } from 'next-auth/next'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
-import { GET, PUT, DELETE } from './route'
 
-const mockGetServerSession = getServerSession as vi.Mock
-const mockPrisma = prisma as vi.Mocked<typeof prisma>
+const mockGetUser = getUser as vi.Mock
+const mockPrismaProjectFindUnique = prisma.project.findUnique as vi.Mock
+const mockPrismaProjectUpdate = prisma.project.update as vi.Mock
+const mockPrismaProjectDelete = prisma.project.delete as vi.Mock
 
 describe('Projects [id] API', () => {
-  const mockSession = {
-    user: { id: 'user_123', email: 'test@example.com' },
-  }
+  const mockSession = { id: 'user_123', email: 'test@example.com' }
 
   const mockProject = {
-    id: 'proj_123',
+    id: 'p1',
     name: 'Test Project',
-    description: 'Test description',
+    organizationId: 'org_123',
     status: 'ACTIVE',
     organization: {
-      id: 'org_123',
-      name: 'Test Org',
-      slug: 'test-org',
       ownerId: 'user_123',
-      members: [{ role: 'OWNER' }],
-      owner: { id: 'user_123', name: 'Test User', email: 'test@example.com' },
+      members: [{ userId: 'user_123', role: 'OWNER', status: 'ACTIVE' }],
     },
   }
 
+  const createRequest = (body: Record<string, unknown> = {}): NextRequest =>
+    ({
+      json: vi.fn().mockResolvedValue(body),
+    }) as unknown as NextRequest
+
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetServerSession.mockResolvedValue(mockSession)
+    mockGetUser.mockResolvedValue(mockSession)
   })
-
-  const createRequest = (body?: object): NextRequest => {
-    return {
-      json: vi.fn().mockResolvedValue(body || {}),
-    } as unknown as NextRequest
-  }
 
   describe('GET /api/projects/[id]', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
-      const request = createRequest()
-      const response = await GET(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await GET(createRequest(), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(401)
-      expect(data.error).toBe('Unauthorized')
+      expect(json.error).toBe('Unauthorized')
     })
 
     it('returns 404 when project not found', async () => {
-      mockPrisma.project.findUnique.mockResolvedValueOnce(null)
+      mockPrismaProjectFindUnique.mockResolvedValueOnce(null)
 
-      const request = createRequest()
-      const response = await GET(request, { params: { id: 'nonexistent' } })
-      const data = await response.json()
+      const response = await GET(createRequest(), { params: { id: 'nonexistent' } })
+      const json = await response.json()
 
       expect(response.status).toBe(404)
-      expect(data.error).toBe('Project not found')
+      expect(json.error).toBe('Project not found')
     })
 
     it('returns 403 when user is not a member', async () => {
-      mockPrisma.project.findUnique.mockResolvedValueOnce({
+      mockPrismaProjectFindUnique.mockResolvedValueOnce({
         ...mockProject,
         organization: {
-          ...mockProject.organization,
           ownerId: 'other_user',
           members: [],
         },
-      } as never)
+      })
 
-      const request = createRequest()
-      const response = await GET(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await GET(createRequest(), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(403)
-      expect(data.error).toBe('Forbidden')
+      expect(json.error).toBe('Forbidden')
     })
 
     it('returns project details for owner', async () => {
-      // Mock is called twice: once in checkProjectPermission, once for detailed info
-      mockPrisma.project.findUnique.mockResolvedValue(mockProject as never)
+      mockPrismaProjectFindUnique.mockResolvedValueOnce(mockProject)
 
-      const request = createRequest()
-      const response = await GET(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await GET(createRequest(), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.project).toBeDefined()
-      expect(data.project.userRole).toBe('OWNER')
+      expect(json.project).toBeDefined()
+      expect(json.project.userRole).toBe('OWNER')
     })
 
     it('returns project details for member', async () => {
-      const memberProject = {
+      mockPrismaProjectFindUnique.mockResolvedValueOnce({
         ...mockProject,
         organization: {
-          ...mockProject.organization,
           ownerId: 'other_user',
-          members: [{ role: 'MEMBER' }],
+          members: [{ userId: 'user_123', role: 'MEMBER', status: 'ACTIVE' }],
         },
-      }
-      mockPrisma.project.findUnique.mockResolvedValue(memberProject as never)
+      })
 
-      const request = createRequest()
-      const response = await GET(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await GET(createRequest(), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.project).toBeDefined()
+      expect(json.project).toBeDefined()
     })
 
     it('returns 403 for viewer role (requires MEMBER)', async () => {
-      const viewerProject = {
+      mockPrismaProjectFindUnique.mockResolvedValueOnce({
         ...mockProject,
         organization: {
-          ...mockProject.organization,
           ownerId: 'other_user',
-          members: [{ role: 'VIEWER' }],
+          members: [{ userId: 'user_123', role: 'VIEWER', status: 'ACTIVE' }],
         },
-      }
-      mockPrisma.project.findUnique.mockResolvedValue(viewerProject as never)
+      })
 
-      const request = createRequest()
-      const response = await GET(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await GET(createRequest(), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(403)
-      expect(data.error).toBe('Forbidden')
+      expect(json.error).toBe('Forbidden')
     })
   })
 
   describe('PUT /api/projects/[id]', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
-      const request = createRequest({ name: 'New Name' })
-      const response = await PUT(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await PUT(createRequest(), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(401)
-      expect(data.error).toBe('Unauthorized')
+      expect(json.error).toBe('Unauthorized')
     })
 
     it('returns 404 when project not found', async () => {
-      mockPrisma.project.findUnique.mockResolvedValueOnce(null)
+      mockPrismaProjectFindUnique.mockResolvedValueOnce(null)
 
-      const request = createRequest({ name: 'New Name' })
-      const response = await PUT(request, { params: { id: 'nonexistent' } })
-      const data = await response.json()
+      const response = await PUT(createRequest({ name: 'Updated' }), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(404)
-      expect(data.error).toBe('Project not found')
+      expect(json.error).toBe('Project not found')
     })
 
     it('returns 403 when user is viewer', async () => {
-      mockPrisma.project.findUnique.mockResolvedValueOnce({
+      mockPrismaProjectFindUnique.mockResolvedValueOnce({
         ...mockProject,
         organization: {
-          ...mockProject.organization,
           ownerId: 'other_user',
-          members: [{ role: 'VIEWER' }],
+          members: [{ userId: 'user_123', role: 'VIEWER', status: 'ACTIVE' }],
         },
-      } as never)
+      })
 
-      const request = createRequest({ name: 'New Name' })
-      const response = await PUT(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await PUT(createRequest({ name: 'Updated' }), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(403)
-      expect(data.error).toBe('Forbidden')
+      expect(json.error).toBe('Forbidden')
     })
 
     it('updates project for owner', async () => {
-      mockPrisma.project.findUnique.mockResolvedValue(mockProject as never)
-      mockPrisma.project.update.mockResolvedValue({
+      mockPrismaProjectFindUnique.mockResolvedValueOnce(mockProject)
+      mockPrismaProjectUpdate.mockResolvedValueOnce({
         ...mockProject,
         name: 'Updated Project',
-      } as never)
+      })
 
-      const request = createRequest({ name: 'Updated Project' })
-      const response = await PUT(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await PUT(createRequest({ name: 'Updated Project' }), {
+        params: { id: 'p1' },
+      })
+      const json = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.project.name).toBe('Updated Project')
+      expect(json.project.name).toBe('Updated Project')
     })
 
     it('updates project for member', async () => {
-      const memberProject = {
+      mockPrismaProjectFindUnique.mockResolvedValueOnce({
         ...mockProject,
         organization: {
-          ...mockProject.organization,
           ownerId: 'other_user',
-          members: [{ role: 'MEMBER' }],
+          members: [{ userId: 'user_123', role: 'MEMBER', status: 'ACTIVE' }],
         },
-      }
-      mockPrisma.project.findUnique.mockResolvedValue(memberProject as never)
-      mockPrisma.project.update.mockResolvedValue({
+      })
+      mockPrismaProjectUpdate.mockResolvedValueOnce({
         ...mockProject,
         description: 'Member updated',
-      } as never)
+      })
 
-      const request = createRequest({ description: 'Member updated' })
-      const response = await PUT(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await PUT(createRequest({ description: 'Member updated' }), {
+        params: { id: 'p1' },
+      })
+      const json = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.project.description).toBe('Member updated')
+      expect(json.project.description).toBe('Member updated')
     })
 
     it('updates project status', async () => {
-      mockPrisma.project.findUnique.mockResolvedValue(mockProject as never)
-      mockPrisma.project.update.mockResolvedValue({
+      mockPrismaProjectFindUnique.mockResolvedValueOnce(mockProject)
+      mockPrismaProjectUpdate.mockResolvedValueOnce({
         ...mockProject,
         status: 'ARCHIVED',
-      } as never)
+      })
 
-      const request = createRequest({ status: 'ARCHIVED' })
-      const response = await PUT(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await PUT(createRequest({ status: 'ARCHIVED' }), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.project.status).toBe('ARCHIVED')
+      expect(json.project.status).toBe('ARCHIVED')
     })
 
     it('returns 400 for invalid status', async () => {
-      mockPrisma.project.findUnique.mockResolvedValue(mockProject as never)
+      mockPrismaProjectFindUnique.mockResolvedValueOnce(mockProject)
 
-      const request = createRequest({ status: 'INVALID' })
-      const response = await PUT(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await PUT(createRequest({ status: 'INVALID' }), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('Invalid input')
+      expect(json.error).toBe('Invalid input')
     })
 
     it('returns 400 for name too long', async () => {
-      mockPrisma.project.findUnique.mockResolvedValue(mockProject as never)
+      mockPrismaProjectFindUnique.mockResolvedValueOnce(mockProject)
 
-      const request = createRequest({ name: 'a'.repeat(101) })
-      const response = await PUT(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await PUT(createRequest({ name: 'a'.repeat(101) }), {
+        params: { id: 'p1' },
+      })
+      const json = await response.json()
 
       expect(response.status).toBe(400)
-      expect(data.error).toBe('Invalid input')
+      expect(json.error).toBe('Invalid input')
     })
   })
 
   describe('DELETE /api/projects/[id]', () => {
     it('returns 401 when not authenticated', async () => {
-      mockGetServerSession.mockResolvedValueOnce(null)
+      mockGetUser.mockResolvedValueOnce(null)
 
-      const request = createRequest()
-      const response = await DELETE(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await DELETE(createRequest(), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(401)
-      expect(data.error).toBe('Unauthorized')
+      expect(json.error).toBe('Unauthorized')
     })
 
     it('returns 404 when project not found', async () => {
-      mockPrisma.project.findUnique.mockResolvedValueOnce(null)
+      mockPrismaProjectFindUnique.mockResolvedValueOnce(null)
 
-      const request = createRequest()
-      const response = await DELETE(request, { params: { id: 'nonexistent' } })
-      const data = await response.json()
+      const response = await DELETE(createRequest(), { params: { id: 'nonexistent' } })
+      const json = await response.json()
 
       expect(response.status).toBe(404)
-      expect(data.error).toBe('Project not found')
+      expect(json.error).toBe('Project not found')
     })
 
     it('returns 403 when user is member', async () => {
-      mockPrisma.project.findUnique.mockResolvedValueOnce({
+      mockPrismaProjectFindUnique.mockResolvedValueOnce({
         ...mockProject,
         organization: {
-          ...mockProject.organization,
           ownerId: 'other_user',
-          members: [{ role: 'MEMBER' }],
+          members: [{ userId: 'user_123', role: 'MEMBER', status: 'ACTIVE' }],
         },
-      } as never)
+      })
 
-      const request = createRequest()
-      const response = await DELETE(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await DELETE(createRequest(), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(403)
-      expect(data.error).toBe('Forbidden')
+      expect(json.error).toBe('Forbidden')
     })
 
     it('deletes project for owner', async () => {
-      mockPrisma.project.findUnique.mockResolvedValue(mockProject as never)
-      mockPrisma.project.delete.mockResolvedValue(mockProject as never)
+      mockPrismaProjectFindUnique.mockResolvedValueOnce(mockProject)
+      mockPrismaProjectDelete.mockResolvedValueOnce(mockProject)
 
-      const request = createRequest()
-      const response = await DELETE(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await DELETE(createRequest(), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.success).toBe(true)
-      expect(mockPrisma.project.delete).toHaveBeenCalledWith({
-        where: { id: 'proj_123' },
+      expect(json.success).toBe(true)
+      expect(mockPrismaProjectDelete).toHaveBeenCalledWith({
+        where: { id: 'p1' },
       })
     })
 
     it('deletes project for admin', async () => {
-      const adminProject = {
+      mockPrismaProjectFindUnique.mockResolvedValueOnce({
         ...mockProject,
         organization: {
-          ...mockProject.organization,
           ownerId: 'other_user',
-          members: [{ role: 'ADMIN' }],
+          members: [{ userId: 'user_123', role: 'ADMIN', status: 'ACTIVE' }],
         },
-      }
-      mockPrisma.project.findUnique.mockResolvedValue(adminProject as never)
-      mockPrisma.project.delete.mockResolvedValue(mockProject as never)
+      })
+      mockPrismaProjectDelete.mockResolvedValueOnce(mockProject)
 
-      const request = createRequest()
-      const response = await DELETE(request, { params: { id: 'proj_123' } })
-      const data = await response.json()
+      const response = await DELETE(createRequest(), { params: { id: 'p1' } })
+      const json = await response.json()
 
       expect(response.status).toBe(200)
-      expect(data.success).toBe(true)
+      expect(json.success).toBe(true)
     })
   })
 })

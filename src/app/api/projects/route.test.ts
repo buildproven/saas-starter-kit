@@ -4,22 +4,42 @@
 
 import { GET, POST } from './route'
 import type { NextRequest } from 'next/server'
+import { vi } from 'vitest'
 
-vi.mock('next/server', () => {
-  const actual = vi.importActual('next/server')
-  return {
-    ...actual,
-    NextResponse: {
-      json: (data: unknown, init?: { status?: number }) => ({
-        json: async () => data,
-        status: init?.status ?? 200,
-      }),
-    },
-  }
-})
+const mocks = vi.hoisted(() => ({
+  mockGetUser: vi.fn(),
+  prismaOrgFindUniqueMock: vi.fn(),
+  prismaOrgFindFirstMock: vi.fn(),
+  prismaProjectFindManyMock: vi.fn(),
+  prismaProjectCountMock: vi.fn(),
+  prismaProjectCreateMock: vi.fn(),
+  mockCanPerformAction: vi.fn(),
+  mockGetPlanFeatures: vi.fn(),
+}))
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+const {
+  mockGetUser,
+  prismaOrgFindUniqueMock,
+  prismaOrgFindFirstMock,
+  prismaProjectFindManyMock,
+  prismaProjectCountMock,
+  prismaProjectCreateMock,
+  mockCanPerformAction,
+  mockGetPlanFeatures,
+} = mocks
+
+vi.mock('next/server', () => ({
+  NextResponse: {
+    json: vi.fn((data: unknown, init?: { status?: number; headers?: globalThis.HeadersInit }) => ({
+      json: async () => data,
+      status: init?.status ?? 200,
+      headers: new Headers(init?.headers),
+    })),
+  },
+}))
+
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: mocks.mockGetUser,
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -29,50 +49,76 @@ vi.mock('@/lib/auth', () => ({
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     organization: {
-      findUnique: vi.fn(),
+      findUnique: mocks.prismaOrgFindUniqueMock,
+      findFirst: mocks.prismaOrgFindFirstMock,
     },
     project: {
-      findMany: vi.fn(),
-      count: vi.fn(),
-      create: vi.fn(),
+      findMany: mocks.prismaProjectFindManyMock,
+      count: mocks.prismaProjectCountMock,
+      create: mocks.prismaProjectCreateMock,
     },
   },
 }))
 
 vi.mock('@/lib/subscription', () => ({
   SubscriptionService: {
-    canPerformAction: vi.fn(),
-    getPlanFeatures: vi.fn(),
+    canPerformAction: mocks.mockCanPerformAction,
+    getPlanFeatures: mocks.mockGetPlanFeatures,
   },
 }))
 
-import { getServerSession } from 'next-auth/next'
-import { prisma } from '@/lib/prisma'
-import { SubscriptionService } from '@/lib/subscription'
+const createRequest = (
+  method: 'GET' | 'POST',
+  params: Record<string, string> | Record<string, unknown> = {},
+  body: Record<string, unknown> | null = null
+): NextRequest => {
+  const url = new URL('https://example.com/api/projects')
 
-const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
-const mockPrismaOrgFindUnique = prisma.organization.findUnique as vi.Mock
-const mockPrismaProjectFindMany = prisma.project.findMany as vi.Mock
-const mockPrismaProjectCount = prisma.project.count as vi.Mock
-const mockPrismaProjectCreate = prisma.project.create as vi.Mock
-const mockCanPerformAction = SubscriptionService.canPerformAction as vi.Mock
-const mockGetPlanFeatures = SubscriptionService.getPlanFeatures as vi.Mock
-
-describe('GET /api/projects', () => {
-  const createRequest = (params: Record<string, string> = {}): NextRequest => {
-    const url = new URL('https://example.com/api/projects')
-    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
-    return { url: url.toString() } as unknown as NextRequest
+  // Populate search params for GET requests
+  if (method === 'GET') {
+    Object.entries(params as Record<string, string>).forEach(([k, v]) => url.searchParams.set(k, v))
   }
 
+  // Create a mock NextRequest object with a URL and a json method
+  const mockRequest = {
+    url: url.toString(),
+    method: method,
+    headers: new Headers(),
+    json: vi.fn().mockResolvedValue(body),
+  } as unknown as NextRequest
+
+  return mockRequest
+}
+
+describe('GET /api/projects', () => {
   beforeEach(() => {
+    // Removed async
     vi.clearAllMocks()
+
+    // Reset all mocks
+    mockGetUser.mockReset()
+    prismaOrgFindUniqueMock.mockReset()
+    prismaOrgFindFirstMock.mockReset()
+    prismaProjectFindManyMock.mockReset()
+    prismaProjectCountMock.mockReset()
+    prismaProjectCreateMock.mockReset()
+    mockCanPerformAction.mockReset()
+    mockGetPlanFeatures.mockReset()
+
+    // Default authenticated user session for mockGetUser
+    mockGetUser.mockResolvedValue({
+      id: 'user_123',
+      role: 'USER',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+    })
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
-    const response = await GET(createRequest())
+    const response = await GET(createRequest('GET'))
     const json = await response.json()
 
     expect(response.status).toBe(401)
@@ -80,19 +126,17 @@ describe('GET /api/projects', () => {
   })
 
   it('returns user projects with pagination', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaProjectFindMany.mockResolvedValueOnce([
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
+    prismaProjectFindManyMock.mockResolvedValueOnce([
       {
         id: 'proj_1',
         name: 'Test Project',
         organization: { id: 'org_1', name: 'Test Org', slug: 'test-org' },
       },
     ])
-    mockPrismaProjectCount.mockResolvedValueOnce(1)
+    prismaProjectCountMock.mockResolvedValueOnce(1)
 
-    const response = await GET(createRequest())
+    const response = await GET(createRequest('GET'))
     const json = await response.json()
 
     expect(response.status).toBe(200)
@@ -102,15 +146,13 @@ describe('GET /api/projects', () => {
   })
 
   it('filters by organizationId', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaProjectFindMany.mockResolvedValueOnce([])
-    mockPrismaProjectCount.mockResolvedValueOnce(0)
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
+    prismaProjectFindManyMock.mockResolvedValueOnce([])
+    prismaProjectCountMock.mockResolvedValueOnce(0)
 
-    await GET(createRequest({ organizationId: 'org_123' }))
+    await GET(createRequest('GET', { organizationId: 'org_123' }))
 
-    expect(mockPrismaProjectFindMany).toHaveBeenCalledWith(
+    expect(prismaProjectFindManyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           organizationId: 'org_123',
@@ -120,15 +162,13 @@ describe('GET /api/projects', () => {
   })
 
   it('filters by status', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaProjectFindMany.mockResolvedValueOnce([])
-    mockPrismaProjectCount.mockResolvedValueOnce(0)
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
+    prismaProjectFindManyMock.mockResolvedValueOnce([])
+    prismaProjectCountMock.mockResolvedValueOnce(0)
 
-    await GET(createRequest({ status: 'ACTIVE' }))
+    await GET(createRequest('GET', { status: 'ACTIVE' }))
 
-    expect(mockPrismaProjectFindMany).toHaveBeenCalledWith(
+    expect(prismaProjectFindManyMock).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
           status: 'ACTIVE',
@@ -138,13 +178,11 @@ describe('GET /api/projects', () => {
   })
 
   it('handles pagination parameters', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaProjectFindMany.mockResolvedValueOnce([])
-    mockPrismaProjectCount.mockResolvedValueOnce(50)
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
+    prismaProjectFindManyMock.mockResolvedValueOnce([])
+    prismaProjectCountMock.mockResolvedValueOnce(50)
 
-    const response = await GET(createRequest({ page: '2', limit: '10' }))
+    const response = await GET(createRequest('GET', { page: '2', limit: '10' }))
     const json = await response.json()
 
     expect(json.pagination.page).toBe(2)
@@ -153,13 +191,11 @@ describe('GET /api/projects', () => {
   })
 
   it('handles internal errors', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaProjectFindMany.mockRejectedValueOnce(new Error('Database error'))
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
+    prismaProjectFindManyMock.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
-    const response = await GET(createRequest())
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const response = await GET(createRequest('GET'))
     const json = await response.json()
 
     expect(response.status).toBe(500)
@@ -170,19 +206,35 @@ describe('GET /api/projects', () => {
 })
 
 describe('POST /api/projects', () => {
-  const createRequest = (body: Record<string, unknown>): NextRequest =>
-    ({
-      json: vi.fn().mockResolvedValue(body),
-    }) as unknown as NextRequest
-
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // Reset all mocks
+    mockGetUser.mockReset()
+    prismaOrgFindUniqueMock.mockReset()
+    prismaOrgFindFirstMock.mockReset()
+    prismaProjectFindManyMock.mockReset()
+    prismaProjectCountMock.mockReset()
+    prismaProjectCreateMock.mockReset()
+    mockCanPerformAction.mockReset()
+    mockGetPlanFeatures.mockReset()
+
+    // Default authenticated user session for mockGetUser
+    mockGetUser.mockResolvedValue({
+      id: 'user_123',
+      role: 'USER',
+      email: 'test@example.com',
+      name: 'Test User',
+      image: null,
+    })
+    mockCanPerformAction.mockResolvedValue(true) // Default to allow
+    mockGetPlanFeatures.mockResolvedValue({ maxProjects: 10 }) // Default features
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
-    const response = await POST(createRequest({}))
+    const response = await POST(createRequest('POST', {}, {}))
     const json = await response.json()
 
     expect(response.status).toBe(401)
@@ -190,11 +242,9 @@ describe('POST /api/projects', () => {
   })
 
   it('returns 400 for invalid input', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
 
-    const response = await POST(createRequest({ invalid: 'data' }))
+    const response = await POST(createRequest('POST', {}, { invalid: 'data' }))
     const json = await response.json()
 
     expect(response.status).toBe(400)
@@ -202,16 +252,16 @@ describe('POST /api/projects', () => {
   })
 
   it('returns 403 when user lacks access', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaOrgFindUnique.mockResolvedValueOnce(null)
-
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     const response = await POST(
-      createRequest({
-        name: 'New Project',
-        organizationId: 'org_123',
-      })
+      createRequest(
+        'POST',
+        {},
+        {
+          name: 'New Project',
+          organizationId: 'org_123',
+        }
+      )
     )
     const json = await response.json()
 
@@ -220,20 +270,21 @@ describe('POST /api/projects', () => {
   })
 
   it('returns 403 for viewer role', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaOrgFindUnique.mockResolvedValueOnce({
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
+    prismaOrgFindUniqueMock.mockResolvedValueOnce({
       id: 'org_123',
-      ownerId: 'other_user',
       members: [{ role: 'VIEWER' }],
     })
 
     const response = await POST(
-      createRequest({
-        name: 'New Project',
-        organizationId: 'org_123',
-      })
+      createRequest(
+        'POST',
+        {},
+        {
+          name: 'New Project',
+          organizationId: 'org_123',
+        }
+      )
     )
     const json = await response.json()
 
@@ -242,23 +293,29 @@ describe('POST /api/projects', () => {
   })
 
   it('returns 402 when project limit reached', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaOrgFindUnique.mockResolvedValueOnce({
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
+    prismaOrgFindUniqueMock.mockResolvedValueOnce({
       id: 'org_123',
       ownerId: 'user_123',
-      members: [],
+      members: [{ role: 'ADMIN' }],
+      subscription: {
+        status: 'ACTIVE',
+        plan: {
+          features: { maxProjects: 1 },
+        },
+      },
     })
-    mockPrismaProjectCount.mockResolvedValueOnce(10)
     mockCanPerformAction.mockResolvedValueOnce(false)
-    mockGetPlanFeatures.mockResolvedValueOnce({ maxProjects: 10 })
-
+    mockGetPlanFeatures.mockResolvedValueOnce({ maxProjects: 1 })
     const response = await POST(
-      createRequest({
-        name: 'New Project',
-        organizationId: 'org_123',
-      })
+      createRequest(
+        'POST',
+        {},
+        {
+          name: 'New Project',
+          organizationId: 'org_123',
+        }
+      )
     )
     const json = await response.json()
 
@@ -268,27 +325,29 @@ describe('POST /api/projects', () => {
   })
 
   it('creates project successfully', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaOrgFindUnique.mockResolvedValueOnce({
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
+    prismaOrgFindUniqueMock.mockResolvedValueOnce({
       id: 'org_123',
-      ownerId: 'user_123',
-      members: [],
+      members: [{ role: 'ADMIN' }],
+      subscription: null,
+      projects: [],
     })
-    mockPrismaProjectCount.mockResolvedValueOnce(5)
     mockCanPerformAction.mockResolvedValueOnce(true)
-    mockPrismaProjectCreate.mockResolvedValueOnce({
-      id: 'proj_new',
+    prismaProjectCreateMock.mockResolvedValueOnce({
+      id: 'p_new',
       name: 'New Project',
-      organization: { id: 'org_123', name: 'Test Org', slug: 'test-org' },
+      organizationId: 'org_123',
     })
 
     const response = await POST(
-      createRequest({
-        name: 'New Project',
-        organizationId: 'org_123',
-      })
+      createRequest(
+        'POST',
+        {},
+        {
+          name: 'New Project',
+          organizationId: 'org_123',
+        }
+      )
     )
     const json = await response.json()
 
@@ -297,27 +356,28 @@ describe('POST /api/projects', () => {
   })
 
   it('allows member role to create projects', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaOrgFindUnique.mockResolvedValueOnce({
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
+    prismaOrgFindUniqueMock.mockResolvedValueOnce({
       id: 'org_123',
-      ownerId: 'other_user',
       members: [{ role: 'MEMBER' }],
+      subscription: null,
+      projects: [],
     })
-    mockPrismaProjectCount.mockResolvedValueOnce(0)
     mockCanPerformAction.mockResolvedValueOnce(true)
-    mockPrismaProjectCreate.mockResolvedValueOnce({
-      id: 'proj_new',
+    prismaProjectCreateMock.mockResolvedValueOnce({
+      id: 'p_new',
       name: 'New Project',
-      organization: { id: 'org_123', name: 'Test Org', slug: 'test-org' },
     })
 
     const response = await POST(
-      createRequest({
-        name: 'New Project',
-        organizationId: 'org_123',
-      })
+      createRequest(
+        'POST',
+        {},
+        {
+          name: 'New Project',
+          organizationId: 'org_123',
+        }
+      )
     )
 
     expect(response.status).toBe(201)

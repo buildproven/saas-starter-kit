@@ -28,13 +28,13 @@ vi.mock('@/lib/prisma', () => ({
 import { SubscriptionService, PLAN_CONFIGS } from './subscription'
 import { prisma } from '@/lib/prisma'
 
-// Type-safe mock accessors
-const subMock = prisma.subscription as { findUnique: vi.Mock; create: vi.Mock; update: vi.Mock }
-const memberMock = prisma.organizationMember as { count: vi.Mock }
-const projectMock = prisma.project as { count: vi.Mock }
-const apiKeyMock = prisma.apiKey as { count: vi.Mock }
-const usageMock = prisma.usageRecord as { aggregate: vi.Mock; create: vi.Mock }
-const planMock = prisma.plan as { findMany: vi.Mock; findUnique: vi.Mock }
+// Type-safe mock accessors using vi.mocked()
+const mockSubscription = vi.mocked(prisma.subscription, true)
+const mockOrganizationMember = vi.mocked(prisma.organizationMember, true)
+const mockProject = vi.mocked(prisma.project, true)
+const mockApiKey = vi.mocked(prisma.apiKey, true)
+const mockUsageRecord = vi.mocked(prisma.usageRecord, true)
+const mockPlan = vi.mocked(prisma.plan, true)
 
 describe('SubscriptionService', () => {
   beforeEach(() => {
@@ -43,39 +43,39 @@ describe('SubscriptionService', () => {
 
   describe('PLAN_CONFIGS', () => {
     it('has correct free plan limits', () => {
-      expect(PLAN_CONFIGS.free.maxUsers).toBe(1)
-      expect(PLAN_CONFIGS.free.maxProjects).toBe(3)
-      expect(PLAN_CONFIGS.free.prioritySupport).toBe(false)
+      expect(PLAN_CONFIGS.free!.maxUsers).toBe(1)
+      expect(PLAN_CONFIGS.free!.maxProjects).toBe(3)
+      expect(PLAN_CONFIGS.free!.prioritySupport).toBe(false)
     })
 
     it('has correct enterprise plan with unlimited access', () => {
-      expect(PLAN_CONFIGS.enterprise.maxUsers).toBe(-1)
-      expect(PLAN_CONFIGS.enterprise.maxProjects).toBe(-1)
-      expect(PLAN_CONFIGS.enterprise.prioritySupport).toBe(true)
+      expect(PLAN_CONFIGS.enterprise!.maxUsers).toBe(-1)
+      expect(PLAN_CONFIGS.enterprise!.maxProjects).toBe(-1)
+      expect(PLAN_CONFIGS.enterprise!.prioritySupport).toBe(true)
     })
   })
 
   describe('getSubscription', () => {
     it('returns subscription with plan and organization', async () => {
-      const mockSubscription = {
+      const mockSubscriptionData = {
         id: 'sub_123',
         organizationId: 'org_123',
         plan: { id: 'plan_pro', name: 'Pro' },
         organization: { id: 'org_123', name: 'Test Org' },
       }
-      subMock.findUnique.mockResolvedValueOnce(mockSubscription)
+      mockSubscription.findUnique.mockResolvedValueOnce(mockSubscriptionData as never)
 
       const result = await SubscriptionService.getSubscription('org_123')
 
-      expect(result).toEqual(mockSubscription)
-      expect(subMock.findUnique).toHaveBeenCalledWith({
+      expect(result).toEqual(mockSubscriptionData)
+      expect(mockSubscription.findUnique).toHaveBeenCalledWith({
         where: { organizationId: 'org_123' },
         include: { plan: true, organization: true },
       })
     })
 
     it('returns null for non-existent subscription', async () => {
-      subMock.findUnique.mockResolvedValueOnce(null)
+      mockSubscription.findUnique.mockResolvedValueOnce(null)
 
       const result = await SubscriptionService.getSubscription('org_none')
       expect(result).toBeNull()
@@ -84,7 +84,7 @@ describe('SubscriptionService', () => {
 
   describe('getPlanFeatures', () => {
     it('returns plan features from subscription', async () => {
-      subMock.findUnique.mockResolvedValueOnce({
+      mockSubscription.findUnique.mockResolvedValueOnce({
         plan: {
           features: {
             maxUsers: 25,
@@ -92,7 +92,7 @@ describe('SubscriptionService', () => {
             prioritySupport: true,
           },
         },
-      })
+      } as never)
 
       const result = await SubscriptionService.getPlanFeatures('org_123')
 
@@ -101,7 +101,7 @@ describe('SubscriptionService', () => {
     })
 
     it('returns free plan defaults when no subscription', async () => {
-      subMock.findUnique.mockResolvedValueOnce(null)
+      mockSubscription.findUnique.mockResolvedValueOnce(null)
 
       const result = await SubscriptionService.getPlanFeatures('org_free')
 
@@ -111,45 +111,45 @@ describe('SubscriptionService', () => {
 
   describe('canPerformAction', () => {
     it('returns true for unlimited access (-1)', async () => {
-      subMock.findUnique.mockResolvedValueOnce({
+      mockSubscription.findUnique.mockResolvedValueOnce({
         plan: { features: { maxUsers: -1 } },
-      })
+      } as never)
 
       const result = await SubscriptionService.canPerformAction('org_enterprise', 'maxUsers', 100)
       expect(result).toBe(true)
     })
 
     it('returns true for boolean features that are enabled', async () => {
-      subMock.findUnique.mockResolvedValueOnce({
+      mockSubscription.findUnique.mockResolvedValueOnce({
         plan: { features: { prioritySupport: true } },
-      })
+      } as never)
 
       const result = await SubscriptionService.canPerformAction('org_pro', 'prioritySupport')
       expect(result).toBe(true)
     })
 
     it('returns false for boolean features that are disabled', async () => {
-      subMock.findUnique.mockResolvedValueOnce({
+      mockSubscription.findUnique.mockResolvedValueOnce({
         plan: { features: { sso: false } },
-      })
+      } as never)
 
       const result = await SubscriptionService.canPerformAction('org_starter', 'sso')
       expect(result).toBe(false)
     })
 
     it('returns true when under limit', async () => {
-      subMock.findUnique.mockResolvedValueOnce({
+      mockSubscription.findUnique.mockResolvedValueOnce({
         plan: { features: { maxProjects: 10 } },
-      })
+      } as never)
 
       const result = await SubscriptionService.canPerformAction('org_123', 'maxProjects', 5)
       expect(result).toBe(true)
     })
 
     it('returns false when at or over limit', async () => {
-      subMock.findUnique.mockResolvedValueOnce({
+      mockSubscription.findUnique.mockResolvedValueOnce({
         plan: { features: { maxProjects: 10 } },
-      })
+      } as never)
 
       const result = await SubscriptionService.canPerformAction('org_123', 'maxProjects', 10)
       expect(result).toBe(false)
@@ -158,15 +158,15 @@ describe('SubscriptionService', () => {
 
   describe('getCurrentUsage', () => {
     it('returns current usage counts', async () => {
-      subMock.findUnique.mockResolvedValueOnce({
+      mockSubscription.findUnique.mockResolvedValueOnce({
         currentPeriodStart: new Date('2024-01-01'),
-      })
-      memberMock.count.mockResolvedValueOnce(5)
-      projectMock.count.mockResolvedValueOnce(3)
-      apiKeyMock.count.mockResolvedValueOnce(2)
-      usageMock.aggregate
-        .mockResolvedValueOnce({ _sum: { quantity: 50000 } })
-        .mockResolvedValueOnce({ _sum: { quantity: 5 } })
+      } as never)
+      mockOrganizationMember.count.mockResolvedValueOnce(5)
+      mockProject.count.mockResolvedValueOnce(3)
+      mockApiKey.count.mockResolvedValueOnce(2)
+      mockUsageRecord.aggregate
+        .mockResolvedValueOnce({ _sum: { quantity: 50000 } } as never)
+        .mockResolvedValueOnce({ _sum: { quantity: 5 } } as never)
 
       const result = await SubscriptionService.getCurrentUsage('org_123')
 
@@ -178,13 +178,13 @@ describe('SubscriptionService', () => {
     })
 
     it('handles null aggregates gracefully', async () => {
-      subMock.findUnique.mockResolvedValueOnce(null)
-      memberMock.count.mockResolvedValueOnce(0)
-      projectMock.count.mockResolvedValueOnce(0)
-      apiKeyMock.count.mockResolvedValueOnce(0)
-      usageMock.aggregate
-        .mockResolvedValueOnce({ _sum: { quantity: null } })
-        .mockResolvedValueOnce({ _sum: { quantity: null } })
+      mockSubscription.findUnique.mockResolvedValueOnce(null)
+      mockOrganizationMember.count.mockResolvedValueOnce(0)
+      mockProject.count.mockResolvedValueOnce(0)
+      mockApiKey.count.mockResolvedValueOnce(0)
+      mockUsageRecord.aggregate
+        .mockResolvedValueOnce({ _sum: { quantity: null } } as never)
+        .mockResolvedValueOnce({ _sum: { quantity: null } } as never)
 
       const result = await SubscriptionService.getCurrentUsage('org_free')
 
@@ -195,31 +195,31 @@ describe('SubscriptionService', () => {
 
   describe('checkLimits', () => {
     it('returns violations when exceeding limits', async () => {
-      subMock.findUnique.mockResolvedValue({
+      mockSubscription.findUnique.mockResolvedValue({
         plan: { features: PLAN_CONFIGS.free },
         currentPeriodStart: new Date(),
-      })
-      memberMock.count.mockResolvedValue(5) // Exceeds free limit of 1
-      projectMock.count.mockResolvedValue(10) // Exceeds free limit of 3
-      apiKeyMock.count.mockResolvedValue(1)
-      usageMock.aggregate.mockResolvedValue({ _sum: { quantity: 0 } })
+      } as never)
+      mockOrganizationMember.count.mockResolvedValue(5) // Exceeds free limit of 1
+      mockProject.count.mockResolvedValue(10) // Exceeds free limit of 3
+      mockApiKey.count.mockResolvedValue(1)
+      mockUsageRecord.aggregate.mockResolvedValue({ _sum: { quantity: 0 } } as never)
 
       const result = await SubscriptionService.checkLimits('org_over_limit')
 
       expect(result.hasViolations).toBe(true)
       expect(result.violations.length).toBeGreaterThan(0)
-      expect(result.violations.some(v => v.includes('User limit'))).toBe(true)
+      expect(result.violations.some((v) => v.includes('User limit'))).toBe(true)
     })
 
     it('returns usage and limits in result', async () => {
-      subMock.findUnique.mockResolvedValue({
+      mockSubscription.findUnique.mockResolvedValue({
         plan: { features: PLAN_CONFIGS.starter },
         currentPeriodStart: new Date(),
-      })
-      memberMock.count.mockResolvedValue(2)
-      projectMock.count.mockResolvedValue(3)
-      apiKeyMock.count.mockResolvedValue(1)
-      usageMock.aggregate.mockResolvedValue({ _sum: { quantity: 5000 } })
+      } as never)
+      mockOrganizationMember.count.mockResolvedValue(2)
+      mockProject.count.mockResolvedValue(3)
+      mockApiKey.count.mockResolvedValue(1)
+      mockUsageRecord.aggregate.mockResolvedValue({ _sum: { quantity: 5000 } } as never)
 
       const result = await SubscriptionService.checkLimits('org_123')
 
@@ -231,15 +231,15 @@ describe('SubscriptionService', () => {
 
   describe('recordUsage', () => {
     it('creates usage record', async () => {
-      usageMock.create.mockResolvedValueOnce({
+      mockUsageRecord.create.mockResolvedValueOnce({
         id: 'usage_123',
         metric: 'api_calls',
         quantity: 100,
-      })
+      } as never)
 
       await SubscriptionService.recordUsage('api_calls', 100, 'proj_123')
 
-      expect(usageMock.create).toHaveBeenCalledWith({
+      expect(mockUsageRecord.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           metric: 'api_calls',
           quantity: 100,
@@ -260,31 +260,31 @@ describe('SubscriptionService', () => {
         currentPeriodStart: new Date(),
         currentPeriodEnd: new Date(),
       }
-      subMock.create.mockResolvedValueOnce({
+      mockSubscription.create.mockResolvedValueOnce({
         ...subscriptionData,
         plan: { name: 'Pro' },
         organization: { name: 'Test' },
-      })
+      } as never)
 
       const result = await SubscriptionService.createSubscription(subscriptionData)
 
       expect(result.organizationId).toBe('org_123')
-      expect(subMock.create).toHaveBeenCalled()
+      expect(mockSubscription.create).toHaveBeenCalled()
     })
   })
 
   describe('updateSubscription', () => {
     it('updates subscription status', async () => {
-      subMock.update.mockResolvedValueOnce({
+      mockSubscription.update.mockResolvedValueOnce({
         subscriptionId: 'sub_123',
         status: 'PAST_DUE',
-      })
+      } as never)
 
       await SubscriptionService.updateSubscription('sub_123', {
         status: 'PAST_DUE',
       })
 
-      expect(subMock.update).toHaveBeenCalledWith({
+      expect(mockSubscription.update).toHaveBeenCalledWith({
         where: { subscriptionId: 'sub_123' },
         data: { status: 'PAST_DUE' },
         include: { plan: true, organization: true },
@@ -294,14 +294,14 @@ describe('SubscriptionService', () => {
 
   describe('cancelSubscription', () => {
     it('sets cancelAtPeriodEnd to true', async () => {
-      subMock.update.mockResolvedValueOnce({
+      mockSubscription.update.mockResolvedValueOnce({
         organizationId: 'org_123',
         cancelAtPeriodEnd: true,
-      })
+      } as never)
 
       await SubscriptionService.cancelSubscription('org_123')
 
-      expect(subMock.update).toHaveBeenCalledWith({
+      expect(mockSubscription.update).toHaveBeenCalledWith({
         where: { organizationId: 'org_123' },
         data: { cancelAtPeriodEnd: true },
       })
@@ -310,15 +310,15 @@ describe('SubscriptionService', () => {
 
   describe('reactivateSubscription', () => {
     it('reactivates cancelled subscription', async () => {
-      subMock.update.mockResolvedValueOnce({
+      mockSubscription.update.mockResolvedValueOnce({
         organizationId: 'org_123',
         cancelAtPeriodEnd: false,
         status: 'ACTIVE',
-      })
+      } as never)
 
       await SubscriptionService.reactivateSubscription('org_123')
 
-      expect(subMock.update).toHaveBeenCalledWith({
+      expect(mockSubscription.update).toHaveBeenCalledWith({
         where: { organizationId: 'org_123' },
         data: { cancelAtPeriodEnd: false, status: 'ACTIVE' },
       })
@@ -327,15 +327,15 @@ describe('SubscriptionService', () => {
 
   describe('getAvailablePlans', () => {
     it('returns active plans sorted by amount', async () => {
-      planMock.findMany.mockResolvedValueOnce([
+      mockPlan.findMany.mockResolvedValueOnce([
         { id: 'plan_starter', name: 'Starter', amount: 900 },
         { id: 'plan_pro', name: 'Pro', amount: 2900 },
-      ])
+      ] as never)
 
       const result = await SubscriptionService.getAvailablePlans()
 
       expect(result).toHaveLength(2)
-      expect(planMock.findMany).toHaveBeenCalledWith({
+      expect(mockPlan.findMany).toHaveBeenCalledWith({
         where: { isActive: true },
         orderBy: { amount: 'asc' },
       })
@@ -344,11 +344,11 @@ describe('SubscriptionService', () => {
 
   describe('getPlanByPriceId', () => {
     it('returns plan for given price ID', async () => {
-      planMock.findUnique.mockResolvedValueOnce({
+      mockPlan.findUnique.mockResolvedValueOnce({
         id: 'plan_pro',
         priceId: 'price_pro',
         name: 'Pro',
-      })
+      } as never)
 
       const result = await SubscriptionService.getPlanByPriceId('price_pro')
 
@@ -356,7 +356,7 @@ describe('SubscriptionService', () => {
     })
 
     it('returns null for unknown price ID', async () => {
-      planMock.findUnique.mockResolvedValueOnce(null)
+      mockPlan.findUnique.mockResolvedValueOnce(null)
 
       const result = await SubscriptionService.getPlanByPriceId('price_unknown')
       expect(result).toBeNull()

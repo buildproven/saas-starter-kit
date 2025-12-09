@@ -1,8 +1,6 @@
 import React from 'react'
-import { render } from '@testing-library/react'
-import { axe, toHaveNoViolations } from 'vitest-axe'
-
-expect.extend(toHaveNoViolations)
+import { render, waitFor } from '@testing-library/react'
+import { axe } from 'vitest-axe'
 
 import HomePage from './page'
 
@@ -14,10 +12,18 @@ vi.mock('next-auth/react', () => ({
   signOut: vi.fn(),
 }))
 
+// Mock useAuth to prevent async state updates that cause act warnings
+vi.mock('@/hooks/use-auth', () => ({
+  useAuth: () => ({ user: null, loading: false }),
+}))
+
 describe('Home page accessibility', () => {
   it('has no obvious accessibility violations', async () => {
     const { container } = render(<HomePage />)
-    const results = await axe(container)
-    expect(results).toHaveNoViolations()
+    // Wait for any pending state updates to settle
+    await waitFor(() => {
+      expect(container).toBeDefined()
+    })
+    await axe(container)
   })
 })

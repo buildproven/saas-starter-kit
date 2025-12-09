@@ -4,13 +4,13 @@ This document describes the major components, data flows, and extension points f
 
 ## High-Level Stack
 
-- **Framework**: Next.js 14 App Router with TypeScript.
+- **Framework**: Next.js 16 App Router with TypeScript.
 - **Authentication**: NextAuth (JWT strategy) with Prisma adapter.
 - **Database**: PostgreSQL accessed through Prisma ORM.
 - **State Management**: Zustand for client-side session and UI state sync.
 - **UI Layer**: Tailwind CSS + shadcn/ui-inspired component primitives and Lucide icons.
 - **Observability**: Sentry client/server SDKs, structured error logging helpers.
-- **Tooling**: Jest, Testing Library, ESLint (incl. security plugin), Stylelint, Prettier, Husky & lint-staged.
+- **Tooling**: Vitest, Testing Library, Playwright, ESLint (incl. security plugin), Stylelint, Prettier, Husky & lint-staged.
 
 ```
 ┌─────────────┐
@@ -86,8 +86,9 @@ This document describes the major components, data flows, and extension points f
 
 ### Testing
 
-- Jest configuration (`jest.config.js`) integrates with Next.js via `next/jest`.
-- `jest.setup.ts` polyfills browser APIs, mocks Next navigation, and sets up custom `Request`/`Response` classes for route testing.
+- Vitest configuration (`vitest.config.ts`) runs with jsdom, global APIs, and 80% coverage thresholds.
+- `tests/setup.ts` polyfills browser APIs, mocks Next navigation, and sets up custom `Request`/`Response` classes for route testing.
+- Playwright end-to-end specs live under `e2e/`.
 - Example tests:
   - `src/components/ui/Button.test.tsx`
   - `src/app/page.test.tsx`

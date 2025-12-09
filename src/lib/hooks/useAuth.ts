@@ -30,7 +30,9 @@ export function useAuth(): UseAuthReturn {
   const authData = useMemo(() => {
     const isLoading = loading
     const isAuthenticated = !!supabaseUser
-    const userRole: UserRole | null = isAuthenticated ? 'USER' : null
+    const userRole: UserRole | null = isAuthenticated
+      ? (supabaseUser?.app_metadata?.role as UserRole) || 'USER'
+      : null
 
     const user: AuthUser | null = supabaseUser
       ? {
@@ -38,7 +40,7 @@ export function useAuth(): UseAuthReturn {
           email: supabaseUser.email || '',
           name: supabaseUser.user_metadata?.full_name || undefined,
           image: supabaseUser.user_metadata?.avatar_url || undefined,
-          role: 'USER',
+          role: userRole || 'USER',
         }
       : null
 

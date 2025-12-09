@@ -26,10 +26,11 @@ src/
 
 ## Testing Tools
 
-- **Jest** - Test runner and assertion library
+- **Vitest** - Test runner and assertion library
 - **React Testing Library** - Component testing utilities
 - **@testing-library/user-event** - User interaction simulation
-- **@testing-library/jest-dom** - Additional Jest matchers
+- **@testing-library/jest-dom** - Additional DOM matchers for Vitest
+- **Playwright** - End-to-end browser automation
 
 ## Test Utilities
 
@@ -99,13 +100,16 @@ describe('MyComponent', () => {
   })
 
   it('handles click events', async () => {
-    const handleClick = jest.fn()
+    const handleClick = vi.fn()
     render(<MyComponent onClick={handleClick} />)
 
     await user.click(screen.getByRole('button'))
     expect(handleClick).toHaveBeenCalledTimes(1)
   })
 })
+
+// Import vi from Vitest in your tests:
+// import { vi } from 'vitest'
 ```
 
 ### API Route Testing
@@ -227,20 +231,12 @@ it('updates theme when toggle button is clicked', async () => {
 ## Running Tests
 
 ```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Run tests with coverage
-npm run test:coverage
-
-# Run specific test file
-npm test Button.test.tsx
-
-# Run tests matching pattern
-npm test -- --testNamePattern="renders"
+npm test                       # Vitest run (unit/integration)
+npm run test:watch             # Vitest watch mode
+npm run test:coverage          # Vitest with coverage (80% global)
+npm test -- Button.test.tsx    # Single file
+npm test -- -t "renders"       # Single test name pattern
+npm run test:e2e               # Playwright end-to-end suite
 ```
 
 ## Template-Sales Smoke Test
@@ -250,7 +246,7 @@ npm test -- --testNamePattern="renders"
 - Run locally with:
 
   ```bash
-  npm test -- --runInBand src/app/api/template-sales/smoke.test.ts
+  npm test -- src/app/api/template-sales/smoke.test.ts
   ```
 
 - For staging environments, complement this automated run with a manual Stripe test card checkout and verify that download audits appear in the `TemplateDownloadAudit` table.
@@ -266,11 +262,11 @@ npm test -- --testNamePattern="renders"
 
 2. **Use VS Code Debugger**
    - Set breakpoints in test files
-   - Run "Debug Jest Tests" configuration
+   - Run "Debug Vitest Tests" configuration
 
 3. **Test Individual Components**
    ```bash
-   npm test -- --testPathPattern=Button.test.tsx --verbose
+   npm test -- Button.test.tsx --reporter verbose
    ```
 
 ## Continuous Integration

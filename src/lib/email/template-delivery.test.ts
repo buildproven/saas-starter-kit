@@ -85,10 +85,9 @@ describe('sendTemplateDeliveryEmail', () => {
     })
 
     it('logs in development mode', async () => {
-      const originalNodeEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'development'
+      vi.stubEnv('NODE_ENV', 'development')
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       const result = await sendTemplateDeliveryEmail(baseParams)
 
@@ -97,14 +96,13 @@ describe('sendTemplateDeliveryEmail', () => {
       expect(consoleSpy).toHaveBeenCalled()
 
       consoleSpy.mockRestore()
-      process.env.NODE_ENV = originalNodeEnv
+      vi.unstubAllEnvs()
     })
 
     it('returns noop in production without config', async () => {
-      const originalNodeEnv = process.env.NODE_ENV
-      process.env.NODE_ENV = 'production'
+      vi.stubEnv('NODE_ENV', 'production')
 
-      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation()
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       const result = await sendTemplateDeliveryEmail(baseParams)
 
@@ -112,7 +110,7 @@ describe('sendTemplateDeliveryEmail', () => {
       expect(result.messageId).toMatch(/^noop-/)
 
       consoleWarnSpy.mockRestore()
-      process.env.NODE_ENV = originalNodeEnv
+      vi.unstubAllEnvs()
     })
   })
 
@@ -132,7 +130,9 @@ describe('sendTemplateDeliveryEmail', () => {
     it('generates hobby package content', async () => {
       await sendTemplateDeliveryEmail({ ...baseParams, package: 'hobby' })
 
-      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      const callArgs = mockFetch.mock.calls[0]
+      expect(callArgs).toBeDefined()
+      const callBody = JSON.parse((callArgs?.[1] as globalThis.RequestInit)?.body as string)
       expect(callBody.subject).toContain('Hobby Package')
       expect(callBody.html).toContain('Community support')
     })
@@ -140,7 +140,9 @@ describe('sendTemplateDeliveryEmail', () => {
     it('generates pro package content', async () => {
       await sendTemplateDeliveryEmail({ ...baseParams, package: 'pro' })
 
-      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      const callArgs = mockFetch.mock.calls[0]
+      expect(callArgs).toBeDefined()
+      const callBody = JSON.parse((callArgs?.[1] as globalThis.RequestInit)?.body as string)
       expect(callBody.subject).toContain('Pro Package')
       expect(callBody.html).toContain('GitHub repository access')
       expect(callBody.html).toContain('Video tutorials')
@@ -149,7 +151,9 @@ describe('sendTemplateDeliveryEmail', () => {
     it('generates director package content', async () => {
       await sendTemplateDeliveryEmail({ ...baseParams, package: 'director' })
 
-      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      const callArgs = mockFetch.mock.calls[0]
+      expect(callArgs).toBeDefined()
+      const callBody = JSON.parse((callArgs?.[1] as globalThis.RequestInit)?.body as string)
       expect(callBody.subject).toContain('Director Package')
       expect(callBody.html).toContain('consultation call')
       expect(callBody.html).toContain('Vibe Lab Pro')
@@ -158,7 +162,9 @@ describe('sendTemplateDeliveryEmail', () => {
     it('includes customer name in greeting', async () => {
       await sendTemplateDeliveryEmail(baseParams)
 
-      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      const callArgs = mockFetch.mock.calls[0]
+      expect(callArgs).toBeDefined()
+      const callBody = JSON.parse((callArgs?.[1] as globalThis.RequestInit)?.body as string)
       expect(callBody.html).toContain('Hi Test User')
     })
 
@@ -168,14 +174,18 @@ describe('sendTemplateDeliveryEmail', () => {
         customerName: null,
       })
 
-      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      const callArgs = mockFetch.mock.calls[0]
+      expect(callArgs).toBeDefined()
+      const callBody = JSON.parse((callArgs?.[1] as globalThis.RequestInit)?.body as string)
       expect(callBody.html).toContain('Hi there')
     })
 
     it('includes license key and download URL', async () => {
       await sendTemplateDeliveryEmail(baseParams)
 
-      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      const callArgs = mockFetch.mock.calls[0]
+      expect(callArgs).toBeDefined()
+      const callBody = JSON.parse((callArgs?.[1] as globalThis.RequestInit)?.body as string)
       expect(callBody.html).toContain('HOB-1234-5678-ABCD')
       expect(callBody.html).toContain('https://example.com/download/token123')
     })
@@ -189,7 +199,9 @@ describe('sendTemplateDeliveryEmail', () => {
         },
       })
 
-      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body)
+      const callArgs = mockFetch.mock.calls[0]
+      expect(callArgs).toBeDefined()
+      const callBody = JSON.parse((callArgs?.[1] as globalThis.RequestInit)?.body as string)
       expect(callBody.html).toContain('Does not expire')
     })
   })

@@ -41,6 +41,11 @@ export function useCurrentOrganization() {
   )
 
   const isOwnerOrAdmin = ['OWNER', 'ADMIN'].includes(currentOrganization?.role || '')
+  const canAccess = (_featureKey: string) => {
+    // Currently gate by active/trialing subscription; _featureKey placeholder for future limits
+    if (!currentOrganization?.subscription) return false
+    return ['ACTIVE', 'TRIALING'].includes(currentOrganization.subscription.status || '')
+  }
 
   return {
     organization: currentOrganization,
@@ -50,6 +55,7 @@ export function useCurrentOrganization() {
     isTrialing,
     subscriptionEnded,
     isOwnerOrAdmin,
+    canAccess,
   }
 }
 

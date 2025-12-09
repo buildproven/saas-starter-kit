@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import Link from 'next/link'
@@ -12,6 +13,14 @@ const errorMessages: Record<string, string> = {
 }
 
 export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <AuthErrorContent />
+    </Suspense>
+  )
+}
+
+function AuthErrorContent() {
   const searchParams = useSearchParams()
   const error = searchParams?.get('error')
 

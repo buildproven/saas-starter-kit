@@ -126,17 +126,14 @@ class MemoryStorage implements RateLimitStorage {
 
   private startCleanup(): void {
     if (this.cleanupInterval) return
-    this.cleanupInterval = setInterval(
-      () => {
-        const now = Date.now()
-        for (const [key, entry] of this.store.entries()) {
-          if (entry.expiresAt <= now) {
-            this.store.delete(key)
-          }
+    this.cleanupInterval = setInterval(() => {
+      const now = Date.now()
+      for (const [key, entry] of this.store.entries()) {
+        if (entry.expiresAt <= now) {
+          this.store.delete(key)
         }
-      },
-      60 * 1000
-    ) // Cleanup every minute
+      }
+    }, 60 * 1000) // Cleanup every minute
   }
 
   async increment(key: string, ttlMs: number): Promise<number> {

@@ -134,8 +134,10 @@ describe('POST /api/webhooks/subscription', () => {
     expect(response.status).toBe(200)
     expect(result).toEqual({ received: true })
     expect(__prismaMock.subscription.upsert).toHaveBeenCalledTimes(1)
-    const upsertArgs = __prismaMock.subscription.upsert.mock.calls[0][0]
-    expect(upsertArgs.create.organizationId).toBe('org_123')
+    const upsertCall = __prismaMock.subscription.upsert.mock.calls[0]
+    expect(upsertCall).toBeDefined()
+    const upsertArgs = upsertCall?.[0]
+    expect(upsertArgs?.create.organizationId).toBe('org_123')
   })
 
   it('skips duplicate events gracefully', async () => {
@@ -373,7 +375,9 @@ describe('POST /api/webhooks/subscription', () => {
     __prismaMock.stripeWebhookEvent.create.mockResolvedValueOnce({})
     __prismaMock.plan.findUnique.mockResolvedValueOnce({ id: 'plan_1' })
     __prismaMock.subscription.findUnique.mockResolvedValueOnce(null)
-    __prismaMock.subscription.findFirst.mockResolvedValueOnce({ organizationId: 'org_from_customer' })
+    __prismaMock.subscription.findFirst.mockResolvedValueOnce({
+      organizationId: 'org_from_customer',
+    })
     __prismaMock.subscription.upsert.mockResolvedValueOnce({})
 
     const response = await POST(createRequest({}))
@@ -443,8 +447,10 @@ describe('POST /api/webhooks/subscription', () => {
     const response = await POST(createRequest({}))
 
     expect(response.status).toBe(200)
-    const upsertCall = __prismaMock.subscription.upsert.mock.calls[0][0]
-    expect(upsertCall.create.priceId).toBe('price_string')
+    const upsertCallArgs = __prismaMock.subscription.upsert.mock.calls[0]
+    expect(upsertCallArgs).toBeDefined()
+    const upsertCall = upsertCallArgs?.[0]
+    expect(upsertCall?.create.priceId).toBe('price_string')
   })
 
   it('handles subscription without price', async () => {
@@ -509,8 +515,10 @@ describe('POST /api/webhooks/subscription', () => {
 
       await POST(createRequest({}))
 
-      const upsertCall = __prismaMock.subscription.upsert.mock.calls[0][0]
-      expect(upsertCall.create.status).toBe(expected)
+      const upsertCallArgs = __prismaMock.subscription.upsert.mock.calls[0]
+      expect(upsertCallArgs).toBeDefined()
+      const upsertCall = upsertCallArgs?.[0]
+      expect(upsertCall?.create.status).toBe(expected)
     }
   })
 

@@ -35,7 +35,9 @@ for (const [metric, threshold] of Object.entries(THRESHOLDS)) {
   const pass = actual >= threshold
   const status = pass ? '✅' : '❌'
 
-  console.log(`${metric.padEnd(12)}| ${actual.toFixed(1).padStart(5)}% | ${String(threshold).padStart(8)}% | ${status}`)
+  console.log(
+    `${metric.padEnd(12)}| ${actual.toFixed(1).padStart(5)}% | ${String(threshold).padStart(8)}% | ${status}`
+  )
 
   if (!pass) failed = true
 }

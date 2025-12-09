@@ -18,8 +18,8 @@ vi.mock('next/server', () => {
   }
 })
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
 }))
 
 vi.mock('@/lib/auth', () => ({
@@ -28,9 +28,6 @@ vi.mock('@/lib/auth', () => ({
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    user: {
-      findUnique: vi.fn(),
-    },
     plan: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -58,13 +55,12 @@ vi.mock('@/lib/subscription', () => ({
   },
 }))
 
-import { getServerSession } from 'next-auth/next'
+import { getUser } from '@/lib/auth/get-user'
 import { prisma } from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 
-const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockGetUser = getUser as vi.Mock
 const mockGetAvailablePlans = SubscriptionService.getAvailablePlans as vi.Mock
-const mockPrismaUserFindUnique = prisma.user.findUnique as vi.Mock
 const mockPrismaPlanFindUnique = prisma.plan.findUnique as vi.Mock
 const mockPrismaPlanCreate = prisma.plan.create as vi.Mock
 
@@ -74,7 +70,7 @@ describe('GET /api/plans', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await GET()
     const json = await response.json()
@@ -84,9 +80,7 @@ describe('GET /api/plans', () => {
   })
 
   it('returns available plans with free plan included', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockGetAvailablePlans.mockResolvedValueOnce([
       {
         id: 'plan_starter',
@@ -118,9 +112,7 @@ describe('GET /api/plans', () => {
   })
 
   it('marks Pro plan as popular', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockGetAvailablePlans.mockResolvedValueOnce([
       {
         id: 'plan_pro',
@@ -140,9 +132,7 @@ describe('GET /api/plans', () => {
   })
 
   it('handles yearly pricing format', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockGetAvailablePlans.mockResolvedValueOnce([
       {
         id: 'plan_annual',
@@ -161,12 +151,10 @@ describe('GET /api/plans', () => {
   })
 
   it('handles internal errors', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123' })
     mockGetAvailablePlans.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const response = await GET()
     const json = await response.json()
 
@@ -209,7 +197,7 @@ describe('POST /api/plans', () => {
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const response = await POST(createRequest(validPlanData))
     const json = await response.json()
@@ -219,10 +207,7 @@ describe('POST /api/plans', () => {
   })
 
   it('returns 403 when user is not super admin', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaUserFindUnique.mockResolvedValueOnce({ role: 'USER' })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', role: 'USER' })
 
     const response = await POST(createRequest(validPlanData))
     const json = await response.json()
@@ -232,10 +217,7 @@ describe('POST /api/plans', () => {
   })
 
   it('returns 400 for invalid input', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaUserFindUnique.mockResolvedValueOnce({ role: 'SUPER_ADMIN' })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', role: 'SUPER_ADMIN' })
 
     const response = await POST(createRequest({ name: 'Test', invalid: true }))
     const json = await response.json()
@@ -245,10 +227,7 @@ describe('POST /api/plans', () => {
   })
 
   it('returns 409 when price ID already exists', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaUserFindUnique.mockResolvedValueOnce({ role: 'SUPER_ADMIN' })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', role: 'SUPER_ADMIN' })
     mockPrismaPlanFindUnique.mockResolvedValueOnce({ id: 'existing_plan' })
 
     const response = await POST(createRequest(validPlanData))
@@ -259,10 +238,7 @@ describe('POST /api/plans', () => {
   })
 
   it('creates plan successfully for super admin', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaUserFindUnique.mockResolvedValueOnce({ role: 'SUPER_ADMIN' })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', role: 'SUPER_ADMIN' })
     mockPrismaPlanFindUnique.mockResolvedValueOnce(null)
     mockPrismaPlanCreate.mockResolvedValueOnce({
       id: 'new_plan',
@@ -279,10 +255,7 @@ describe('POST /api/plans', () => {
   })
 
   it('handles yearly plans correctly', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaUserFindUnique.mockResolvedValueOnce({ role: 'SUPER_ADMIN' })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', role: 'SUPER_ADMIN' })
     mockPrismaPlanFindUnique.mockResolvedValueOnce(null)
 
     const yearlyPlan = { ...validPlanData, interval: 'YEAR', amount: 19900 }
@@ -299,14 +272,11 @@ describe('POST /api/plans', () => {
   })
 
   it('handles internal errors', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
-    mockPrismaUserFindUnique.mockResolvedValueOnce({ role: 'SUPER_ADMIN' })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_123', role: 'SUPER_ADMIN' })
     mockPrismaPlanFindUnique.mockResolvedValueOnce(null)
     mockPrismaPlanCreate.mockRejectedValueOnce(new Error('Database error'))
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const response = await POST(createRequest(validPlanData))
     const json = await response.json()
 

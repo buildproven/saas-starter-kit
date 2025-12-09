@@ -1,10 +1,10 @@
-import { vi } from 'vitest'
+import { vi, type MockInstance } from 'vitest'
 import { validateEnv, isFeatureEnabled, clearEnvCache } from './env'
 
 describe('env validation', () => {
   const originalEnv = { ...process.env } as typeof process.env
   const originalExit = process.exit
-  let consoleErrorSpy: vi.SpyInstance
+  let consoleErrorSpy: MockInstance
 
   beforeEach(() => {
     // Reset environment before each test

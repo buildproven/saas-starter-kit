@@ -1,9 +1,48 @@
-/**
- * Tests for Subscription Middleware
- */
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import {
+  withSubscriptionCheck,
+  checkPremiumFeature,
+  recordApiUsage,
+  withWebhookAuth,
+} from './subscription-middleware'
+import { getUser } from '@/lib/auth/get-user'
+import { prisma } from '@/lib/prisma'
+import { BillingService } from '@/lib/billing'
+import { SubscriptionService } from '@/lib/subscription'
+import { NextRequest, NextResponse } from 'next/server'
 
-import type { NextRequest } from 'next/server'
+// Mock dependencies
+vi.mock('@/lib/auth/get-user', () => ({
+  getUser: vi.fn(),
+}))
 
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
+    organization: {
+      findUnique: vi.fn(),
+    },
+    usageRecord: {
+      create: vi.fn(),
+    },
+  },
+}))
+
+vi.mock('@/lib/billing', () => ({
+  BillingService: {
+    validateWebhookSignature: vi.fn(),
+  },
+}))
+
+vi.mock('@/lib/subscription', () => ({
+  SubscriptionService: {
+    getPlanFeatures: vi.fn(),
+    getCurrentUsage: vi.fn(),
+    canPerformAction: vi.fn(),
+    recordUsage: vi.fn(),
+  },
+}))
+
+// Mock Next.js response
 vi.mock('next/server', () => {
   const actual = vi.importActual('next/server')
   return {
@@ -17,43 +56,10 @@ vi.mock('next/server', () => {
   }
 })
 
-vi.mock('next-auth/next', () => ({
-  getServerSession: vi.fn(),
-}))
-
-vi.mock('@/lib/auth', () => ({
-  authOptions: {},
-}))
-
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    organization: {
-      findUnique: vi.fn(),
-    },
-  },
-}))
-
-vi.mock('@/lib/subscription', () => ({
-  SubscriptionService: {
-    getPlanFeatures: vi.fn(),
-    getCurrentUsage: vi.fn(),
-    canPerformAction: vi.fn(),
-    recordUsage: vi.fn(),
-  },
-}))
-
-import { getServerSession } from 'next-auth/next'
-import { prisma } from '@/lib/prisma'
-import { SubscriptionService } from '@/lib/subscription'
-import {
-  withSubscriptionCheck,
-  recordApiUsage,
-  checkPremiumFeature,
-  withWebhookAuth,
-} from './subscription-middleware'
-
-const mockGetServerSession = getServerSession as vi.MockedFunction<typeof getServerSession>
+const mockGetUser = getUser as vi.Mock
 const mockPrismaOrg = prisma.organization.findUnique as vi.Mock
+const mockPrismaUsage = prisma.usageRecord.create as vi.Mock
+const mockValidateSignature = BillingService.validateWebhookSignature as vi.Mock
 const mockGetPlanFeatures = SubscriptionService.getPlanFeatures as vi.Mock
 const mockGetCurrentUsage = SubscriptionService.getCurrentUsage as vi.Mock
 const mockCanPerformAction = SubscriptionService.canPerformAction as vi.Mock
@@ -61,27 +67,24 @@ const mockRecordUsage = SubscriptionService.recordUsage as vi.Mock
 
 describe('withSubscriptionCheck', () => {
   const mockHandler = vi.fn()
-  const createRequest = (): NextRequest =>
+
+  const createRequest = (params: Record<string, string> = {}) =>
     ({
-      headers: new Headers(),
+      params,
     }) as unknown as NextRequest
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockHandler.mockResolvedValue({
-      json: async () => ({ success: true }),
-      status: 200,
-    })
+    mockHandler.mockImplementation(async () => NextResponse.json({ success: true }))
   })
 
   it('returns 401 when not authenticated', async () => {
-    mockGetServerSession.mockResolvedValueOnce(null)
+    mockGetUser.mockResolvedValueOnce(null)
 
     const middleware = await withSubscriptionCheck(mockHandler, {
       feature: 'maxProjects',
       getOrganizationId: () => 'org_123',
     })
-
     const response = await middleware(createRequest())
     const json = await response.json()
 
@@ -90,17 +93,14 @@ describe('withSubscriptionCheck', () => {
   })
 
   it('returns 404 when organization not found', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_1' })
     mockPrismaOrg.mockResolvedValueOnce(null)
 
     const middleware = await withSubscriptionCheck(mockHandler, {
       feature: 'maxProjects',
-      getOrganizationId: () => 'org_123',
+      getOrganizationId: () => 'org_1',
     })
-
-    const response = await middleware(createRequest())
+    const response = await middleware(createRequest({ id: 'org_1' }))
     const json = await response.json()
 
     expect(response.status).toBe(404)
@@ -108,21 +108,17 @@ describe('withSubscriptionCheck', () => {
   })
 
   it('returns 403 when user lacks access', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_1' })
     mockPrismaOrg.mockResolvedValueOnce({
-      id: 'org_123',
-      ownerId: 'other_user',
-      members: [],
+      id: 'org_1',
+      members: [], // User not in members
     })
 
     const middleware = await withSubscriptionCheck(mockHandler, {
       feature: 'maxProjects',
-      getOrganizationId: () => 'org_123',
+      getOrganizationId: () => 'org_1',
     })
-
-    const response = await middleware(createRequest())
+    const response = await middleware(createRequest({ id: 'org_1' }))
     const json = await response.json()
 
     expect(response.status).toBe(403)
@@ -130,29 +126,27 @@ describe('withSubscriptionCheck', () => {
   })
 
   it('returns 402 when subscription limit exceeded', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_1' })
     mockPrismaOrg.mockResolvedValueOnce({
-      id: 'org_123',
-      ownerId: 'user_123',
-      members: [],
+      id: 'org_1',
+      ownerId: 'user_1',
+      members: [{ userId: 'user_1' }],
     })
+
     mockGetPlanFeatures.mockResolvedValueOnce({
-      maxProjects: 5,
+      maxProjects: 1,
     })
     mockGetCurrentUsage.mockResolvedValueOnce({
-      projects: 5,
+      projects: 2,
     })
     mockCanPerformAction.mockResolvedValueOnce(false)
 
     const middleware = await withSubscriptionCheck(mockHandler, {
       feature: 'maxProjects',
       action: 'create',
-      getOrganizationId: () => 'org_123',
+      getOrganizationId: () => 'org_1',
     })
-
-    const response = await middleware(createRequest())
+    const response = await middleware(createRequest({ id: 'org_1' }))
     const json = await response.json()
 
     expect(response.status).toBe(402)
@@ -161,28 +155,24 @@ describe('withSubscriptionCheck', () => {
   })
 
   it('returns 402 for unavailable premium features', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_1' })
     mockPrismaOrg.mockResolvedValueOnce({
-      id: 'org_123',
-      ownerId: 'user_123',
-      members: [],
+      id: 'org_1',
+      ownerId: 'user_1',
+      members: [{ userId: 'user_1' }],
     })
+
     mockGetPlanFeatures.mockResolvedValueOnce({
       prioritySupport: false,
     })
     mockGetCurrentUsage.mockResolvedValueOnce({})
-    // Skip the create action check by using 'read' action
-    mockCanPerformAction.mockResolvedValueOnce(true)
+    mockCanPerformAction.mockResolvedValueOnce(true) // Bypass limit check
 
     const middleware = await withSubscriptionCheck(mockHandler, {
       feature: 'prioritySupport',
-      action: 'read', // Use read action to skip limit check and test feature check
-      getOrganizationId: () => 'org_123',
+      getOrganizationId: () => 'org_1',
     })
-
-    const response = await middleware(createRequest())
+    const response = await middleware(createRequest({ id: 'org_1' }))
     const json = await response.json()
 
     expect(response.status).toBe(402)
@@ -190,28 +180,26 @@ describe('withSubscriptionCheck', () => {
   })
 
   it('calls handler when checks pass', async () => {
-    mockGetServerSession.mockResolvedValueOnce({
-      user: { id: 'user_123' },
-    })
+    mockGetUser.mockResolvedValueOnce({ id: 'user_1' })
     mockPrismaOrg.mockResolvedValueOnce({
-      id: 'org_123',
-      ownerId: 'user_123',
-      members: [],
+      id: 'org_1',
+      ownerId: 'user_1',
+      members: [{ userId: 'user_1' }],
     })
+
     mockGetPlanFeatures.mockResolvedValueOnce({
-      maxProjects: 10,
+      maxProjects: 5,
     })
     mockGetCurrentUsage.mockResolvedValueOnce({
-      projects: 3,
+      projects: 1,
     })
     mockCanPerformAction.mockResolvedValueOnce(true)
 
     const middleware = await withSubscriptionCheck(mockHandler, {
       feature: 'maxProjects',
-      getOrganizationId: () => 'org_123',
+      getOrganizationId: () => 'org_1',
     })
-
-    await middleware(createRequest())
+    await middleware(createRequest({ id: 'org_1' }))
 
     expect(mockHandler).toHaveBeenCalled()
   })
@@ -223,7 +211,7 @@ describe('recordApiUsage', () => {
   })
 
   it('records usage successfully', async () => {
-    mockRecordUsage.mockResolvedValueOnce(undefined)
+    mockPrismaUsage.mockResolvedValueOnce(undefined)
 
     await recordApiUsage('org_123', 'key_456', 'proj_789')
 
@@ -233,7 +221,7 @@ describe('recordApiUsage', () => {
   it('handles errors gracefully', async () => {
     mockRecordUsage.mockRejectedValueOnce(new Error('Recording failed'))
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     // Should not throw
     await expect(recordApiUsage('org_123')).resolves.not.toThrow()
@@ -272,7 +260,7 @@ describe('checkPremiumFeature', () => {
   it('returns false on error', async () => {
     mockGetPlanFeatures.mockRejectedValueOnce(new Error('Failed'))
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const result = await checkPremiumFeature('org_123', 'analytics')
 
     expect(result).toBe(false)
@@ -289,6 +277,7 @@ describe('withWebhookAuth', () => {
       headers: {
         get: (key: string) => headerMap.get(key) || null,
       },
+      text: async () => 'payload',
     } as unknown as NextRequest
   }
 
@@ -301,12 +290,13 @@ describe('withWebhookAuth', () => {
   })
 
   it('returns 401 for invalid signature', async () => {
+    mockValidateSignature.mockReturnValue(false)
+
     const middleware = withWebhookAuth(mockHandler, {
       webhookSecret: 'secret',
       validateSignature: () => false,
     })
-
-    const response = await middleware(createRequest())
+    const response = await middleware(createRequest({ 'stripe-signature': 'sig' }))
     const json = await response.json()
 
     expect(response.status).toBe(401)
@@ -314,12 +304,13 @@ describe('withWebhookAuth', () => {
   })
 
   it('calls handler for valid signature', async () => {
+    mockValidateSignature.mockReturnValue(true)
+
     const middleware = withWebhookAuth(mockHandler, {
       webhookSecret: 'secret',
       validateSignature: () => true,
     })
-
-    await middleware(createRequest())
+    await middleware(createRequest({ 'stripe-signature': 'sig' }))
 
     expect(mockHandler).toHaveBeenCalled()
   })
@@ -332,8 +323,8 @@ describe('withWebhookAuth', () => {
       },
     })
 
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation()
-    const response = await middleware(createRequest())
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const response = await middleware(createRequest({ 'stripe-signature': 'sig' }))
     const json = await response.json()
 
     expect(response.status).toBe(401)

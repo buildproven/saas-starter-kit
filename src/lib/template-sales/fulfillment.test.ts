@@ -39,14 +39,23 @@ type PrismaMockShape = {
 }
 
 import { prisma } from '@/lib/prisma'
-const prismaMock = prisma as unknown as PrismaMockShape
-prismaMock.$transaction = vi.fn(
-  async (cb: (ctx: PrismaMockShape) => Promise<unknown> | unknown) => cb(prismaMock)
+
+// Type-safe mock accessors using vi.mocked()
+const mockTemplateSale = vi.mocked(prisma.templateSale, true)
+const mockTemplateSaleCustomer = vi.mocked(prisma.templateSaleCustomer, true)
+const mockTransaction = vi.mocked(prisma.$transaction, true)
+;(mockTransaction as unknown as { mockImplementation: (fn: unknown) => void }).mockImplementation(
+  async (cb: (ctx: PrismaMockShape) => Promise<unknown> | unknown) =>
+    cb({
+      $transaction: mockTransaction as unknown as vi.Mock,
+      templateSale: mockTemplateSale as unknown as PrismaMockShape['templateSale'],
+      templateSaleCustomer:
+        mockTemplateSaleCustomer as unknown as PrismaMockShape['templateSaleCustomer'],
+    })
 )
-const sendEmailMock = sendTemplateDeliveryEmail as vi.MockedFunction<
-  typeof sendTemplateDeliveryEmail
->
-const grantGitHubAccessMock = grantGitHubAccess as vi.MockedFunction<typeof grantGitHubAccess>
+
+const sendEmailMock = vi.mocked(sendTemplateDeliveryEmail, true)
+const grantGitHubAccessMock = vi.mocked(grantGitHubAccess, true)
 
 const createSale = (overrides: Partial<TemplateSale> = {}): TemplateSale =>
   ({
@@ -102,11 +111,11 @@ describe('fulfillTemplateSale', () => {
       companyName: 'Example Co',
       metadata: null,
     })
-    prismaMock.templateSale.findUnique.mockResolvedValueOnce(sale)
+    mockTemplateSale.findUnique.mockResolvedValueOnce(sale)
     sendEmailMock.mockResolvedValueOnce({ success: true, messageId: 'msg_1' })
     grantGitHubAccessMock.mockResolvedValueOnce({ success: true, teamId: 'team-pro' })
-    prismaMock.templateSale.update.mockResolvedValueOnce(createSale({ id: 'sale_1' }))
-    prismaMock.templateSaleCustomer.upsert.mockResolvedValueOnce(
+    mockTemplateSale.update.mockResolvedValueOnce(createSale({ id: 'sale_1' }))
+    mockTemplateSaleCustomer.upsert.mockResolvedValueOnce(
       createCustomer({
         licenseKey: 'PRO-XXXX-YYYY-ZZZZ',
         downloadToken: 'token123',
@@ -123,7 +132,7 @@ describe('fulfillTemplateSale', () => {
       githubUsername: 'BuyerDev',
     })
 
-    expect(prismaMock.templateSale.findUnique).toHaveBeenCalledWith({
+    expect(mockTemplateSale.findUnique).toHaveBeenCalledWith({
       where: { sessionId: 'sess_1' },
     })
     expect(sendEmailMock).toHaveBeenCalled()
@@ -137,19 +146,25 @@ describe('fulfillTemplateSale', () => {
     expect(result.downloadUrl).toContain('/template-download')
     expect(result.githubAccessGranted).toBe(true)
 
-    const updateArgs = prismaMock.templateSale.update.mock.calls.at(-1)?.[0]
-    expect(updateArgs.data.githubUsername).toBe('buyerdev')
-    expect(updateArgs.data.metadata.githubUsername).toBe('buyerdev')
+    const updateArgs = mockTemplateSale.update.mock.calls.at(-1)?.[0]
+    expect(updateArgs?.data.githubUsername).toBe('buyerdev')
+    expect((updateArgs?.data.metadata as Record<string, unknown> | undefined)?.githubUsername).toBe(
+      'buyerdev'
+    )
 
-    const upsertArgs = prismaMock.templateSaleCustomer.upsert.mock.calls[0][0]
-    expect(upsertArgs.update.githubUsername).toBe('buyerdev')
-    expect(upsertArgs.update.metadata.githubUsername).toBe('buyerdev')
-    expect(upsertArgs.create.githubUsername).toBe('buyerdev')
-    expect(upsertArgs.create.metadata.githubUsername).toBe('buyerdev')
+    const upsertArgs = mockTemplateSaleCustomer.upsert.mock.calls[0]?.[0]
+    expect(upsertArgs?.update.githubUsername).toBe('buyerdev')
+    expect(
+      (upsertArgs?.update.metadata as Record<string, unknown> | undefined)?.githubUsername
+    ).toBe('buyerdev')
+    expect(upsertArgs?.create.githubUsername).toBe('buyerdev')
+    expect(
+      (upsertArgs?.create.metadata as Record<string, unknown> | undefined)?.githubUsername
+    ).toBe('buyerdev')
   })
 
   it('throws if sale not found', async () => {
-    prismaMock.templateSale.findUnique.mockResolvedValueOnce(null)
+    mockTemplateSale.findUnique.mockResolvedValueOnce(null)
 
     await expect(
       fulfillTemplateSale({
@@ -166,7 +181,7 @@ describe('fulfillTemplateSale', () => {
       sessionId: 'sess_1',
       metadata: { fulfilled: true },
     })
-    prismaMock.templateSale.findUnique.mockResolvedValueOnce(sale)
+    mockTemplateSale.findUnique.mockResolvedValueOnce(sale)
 
     await expect(
       fulfillTemplateSale({
@@ -184,11 +199,11 @@ describe('fulfillTemplateSale', () => {
       metadata: { githubUsername: 'StoredUser' },
       githubUsername: 'StoredUser',
     })
-    prismaMock.templateSale.findUnique.mockResolvedValueOnce(sale)
+    mockTemplateSale.findUnique.mockResolvedValueOnce(sale)
     sendEmailMock.mockResolvedValueOnce({ success: true, messageId: 'msg_2' })
     grantGitHubAccessMock.mockResolvedValueOnce({ success: true, teamId: 'team' })
-    prismaMock.templateSale.update.mockResolvedValueOnce(createSale({ id: 'sale_2' }))
-    prismaMock.templateSaleCustomer.upsert.mockResolvedValueOnce(
+    mockTemplateSale.update.mockResolvedValueOnce(createSale({ id: 'sale_2' }))
+    mockTemplateSaleCustomer.upsert.mockResolvedValueOnce(
       createCustomer({
         licenseKey: 'PRO-XXXX-YYYY-ZZZZ',
         downloadToken: 'token123',
@@ -204,8 +219,8 @@ describe('fulfillTemplateSale', () => {
     expect(grantGitHubAccessMock).toHaveBeenCalledWith(
       expect.objectContaining({ githubUsername: 'storeduser' })
     )
-    const updateArgs = prismaMock.templateSale.update.mock.calls.at(-1)?.[0]
-    expect(updateArgs.data.githubUsername).toBe('storeduser')
+    const updateArgs = mockTemplateSale.update.mock.calls.at(-1)?.[0]
+    expect(updateArgs?.data.githubUsername).toBe('storeduser')
   })
 })
 import type { TemplateSale, TemplateSaleCustomer } from '@prisma/client'

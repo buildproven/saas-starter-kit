@@ -1,24 +1,34 @@
 import { renderHook } from '@testing-library/react'
-import { useSession } from 'next-auth/react'
-import type { Session } from 'next-auth'
-import type { SessionContextValue } from 'next-auth/react'
 import { useAuth, usePermissions, useOrganizationPermissions } from '../useAuth'
 
-// Mock next-auth
-vi.mock('next-auth/react')
-const mockUseSession = useSession as vi.MockedFunction<typeof useSession>
-const asAuthenticated = (session: Session): SessionContextValue => ({
-  data: session,
-  status: 'authenticated',
-  update: vi.fn(),
-})
+const mockUseSupabaseAuth = vi.fn()
 
-const asStatus = (
-  status: Exclude<SessionContextValue['status'], 'authenticated'>
-): SessionContextValue => ({
-  data: null,
-  status,
-  update: vi.fn(),
+vi.mock('@/hooks/use-auth', () => ({
+  useAuth: () => mockUseSupabaseAuth(),
+}))
+
+interface MockUserMetadata {
+  full_name?: string
+  avatar_url?: string
+}
+
+interface MockAppMetadata {
+  role?: 'USER' | 'ADMIN' | 'SUPER_ADMIN'
+}
+
+interface MockUser {
+  id: string
+  email: string
+  user_metadata: MockUserMetadata
+  app_metadata: MockAppMetadata
+}
+
+const makeUser = (overrides: Partial<MockUser> = {}): MockUser => ({
+  id: '1',
+  email: 'user@example.com',
+  user_metadata: { full_name: 'John Doe', avatar_url: 'https://example.com/avatar.png' },
+  app_metadata: { role: 'USER' },
+  ...overrides,
 })
 
 describe('useAuth', () => {
@@ -27,7 +37,7 @@ describe('useAuth', () => {
   })
 
   it('should return loading state when session is loading', () => {
-    mockUseSession.mockReturnValue(asStatus('loading'))
+    mockUseSupabaseAuth.mockReturnValue({ user: null, loading: true })
 
     const { result } = renderHook(() => useAuth())
 
@@ -37,7 +47,7 @@ describe('useAuth', () => {
   })
 
   it('should return unauthenticated state when no session', () => {
-    mockUseSession.mockReturnValue(asStatus('unauthenticated'))
+    mockUseSupabaseAuth.mockReturnValue({ user: null, loading: false })
 
     const { result } = renderHook(() => useAuth())
 
@@ -50,17 +60,7 @@ describe('useAuth', () => {
   })
 
   it('should return user data when authenticated', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'user@example.com',
-        name: 'John Doe',
-        role: 'USER',
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
-
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+    mockUseSupabaseAuth.mockReturnValue({ user: makeUser(), loading: false })
 
     const { result } = renderHook(() => useAuth())
 
@@ -71,6 +71,7 @@ describe('useAuth', () => {
       email: 'user@example.com',
       name: 'John Doe',
       role: 'USER',
+      image: 'https://example.com/avatar.png',
     })
     expect(result.current.role).toBe('USER')
     expect(result.current.isAdmin).toBe(false)
@@ -78,16 +79,10 @@ describe('useAuth', () => {
   })
 
   it('should correctly identify admin user', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'admin@example.com',
-        role: 'ADMIN',
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
-
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+    mockUseSupabaseAuth.mockReturnValue({
+      user: makeUser({ email: 'admin@example.com', app_metadata: { role: 'ADMIN' } }),
+      loading: false,
+    })
 
     const { result } = renderHook(() => useAuth())
 
@@ -99,16 +94,10 @@ describe('useAuth', () => {
   })
 
   it('should correctly identify super admin user', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'superadmin@example.com',
-        role: 'SUPER_ADMIN',
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
-
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+    mockUseSupabaseAuth.mockReturnValue({
+      user: makeUser({ email: 'superadmin@example.com', app_metadata: { role: 'SUPER_ADMIN' } }),
+      loading: false,
+    })
 
     const { result } = renderHook(() => useAuth())
 
@@ -120,16 +109,10 @@ describe('useAuth', () => {
   })
 
   it('should handle role checks correctly', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'admin@example.com',
-        role: 'ADMIN',
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
-
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+    mockUseSupabaseAuth.mockReturnValue({
+      user: makeUser({ email: 'admin@example.com', app_metadata: { role: 'ADMIN' } }),
+      loading: false,
+    })
 
     const { result } = renderHook(() => useAuth())
 
@@ -145,36 +128,24 @@ describe('useAuth', () => {
   })
 
   it('should default to USER role when no role provided', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'user@example.com',
-        // No role property
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
-
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+    mockUseSupabaseAuth.mockReturnValue({
+      user: makeUser({ app_metadata: {} }),
+      loading: false,
+    })
 
     const { result } = renderHook(() => useAuth())
 
     expect(result.current.user?.role).toBe('USER')
-    expect(result.current.role).toBeNull() // The hook returns null if no role in session
+    expect(result.current.role).toBe('USER')
   })
 })
 
 describe('usePermissions', () => {
   it('should provide correct permission methods for admin user', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'admin@example.com',
-        role: 'ADMIN',
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
-
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+    mockUseSupabaseAuth.mockReturnValue({
+      user: makeUser({ email: 'admin@example.com', app_metadata: { role: 'ADMIN' } }),
+      loading: false,
+    })
 
     const { result } = renderHook(() => usePermissions())
 
@@ -187,16 +158,10 @@ describe('usePermissions', () => {
   })
 
   it('should provide correct permission methods for super admin user', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'superadmin@example.com',
-        role: 'SUPER_ADMIN',
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
-
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+    mockUseSupabaseAuth.mockReturnValue({
+      user: makeUser({ email: 'superadmin@example.com', app_metadata: { role: 'SUPER_ADMIN' } }),
+      loading: false,
+    })
 
     const { result } = renderHook(() => usePermissions())
 
@@ -209,16 +174,10 @@ describe('usePermissions', () => {
   })
 
   it('should deny all admin permissions for regular user', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'user@example.com',
-        role: 'USER',
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
-
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+    mockUseSupabaseAuth.mockReturnValue({
+      user: makeUser({ app_metadata: { role: 'USER' } }),
+      loading: false,
+    })
 
     const { result } = renderHook(() => usePermissions())
 
@@ -237,7 +196,7 @@ describe('useOrganizationPermissions', () => {
   })
 
   it('should return false for membership when not authenticated', () => {
-    mockUseSession.mockReturnValue(asStatus('unauthenticated'))
+    mockUseSupabaseAuth.mockReturnValue({ user: null, loading: false })
 
     const { result } = renderHook(() => useOrganizationPermissions('org_123'))
 
@@ -246,16 +205,7 @@ describe('useOrganizationPermissions', () => {
   })
 
   it('should return false when no organization ID provided', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'user@example.com',
-        role: 'USER',
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
-
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+    mockUseSupabaseAuth.mockReturnValue({ user: makeUser(), loading: false })
 
     const { result } = renderHook(() => useOrganizationPermissions())
 
@@ -264,16 +214,7 @@ describe('useOrganizationPermissions', () => {
   })
 
   it('should return membership for authenticated user with org ID', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'user@example.com',
-        role: 'USER',
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
-
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+    mockUseSupabaseAuth.mockReturnValue({ user: makeUser(), loading: false })
 
     const { result } = renderHook(() => useOrganizationPermissions('org_123'))
 
@@ -282,16 +223,7 @@ describe('useOrganizationPermissions', () => {
   })
 
   it('should provide correct organization permissions for member role', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'user@example.com',
-        role: 'USER',
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
-
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
+    mockUseSupabaseAuth.mockReturnValue({ user: makeUser(), loading: false })
 
     const { result } = renderHook(() => useOrganizationPermissions('org_123'))
 
@@ -303,26 +235,16 @@ describe('useOrganizationPermissions', () => {
   })
 
   it('should update when organization ID changes', () => {
-    const mockSession: Session = {
-      user: {
-        id: '1',
-        email: 'user@example.com',
-        role: 'USER',
-      },
-      expires: '2025-01-01T00:00:00.000Z',
-    }
+    mockUseSupabaseAuth.mockReturnValue({ user: makeUser(), loading: false })
 
-    mockUseSession.mockReturnValue(asAuthenticated(mockSession))
-
-    const { result, rerender } = renderHook(
-      ({ orgId }) => useOrganizationPermissions(orgId),
-      { initialProps: { orgId: 'org_123' } }
-    )
+    const { result, rerender } = renderHook(({ orgId }) => useOrganizationPermissions(orgId), {
+      initialProps: { orgId: 'org_123' },
+    })
 
     expect(result.current.isOrganizationMember).toBe(true)
 
-    // Change to undefined
-    rerender({ orgId: undefined })
+    // Change to undefined - test fallback behavior with empty string
+    rerender({ orgId: '' })
     expect(result.current.isOrganizationMember).toBe(false)
   })
 })

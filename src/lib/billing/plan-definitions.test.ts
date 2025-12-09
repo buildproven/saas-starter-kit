@@ -40,9 +40,7 @@ describe('Plan Definitions', () => {
       const starterMonthly = PLAN_VARIANTS.find(
         (v) => v.tier === 'starter' && v.interval === 'month'
       )
-      const starterYearly = PLAN_VARIANTS.find(
-        (v) => v.tier === 'starter' && v.interval === 'year'
-      )
+      const starterYearly = PLAN_VARIANTS.find((v) => v.tier === 'starter' && v.interval === 'year')
 
       expect(starterMonthly?.priceEnv).toBe('STRIPE_PRICE_STARTER_MONTHLY')
       expect(starterYearly?.priceEnv).toBe('STRIPE_PRICE_STARTER_YEARLY')

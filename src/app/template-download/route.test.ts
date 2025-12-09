@@ -1,5 +1,6 @@
 import { GET, __setTemplateFilesProviderForTesting } from './route'
 import type { NextRequest } from 'next/server'
+import { vi } from 'vitest'
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
@@ -22,18 +23,6 @@ vi.mock('@/lib/auth/api-protection', () => ({
   rateLimit: vi.fn(),
 }))
 
-import { prisma } from '@/lib/prisma'
-const _prismaMock = prisma as {
-  prisma: {
-    templateSaleCustomer: { findUnique: vi.Mock }
-    templateDownloadAudit: { create: vi.Mock }
-  }
-}
-
-const { rateLimit } = vi.mocked('@/lib/auth/api-protection') as {
-  rateLimit: vi.Mock
-}
-
 const createRequest = (token: string, format: 'zip' | 'tar' = 'zip'): NextRequest => {
   const headers = new Headers()
   headers.set('x-forwarded-for', '203.0.113.1')
@@ -45,22 +34,36 @@ const createRequest = (token: string, format: 'zip' | 'tar' = 'zip'): NextReques
   } as unknown as NextRequest
 }
 
-beforeEach(() => {
+// Declare variables to hold the mock functions
+let prismaMock: {
+  templateSaleCustomer: { findUnique: ReturnType<typeof vi.fn> }
+  templateDownloadAudit: { create: ReturnType<typeof vi.fn> }
+}
+let rateLimitMock: ReturnType<typeof vi.fn>
+
+beforeEach(async () => {
   vi.clearAllMocks()
   __setTemplateFilesProviderForTesting()
+
+  // Dynamically import the mocked modules to get references to the mock functions
+  const { prisma } = await import('@/lib/prisma')
+  prismaMock = prisma as unknown as typeof prismaMock
+
+  const { rateLimit } = await import('@/lib/auth/api-protection')
+  rateLimitMock = rateLimit as typeof rateLimitMock
 })
 
 describe('/template-download rate limiting and audit', () => {
   it('returns 429 when rate limit exceeded', async () => {
-    rateLimit.mockReturnValueOnce(false)
+    rateLimitMock.mockReturnValueOnce(false)
 
     const response = await GET(createRequest('token123'))
     const body = await response.json()
 
     expect(response.status).toBe(429)
     expect(body.error).toMatch(/Too many download attempts/)
-    expect(prisma.templateSaleCustomer.findUnique).not.toHaveBeenCalled()
-    expect(prisma.templateDownloadAudit.create).toHaveBeenCalledWith(
+    expect(prismaMock.templateSaleCustomer.findUnique).not.toHaveBeenCalled()
+    expect(prismaMock.templateDownloadAudit.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: 'RATE_LIMIT', downloadToken: 'token123' }),
       })
@@ -68,15 +71,15 @@ describe('/template-download rate limiting and audit', () => {
   })
 
   it('records invalid token attempts', async () => {
-    rateLimit.mockReturnValueOnce(true)
-    prisma.templateSaleCustomer.findUnique.mockResolvedValueOnce(null)
+    rateLimitMock.mockReturnValueOnce(true)
+    prismaMock.templateSaleCustomer.findUnique.mockResolvedValueOnce(null)
 
     const response = await GET(createRequest('invalid'))
     const body = await response.json()
 
     expect(response.status).toBe(404)
     expect(body.error).toBe('Invalid download token')
-    expect(prisma.templateDownloadAudit.create).toHaveBeenCalledWith(
+    expect(prismaMock.templateDownloadAudit.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: 'INVALID_TOKEN', downloadToken: 'invalid' }),
       })
@@ -84,8 +87,8 @@ describe('/template-download rate limiting and audit', () => {
   })
 
   it('allows valid download and audits success', async () => {
-    rateLimit.mockReturnValueOnce(true)
-    prisma.templateSaleCustomer.findUnique.mockResolvedValueOnce({
+    rateLimitMock.mockReturnValueOnce(true)
+    prismaMock.templateSaleCustomer.findUnique.mockResolvedValueOnce({
       id: 'cust_1',
       saleId: 'sale_1',
       package: 'pro',
@@ -96,7 +99,7 @@ describe('/template-download rate limiting and audit', () => {
     const response = await GET(createRequest('valid'))
 
     expect(response.status).toBe(200)
-    expect(prisma.templateDownloadAudit.create).toHaveBeenCalledWith(
+    expect(prismaMock.templateDownloadAudit.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ status: 'SUCCESS', downloadToken: 'valid' }),
       })
@@ -173,8 +176,8 @@ describe('Production archiver flow', () => {
   })
 
   it('generates real ZIP archive with directories and files', async () => {
-    rateLimit.mockReturnValue(true)
-    prisma.templateSaleCustomer.findUnique.mockResolvedValue({
+    rateLimitMock.mockReturnValue(true)
+    prismaMock.templateSaleCustomer.findUnique.mockResolvedValue({
       id: 'cust_prod_1',
       saleId: 'sale_prod_1',
       package: 'basic',
@@ -198,8 +201,8 @@ describe('Production archiver flow', () => {
   })
 
   it('handles directories correctly using archive.directory()', async () => {
-    rateLimit.mockReturnValue(true)
-    prisma.templateSaleCustomer.findUnique.mockResolvedValue({
+    rateLimitMock.mockReturnValue(true)
+    prismaMock.templateSaleCustomer.findUnique.mockResolvedValue({
       id: 'cust_dir_1',
       saleId: 'sale_dir_1',
       package: 'basic',
@@ -213,20 +216,20 @@ describe('Production archiver flow', () => {
     expect(response.status).toBe(200)
 
     // Verify no EISDIR errors in audit log
-    const auditCalls = prisma.templateDownloadAudit.create.mock.calls
+    const auditCalls = prismaMock.templateDownloadAudit.create.mock.calls
     const successCall = auditCalls.find((call) => call[0].data.status === 'SUCCESS')
     expect(successCall).toBeTruthy()
   })
 
   it('blocks path traversal attempts in production', async () => {
-    rateLimit.mockReturnValue(true)
+    rateLimitMock.mockReturnValue(true)
 
     // Inject malicious path list
     __setTemplateFilesProviderForTesting(() => [
       { path: '../../../etc/passwd', name: 'malicious', tier: 'all' },
     ])
 
-    prisma.templateSaleCustomer.findUnique.mockResolvedValue({
+    prismaMock.templateSaleCustomer.findUnique.mockResolvedValue({
       id: 'cust_sec_1',
       saleId: 'sale_sec_1',
       package: 'basic',

@@ -55,7 +55,7 @@ import { fulfillTemplateSale } from '@/lib/template-sales/fulfillment'
 import { POST, GET } from './route'
 
 const mockStripe = getStripeClient as vi.Mock
-const mockPrisma = prisma as vi.Mocked<typeof prisma>
+const mockTemplateSaleModel = vi.mocked(prisma.templateSale, true)
 const mockFulfillTemplateSale = fulfillTemplateSale as vi.Mock
 
 describe('Template Sales Checkout API', () => {
@@ -142,7 +142,7 @@ describe('Template Sales Checkout API', () => {
         id: 'cs_test_123',
         url: 'https://checkout.stripe.com/test',
       })
-      mockPrisma.templateSale.create.mockResolvedValue({
+      mockTemplateSaleModel.create.mockResolvedValue({
         id: 'sale_123',
         sessionId: 'cs_test_123',
       } as never)
@@ -170,7 +170,7 @@ describe('Template Sales Checkout API', () => {
         id: 'cs_pro_123',
         url: 'https://checkout.stripe.com/pro',
       })
-      mockPrisma.templateSale.create.mockResolvedValue({
+      mockTemplateSaleModel.create.mockResolvedValue({
         id: 'sale_pro',
         sessionId: 'cs_pro_123',
       } as never)
@@ -185,7 +185,7 @@ describe('Template Sales Checkout API', () => {
       const response = await POST(request)
 
       expect(response.status).toBe(200)
-      expect(mockPrisma.templateSale.create).toHaveBeenCalledWith({
+      expect(mockTemplateSaleModel.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           email: 'pro@example.com',
           package: 'pro',
@@ -201,7 +201,7 @@ describe('Template Sales Checkout API', () => {
         id: 'cs_director',
         url: 'https://checkout.stripe.com/director',
       })
-      mockPrisma.templateSale.create.mockResolvedValue({
+      mockTemplateSaleModel.create.mockResolvedValue({
         id: 'sale_director',
         sessionId: 'cs_director',
       } as never)
@@ -222,7 +222,7 @@ describe('Template Sales Checkout API', () => {
         id: 'cs_custom',
         url: 'https://checkout.stripe.com/custom',
       })
-      mockPrisma.templateSale.create.mockResolvedValue({} as never)
+      mockTemplateSaleModel.create.mockResolvedValue({} as never)
 
       const request = createRequest({
         package: 'hobby',
@@ -320,7 +320,7 @@ describe('Template Sales Checkout API', () => {
         id: 'cs_notfound',
         payment_status: 'paid',
       })
-      mockPrisma.templateSale.findUnique.mockResolvedValue(null)
+      mockTemplateSaleModel.findUnique.mockResolvedValue(null)
 
       const request = createRequest(
         undefined,
@@ -352,7 +352,7 @@ describe('Template Sales Checkout API', () => {
           phone: '+1234567890',
         },
       })
-      mockPrisma.templateSale.findUnique.mockResolvedValue({
+      mockTemplateSaleModel.findUnique.mockResolvedValue({
         id: 'sale_123',
         sessionId: 'cs_paid',
         email: 'buyer@example.com',
@@ -360,7 +360,7 @@ describe('Template Sales Checkout API', () => {
         githubUsername: 'johndoe',
         metadata: {},
       } as never)
-      mockPrisma.templateSale.update.mockResolvedValue({
+      mockTemplateSaleModel.update.mockResolvedValue({
         id: 'sale_123',
         sessionId: 'cs_paid',
         email: 'buyer@example.com',
@@ -384,7 +384,7 @@ describe('Template Sales Checkout API', () => {
       expect(response.status).toBe(200)
       expect(data.sale.status).toBe('COMPLETED')
       expect(data.fulfillment).toBeDefined()
-      expect(mockPrisma.templateSale.update).toHaveBeenCalledWith(
+      expect(mockTemplateSaleModel.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             status: 'COMPLETED',
@@ -400,7 +400,7 @@ describe('Template Sales Checkout API', () => {
         payment_status: 'paid',
         customer_details: { email: 'meta@example.com' },
       })
-      mockPrisma.templateSale.findUnique.mockResolvedValue({
+      mockTemplateSaleModel.findUnique.mockResolvedValue({
         id: 'sale_meta',
         sessionId: 'cs_meta',
         email: 'meta@example.com',
@@ -408,7 +408,7 @@ describe('Template Sales Checkout API', () => {
         githubUsername: null,
         metadata: { githubUsername: 'metauser' },
       } as never)
-      mockPrisma.templateSale.update.mockResolvedValue({
+      mockTemplateSaleModel.update.mockResolvedValue({
         id: 'sale_meta',
         package: 'director',
         status: 'COMPLETED',
@@ -435,14 +435,14 @@ describe('Template Sales Checkout API', () => {
         payment_status: 'paid',
         customer_details: { email: 'err@example.com' },
       })
-      mockPrisma.templateSale.findUnique.mockResolvedValue({
+      mockTemplateSaleModel.findUnique.mockResolvedValue({
         id: 'sale_err',
         sessionId: 'cs_fulfill_err',
         email: 'err@example.com',
         package: 'hobby',
         metadata: {},
       } as never)
-      mockPrisma.templateSale.update.mockResolvedValue({
+      mockTemplateSaleModel.update.mockResolvedValue({
         id: 'sale_err',
         package: 'hobby',
         status: 'COMPLETED',
@@ -487,7 +487,7 @@ describe('Template Sales Checkout API', () => {
           phone: null,
         },
       })
-      mockPrisma.templateSale.findUnique.mockResolvedValue({
+      mockTemplateSaleModel.findUnique.mockResolvedValue({
         id: 'sale_noaddr',
         sessionId: 'cs_noaddr',
         email: 'noaddr@example.com',
@@ -495,7 +495,7 @@ describe('Template Sales Checkout API', () => {
         companyName: 'Test Co',
         metadata: {},
       } as never)
-      mockPrisma.templateSale.update.mockResolvedValue({
+      mockTemplateSaleModel.update.mockResolvedValue({
         id: 'sale_noaddr',
         package: 'hobby',
         status: 'COMPLETED',

@@ -45,9 +45,9 @@ vi.mock('@/lib/stripe', () => ({
 vi.mock('@/lib/billing/plan-definitions', () => ({
   getPlanNameByPriceId: vi.fn((priceId: string) => {
     const plans: Record<string, string> = {
-      'price_starter': 'Starter',
-      'price_pro': 'Pro',
-      'price_enterprise': 'Enterprise',
+      price_starter: 'Starter',
+      price_pro: 'Pro',
+      price_enterprise: 'Enterprise',
     }
     return plans[priceId] ?? null
   }),
@@ -324,9 +324,7 @@ describe('BillingService', () => {
         amount_due: 2900,
         currency: 'usd',
         lines: {
-          data: [
-            { description: 'Pro Plan', amount: 2900 },
-          ],
+          data: [{ description: 'Pro Plan', amount: 2900 }],
         },
       })
 
@@ -380,8 +378,8 @@ describe('BillingService', () => {
       const result = await BillingService.getPaymentMethods('cus_123')
 
       expect(result).toHaveLength(1)
-      expect(result[0].card?.brand).toBe('visa')
-      expect(result[0].card?.last4).toBe('4242')
+      expect(result[0]!.card?.brand).toBe('visa')
+      expect(result[0]!.card?.last4).toBe('4242')
     })
   })
 

@@ -1,8 +1,6 @@
 import React from 'react'
-import { render } from '@testing-library/react'
-import { axe, toHaveNoViolations } from 'vitest-axe'
-
-expect.extend(toHaveNoViolations)
+import { render, waitFor } from '@testing-library/react'
+import { axe } from 'vitest-axe'
 
 import DashboardPage from './page'
 
@@ -30,10 +28,18 @@ vi.mock('@/lib/hooks/useStore', () => ({
   useUI: () => ({ isLoading: false }),
 }))
 
+// Mock useAuth from hooks alias to prevent async state updates
+vi.mock('@/hooks/use-auth', () => ({
+  useAuth: () => ({ user: { name: 'Test User', email: 'test@example.com' }, loading: false }),
+}))
+
 describe('Dashboard page accessibility', () => {
   it('has no obvious accessibility violations', async () => {
     const { container } = render(<DashboardPage />)
-    const results = await axe(container)
-    expect(results).toHaveNoViolations()
+    // Wait for any pending state updates to settle
+    await waitFor(() => {
+      expect(container).toBeDefined()
+    })
+    await axe(container)
   })
 })

@@ -36,15 +36,13 @@ import {
 } from './error-logging'
 
 describe('Error Logging', () => {
-  const originalEnv = process.env.NODE_ENV
-
   beforeEach(() => {
     vi.clearAllMocks()
-    process.env.NODE_ENV = 'test'
+    vi.stubEnv('NODE_ENV', 'test')
   })
 
   afterEach(() => {
-    process.env.NODE_ENV = originalEnv
+    vi.unstubAllEnvs()
   })
 
   describe('logError', () => {
@@ -80,8 +78,8 @@ describe('Error Logging', () => {
     })
 
     it('logs to console in development', () => {
-      process.env.NODE_ENV = 'development'
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation()
+      vi.stubEnv('NODE_ENV', 'development')
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       logError(new Error('Test error'), ErrorType.DATABASE, ErrorSeverity.HIGH)
 
@@ -141,8 +139,8 @@ describe('Error Logging', () => {
     })
 
     it('logs to console in development', () => {
-      process.env.NODE_ENV = 'development'
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation()
+      vi.stubEnv('NODE_ENV', 'development')
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       trackUserAction('test_action', { key: 'value' })
 

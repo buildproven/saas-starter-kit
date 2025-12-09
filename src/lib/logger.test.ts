@@ -10,7 +10,13 @@ vi.mock('pino', () => {
     debug: vi.fn(),
     child: vi.fn().mockReturnThis(),
   }
-  const pino = vi.fn().mockReturnValue(mockLogger)
+  const pino = vi.fn().mockReturnValue(mockLogger) as ReturnType<typeof vi.fn> & {
+    stdSerializers: {
+      err: ReturnType<typeof vi.fn>
+      req: ReturnType<typeof vi.fn>
+      res: ReturnType<typeof vi.fn>
+    }
+  }
   // Add serializers
   pino.stdSerializers = {
     err: vi.fn(),

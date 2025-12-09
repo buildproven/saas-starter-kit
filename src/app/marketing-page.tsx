@@ -185,7 +185,8 @@ const testimonials = [
 
 export default function MarketingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly')
-  const { data: session } = useSession()
+  const sessionResult = useSession()
+  const session = sessionResult?.data
 
   const handleGetStarted = (planId: string) => {
     if (planId === 'free') {
