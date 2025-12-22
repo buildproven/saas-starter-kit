@@ -9,7 +9,7 @@ jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -47,7 +47,7 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
 
       - name: Security scan
         uses: github/codeql-action/init@v2
@@ -65,7 +65,7 @@ jobs:
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
