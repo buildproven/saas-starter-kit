@@ -144,14 +144,7 @@ const session = await createCheckoutSession({
 
 ## Roadmap
 
-- [x] Core authentication with Supabase
-- [x] Multi-tenant data model
-- [x] Stripe billing integration
-- [x] Smart test strategy
-- [ ] Team collaboration features
-- [ ] Advanced analytics dashboard
-- [ ] Email notification system
-- [ ] Webhook management UI
+See [ROADMAP.md](ROADMAP.md) for planned features and strategic direction.
 
 ## Documentation
 
