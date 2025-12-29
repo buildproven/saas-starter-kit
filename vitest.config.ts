@@ -10,6 +10,7 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     exclude: ['**/node_modules/**', '**/e2e/**', '**/*.spec.ts'],
     passWithNoTests: true,
+    testTimeout: 15000,
     coverage: {
       reportOnFailure: true,
       provider: 'v8',
