@@ -85,7 +85,7 @@ if [[ $RISK_SCORE -ge 7 ]]; then
   echo "🔴 HIGH RISK - Comprehensive validation (pre-push)"
   echo "   • All tests + typecheck + security audit"
   echo "   • (E2E tests run in CI only)"
-  npm run typecheck && npm test && npm run security:audit
+  npm run typecheck && npm test && npm run security:all
 elif [[ $RISK_SCORE -ge 4 ]]; then
   echo "🟡 MEDIUM RISK - Standard validation"
   echo "   • Lint + format + tests"
@@ -101,4 +101,4 @@ else
 fi
 
 echo ""
-echo "💡 Tip: Run 'npm test && npm run typecheck && npm run security:audit' locally for full validation"
+echo "💡 Tip: Run 'npm test && npm run typecheck && npm run security:all' locally for full validation"
