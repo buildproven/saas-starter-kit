@@ -26,7 +26,7 @@ The MIT License applies to the core template code. See [LICENSE](./LICENSE) for 
 
 ## Commercial Packages
 
-For current pricing and package details, visit [vibebuildlab.com](https://vibebuildlab.com).
+For current pricing and package details, visit [buildproven.com](https://buildproven.com).
 
 ## License Terms
 
@@ -69,13 +69,13 @@ Any project that:
 
 ## Purchase
 
-Visit [vibebuildlab.com](https://vibebuildlab.com) to purchase a commercial license.
+Visit [buildproven.com](https://buildproven.com) to purchase a commercial license.
 
 ## Legal
 
-- [Privacy Policy](https://vibebuildlab.com/privacy-policy)
-- [Terms of Service](https://vibebuildlab.com/terms)
+- [Privacy Policy](https://buildproven.com/privacy-policy)
+- [Terms of Service](https://buildproven.com/terms)
 
 ---
 
-> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)
+> **BuildProven LLC** · [buildproven.com](https://buildproven.com)
