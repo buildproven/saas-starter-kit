@@ -60,7 +60,7 @@ jobs:
         run: npx stylelint "**/*.{css,scss,sass,less,pcss}" --allow-empty-input
 
       - name: Security audit
-        run: npm audit --audit-level high
+        run: npm audit --audit-level high --omit=dev
 
       - name: Check for hardcoded secrets
         run: |

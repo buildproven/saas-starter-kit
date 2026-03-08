@@ -137,7 +137,9 @@
     "webpack-bundle-analyzer": "^4.10.2"
   },
   "overrides": {
-    "glob": "^11.0.0"
+    "glob": "^11.0.0",
+    "@hono/node-server": "^1.19.10",
+    "hono": "^4.12.4"
   },
   "lint-staged": {
     "package.json": [
