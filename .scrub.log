@@ -1,0 +1,140 @@
+RELEASE SCRUB LOG
+=================
+Date:      2026-03-06
+Mode:      sell
+Directory: /Users/brettstark/Projects/saas-starter-kit
+
+---
+
+PHASE 1: SECURITY AUDIT
+------------------------
+Secrets scan: PASS
+- No live credentials found in code
+- No hardcoded API keys (sk_live, pk_live, whsec_ patterns) in non-test files
+- Test fixtures use sk_test_*/pk_test_*/whsec_test_* patterns only (expected)
+- template/.env.local contained placeholder/development values only
+- No internal company credentials, URLs, or endpoints exposed
+
+Issues found:
+  P0: NONE
+  P1: NONE
+  P2: template/LICENSE contained internal company name "Vibe Build Lab LLC" — FIXED
+
+---
+
+PHASE 2: SECRET REMOVAL
+------------------------
+- template/.env.local: REMOVED (dev file, should never ship with template)
+- template/.env.example: KEPT (correct placeholder format, all values are templates)
+- Root .gitignore: CREATED (was missing; now excludes .env, .env.local, .scrub.log)
+- template/.gitignore: UPDATED (added .scrub.log, secrets/, *.secret entries)
+
+---
+
+PHASE 3: DEV INFRASTRUCTURE CLEANUP
+-------------------------------------
+Files REMOVED:
+  - template/CLAUDE.md          (Claude Code AI instructions)
+  - template/AGENTS.md          (AI agent workflow guidelines)
+  - template/BACKLOG.md         (internal development backlog)
+  - template/ROADMAP.md         (internal roadmap)
+  - template/.qualityrc.json    (VBL-internal quality config)
+  - template/review-backlog-strict.json  (internal code review artifact)
+  - template/.claude/           (Claude Code settings directory)
+  - template/docs/PREFLIGHT_REPORT.md   (internal pre-release audit)
+
+Git history note: template/CLAUDE.md, template/AGENTS.md, template/BACKLOG.md
+appear in git history (commits: feat, fix, fix). RECOMMENDATION: Run
+`git filter-repo` or `git filter-branch` to purge from history before
+distributing the repo publicly or to customers, if the history is included
+in the distributed artifact.
+
+No .open-source-prep.log, .playwright-mcp/, .npm-cache/, .lighthouse/ found.
+No git submodules found.
+
+---
+
+PHASE 4: PRIVACY & INTERNAL REFERENCES
+----------------------------------------
+Internal references found and remediated:
+  - template/LICENSE: "Vibe Build Lab LLC" -> "2026" (year only) [FIXED]
+  - template/BACKLOG.md: referenced "claudedocs/" internal path -> FILE DELETED
+  - All other brand references use "your-brand.ai" placeholder (correct for sell mode)
+
+Kept (intentional sell-mode placeholders for buyer to customize):
+  - template/README.md:             "your-brand.ai" references
+  - template/COMMERCIAL_LICENSE.md: "your-brand.ai" references
+  - template/SECURITY.md:           "your-brand.ai" references
+  - template/src/app/robots.ts:     "saas.your-brand.ai" fallback URL
+  - template/src/app/sitemap.ts:    "saas.your-brand.ai" fallback URL
+
+---
+
+PHASE 5: CODE QUALITY REVIEW
+------------------------------
+No backdoor or bypass patterns detected.
+No eslint-disable directives found.
+No `any` types found (per PREFLIGHT_REPORT.md - confirmed clean).
+License verification code intact (COMMERCIAL_LICENSE.md, template/LICENSE).
+Test fixtures use example.com emails only — no real customer data.
+
+---
+
+PHASE 6: GIT HISTORY CHECK
+----------------------------
+Sensitive files found in git history:
+  - template/AGENTS.md
+  - template/BACKLOG.md
+  - template/CLAUDE.md
+
+ACTION REQUIRED: These files existed in commits and are in the git object store.
+Run the following to purge before distributing:
+  pip install git-filter-repo
+  git filter-repo --path template/AGENTS.md --path template/BACKLOG.md --path template/CLAUDE.md --invert-paths
+
+---
+
+PHASE 7-SL: DOCUMENTATION (SELL MODE)
+----------------------------------------
+Documents created/updated:
+  - LICENSE (root):              REPLACED MIT with Commercial EULA
+  - SETUP.md (root):             CREATED — full installation and configuration guide
+  - README.md (root):            UPDATED — license section changed from MIT to commercial
+  - package.json (root):         UPDATED — "private": true, license -> "SEE LICENSE IN LICENSE"
+  - template/LICENSE:            UPDATED — removed internal company name
+
+Existing sell-mode docs verified present:
+  - template/COMMERCIAL_LICENSE.md     PRESENT
+  - template/CHANGELOG.md              PRESENT
+  - template/.env.example              PRESENT
+  - template/docs/ARCHITECTURE.md      PRESENT
+  - template/docs/DEPLOYMENT.md        PRESENT
+  - template/docs/TESTING.md           PRESENT
+  - template/docs/RELEASE-CHECKLIST.md PRESENT
+
+Sell-specific extra checks:
+  - No competitor product names found in code/docs
+  - Demo/test data uses @example.com addresses only — no real customer info
+  - No internal cost/margin analysis files found
+  - Analytics IDs (GA, GTM): none found — clean
+
+---
+
+FINAL SECURITY SCAN
+--------------------
+Status: PASS
+  - No exposed credentials in tracked files
+  - .env.local removed from template
+  - .gitignore updated at root and template level
+  - Internal company name scrubbed from template/LICENSE
+  - Dev infrastructure files removed
+
+OUTSTANDING RECOMMENDATIONS:
+  1. [HIGH]  Run git-filter-repo to purge CLAUDE.md/AGENTS.md/BACKLOG.md from git history
+             before distributing repo or history to customers.
+  2. [MED]   Buyer should replace all "your-brand.ai" placeholders in template docs
+             with their actual brand URLs before publishing.
+  3. [LOW]   Add public/og-image.png (1200x630) to template for social sharing metadata.
+
+---
+Scrub complete. P0/P1 issues: 0 remaining.
