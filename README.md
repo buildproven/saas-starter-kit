@@ -5,8 +5,8 @@ A batteries-included SaaS foundation built with Next.js 16 (App Router), Prisma,
 ---
 
 > **Maintainer & Ownership**
-> This project is maintained by **Vibe Build Lab LLC**, a studio focused on AI-assisted product development, micro-SaaS, and "vibe coding" workflows for solo founders and small teams.
-> Learn more at **https://www.vibebuildlab.com**.
+> This project is maintained by **BuildProven LLC**, a studio focused on AI-assisted product development, micro-SaaS, and "vibe coding" workflows for solo founders and small teams.
+> Learn more at **https://www.buildproven.com**.
 
 ---
 
@@ -28,7 +28,7 @@ A batteries-included SaaS foundation built with Next.js 16 (App Router), Prisma,
 
 ## Licensing
 
-For commercial packages and pricing, visit [vibebuildlab.com](https://vibebuildlab.com).
+For commercial packages and pricing, visit [buildproven.com](https://buildproven.com).
 
 ### License
 
@@ -65,7 +65,7 @@ For commercial packages and pricing, visit [vibebuildlab.com](https://vibebuildl
 
 ```bash
 # Clone & install
-git clone https://github.com/vibebuildlab/saas-starter-kit.git
+git clone https://github.com/buildproven/saas-starter-kit.git
 cd saas-starter-kit
 npm install
 
@@ -159,9 +159,9 @@ This project is MIT licensed. See [LICENSE](./LICENSE) for full details.
 
 ## Legal
 
-- [Privacy Policy](https://vibebuildlab.com/privacy-policy)
-- [Terms of Service](https://vibebuildlab.com/terms)
+- [Privacy Policy](https://buildproven.com/privacy-policy)
+- [Terms of Service](https://buildproven.com/terms)
 
 ---
 
-> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)
+> **BuildProven LLC** · [buildproven.com](https://buildproven.com)

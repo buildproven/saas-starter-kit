@@ -49,7 +49,7 @@ npm run security:config
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to: **security@vibebuildlab.com**
+Instead, please report them via email to: **security@buildproven.com**
 
 Include:
 
@@ -79,9 +79,9 @@ You should receive a response within 48 hours.
 
 ## Legal
 
-- [Privacy Policy](https://vibebuildlab.com/privacy-policy)
-- [Terms of Service](https://vibebuildlab.com/terms)
+- [Privacy Policy](https://buildproven.com/privacy-policy)
+- [Terms of Service](https://buildproven.com/terms)
 
 ---
 
-> **Vibe Build Lab LLC** · [vibebuildlab.com](https://vibebuildlab.com)
+> **BuildProven LLC** · [buildproven.com](https://buildproven.com)
