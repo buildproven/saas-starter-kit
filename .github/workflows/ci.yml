@@ -49,6 +49,9 @@ jobs:
 
   security:
     runs-on: ubuntu-latest
+    # dependency-review and CodeQL require GitHub Advanced Security,
+    # which is only available on public repos or GHAS-enabled private repos.
+    if: github.event.repository.private == false
     steps:
       - uses: actions/checkout@v3
 
@@ -64,7 +67,7 @@ jobs:
         uses: github/codeql-action/analyze@v2
 
   deploy:
-    needs: [quality, security]
+    needs: [quality]
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
     steps:

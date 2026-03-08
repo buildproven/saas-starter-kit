@@ -137,8 +137,7 @@
     "webpack-bundle-analyzer": "^4.10.2"
   },
   "overrides": {
-    "glob": "^11.0.0",
-    "hono": "^4.12.5"
+    "glob": "^11.0.0"
   },
   "lint-staged": {
     "package.json": [
