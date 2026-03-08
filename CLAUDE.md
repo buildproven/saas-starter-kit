@@ -74,4 +74,31 @@ const projects = await prisma.project.findMany({
 
 ---
 
+## Agent Workflow
+
+### Session Start
+
+Load codebase context before exploring:
+
+```
+Read docs/dev_guide/CONVENTIONS.md
+```
+
+### Planning Complex Work
+
+Before implementing anything spanning multiple files:
+
+```
+/bs:plan <feature-name>
+```
+
+### Session Handoff
+
+```
+/bs:context --save   # before ending session
+/bs:context --resume # at start of new session
+```
+
+---
+
 _80% test coverage. See `docs/` for details. Global rules in `~/.claude/CLAUDE.md`._
