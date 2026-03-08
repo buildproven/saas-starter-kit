@@ -1,9 +1,0 @@
-dist/
-build/
-node_modules/
-.next/
-coverage/
-examples/
-scripts/
-jest.setup.ts
-landing-page.html

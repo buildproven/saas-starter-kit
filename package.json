@@ -113,7 +113,6 @@
     "@vitest/coverage-v8": "^4.0.14",
     "cross-env": "^10.1.0",
     "eslint": "^9.39.1",
-    "eslint-config-next": "^14.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-jest": "^27.0.0",
     "eslint-plugin-react-hooks": "^4.0.0",
