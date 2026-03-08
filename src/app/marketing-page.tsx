@@ -548,7 +548,7 @@ export default function MarketingPage() {
               <ul className="space-y-2 text-gray-400">
                 <li>
                   <a
-                    href="https://vibebuildlab.com/privacy-policy"
+                    href="https://buildproven.com/privacy-policy"
                     className="hover:text-white"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -558,7 +558,7 @@ export default function MarketingPage() {
                 </li>
                 <li>
                   <a
-                    href="https://vibebuildlab.com/terms"
+                    href="https://buildproven.com/terms"
                     className="hover:text-white"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -580,8 +580,8 @@ export default function MarketingPage() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>© 2025 Vibe Build Lab LLC. All rights reserved.</p>
-            <p>Vibe Build Lab LLC, c/o Northwest Registered Agent, WY.</p>
+            <p>© 2025 BuildProven LLC. All rights reserved.</p>
+            <p>BuildProven LLC, c/o Northwest Registered Agent, WY.</p>
           </div>
         </div>
       </footer>
