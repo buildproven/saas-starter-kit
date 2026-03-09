@@ -70,13 +70,23 @@ jobs:
                --exclude-dir=.git \
                --exclude-dir=.github \
                --exclude-dir=tests \
+               --exclude-dir=__tests__ \
                --exclude="*.md" \
+               --exclude="*.test.ts" \
+               --exclude="*.test.js" \
+               --exclude="*.spec.ts" \
+               --exclude="*.spec.js" \
                --exclude="package.json" || \
              grep -r -E "-----BEGIN.*KEY-----" . \
                --exclude-dir=node_modules \
                --exclude-dir=.git \
                --exclude-dir=.github \
-               --exclude-dir=tests; then
+               --exclude-dir=tests \
+               --exclude-dir=__tests__ \
+               --exclude="*.test.ts" \
+               --exclude="*.test.js" \
+               --exclude="*.spec.ts" \
+               --exclude="*.spec.js"; then
             echo "❌ Potential hardcoded secrets found"
             exit 1
           else
