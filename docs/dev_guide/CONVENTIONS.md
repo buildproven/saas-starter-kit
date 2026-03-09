@@ -10,7 +10,7 @@ Production-ready multi-tenant SaaS foundation built on Next.js 16 (App Router), 
 
 ## Directory Structure
 
-```
+```text
 saas-starter-kit/
 ├── src/
 │   ├── app/             # Next.js App Router routes + API handlers

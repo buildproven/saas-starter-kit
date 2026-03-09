@@ -170,14 +170,14 @@ All P0 blocking issues and P1 critical issues have been resolved. The applicatio
 
 #### Testing Gaps (New - Session Crash Recovery)
 
-6. **TEST-005: Template download test only exercises development path**
+1. **TEST-005: Template download test only exercises development path**
    - **Location**: `src/app/template-download/route.test.ts`
    - **Issue**: Only exercises dev path (mock text download), zero coverage for production branch where Archiver is used
    - **Impact**: EISDIR failure (P0-DATA-001) would have been caught with fixture tree test
    - **Fix**: Add production branch test with fixture directory tree
    - Effort: S
 
-7. **CONFIG-004: Prisma seed requires live Stripe credentials**
+2. **CONFIG-004: Prisma seed requires live Stripe credentials**
    - **Location**: `prisma/seed.ts`, `scripts/seed-plans.ts`
    - **Issue**: seed.ts calls seedPlans which talks directly to live Stripe (getStripeClient, stripe.prices.retrieve). Running npm run db:seed without full Stripe credentials/network access fails outright
    - **Impact**: Makes local onboarding painful
@@ -186,63 +186,63 @@ All P0 blocking issues and P1 critical issues have been resolved. The applicatio
 
 #### Existing P2 Items
 
-8. **LOGIC-002: Template fulfillment not idempotent**
+1. **LOGIC-002: Template fulfillment not idempotent**
    - Add transaction or unique constraint
    - Effort: S
 
-9. **LOGIC-003: Webhook event types not validated**
+2. **LOGIC-003: Webhook event types not validated**
    - Add enum validation
    - Effort: XS
 
-10. **LOGIC-004: Customer email not validated before fulfillment**
-    - Add email format check
-    - Effort: XS
+3. **LOGIC-004: Customer email not validated before fulfillment**
+   - Add email format check
+   - Effort: XS
 
-11. **LOGIC-005: No pagination on /api/api-keys**
-    - Add limit/offset support
-    - Effort: S
+4. **LOGIC-005: No pagination on /api/api-keys**
+   - Add limit/offset support
+   - Effort: S
 
-12. **LOGIC-006: Magic number rate limits**
-    - Extract to config
-    - Effort: XS
+5. **LOGIC-006: Magic number rate limits**
+   - Extract to config
+   - Effort: XS
 
-13. **CONFIG-002: Hard-coded template file paths**
-    - Move to environment variables
-    - Effort: XS
+6. **CONFIG-002: Hard-coded template file paths**
+   - Move to environment variables
+   - Effort: XS
 
-14. **CONFIG-003: No feature flag system**
-    - Add feature flags
-    - Effort: M
+7. **CONFIG-003: No feature flag system**
+   - Add feature flags
+   - Effort: M
 
-15. **DATA-003: No soft delete on API keys**
-    - Add deletedAt field
-    - Effort: S
+8. **DATA-003: No soft delete on API keys**
+   - Add deletedAt field
+   - Effort: S
 
-16. **DATA-004: Missing indexes on frequently queried fields**
-    - Add Prisma indexes
-    - Effort: S
+9. **DATA-004: Missing indexes on frequently queried fields**
+   - Add Prisma indexes
+   - Effort: S
 
-17. **SCALE-001: No database connection pooling configuration**
+10. **SCALE-001: No database connection pooling configuration**
     - Configure Prisma pool
     - Effort: S
 
-18. **SCALE-002: No request queue for heavy operations**
+11. **SCALE-002: No request queue for heavy operations**
     - Add BullMQ or similar
     - Effort: L
 
-19. **SCALE-003: Template downloads not cached**
+12. **SCALE-003: Template downloads not cached**
     - Add Redis cache
     - Effort: M
 
-20. **OPS-001: No health check endpoint**
+13. **OPS-001: No health check endpoint**
     - Add /api/health
     - Effort: XS
 
-21. **OPS-002: No graceful shutdown**
+14. **OPS-002: No graceful shutdown**
     - Handle SIGTERM
     - Effort: S
 
-22. **OPS-003: No deployment rollback strategy**
+15. **OPS-003: No deployment rollback strategy**
     - Add blue-green or canary
     - Effort: L
 
