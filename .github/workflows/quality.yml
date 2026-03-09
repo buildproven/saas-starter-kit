@@ -71,16 +71,16 @@ jobs:
 
       - name: Check for hardcoded secrets
         run: |
-          # Use gitleaks with default rules only.
+          # Use gitleaks default rules extended via .gitleaks-ci.toml.
           # The custom .gitleaks.toml contains over-broad patterns (base64-secret,
           # env-secret) that produce thousands of false positives on build artifacts
-          # and test fixtures — so we pass --config /dev/null to skip it.
+          # and test fixtures — so we use a minimal config that extends the default
+          # ruleset and adds path allowlists for build artifacts.
           # The gitleaks default ruleset catches real credentials (AWS keys, Stripe
           # tokens, private keys, etc.) with a near-zero false positive rate.
           echo "🔍 Scanning for hardcoded secrets with gitleaks..."
           if gitleaks detect --source . --no-git \
-               --config /dev/null \
-               --gitleaks-ignore-path .gitleaksignore \
+               --config .gitleaks-ci.toml \
                --redact; then
             echo "✅ No hardcoded secrets detected"
           else
