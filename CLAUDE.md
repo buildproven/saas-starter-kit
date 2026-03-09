@@ -28,7 +28,7 @@ npm run quality:ci       # Full CI pipeline
 
 ## Project Structure
 
-```
+```text
 src/
 ├── app/
 │   ├── dashboard/       # Protected routes
@@ -80,7 +80,7 @@ const projects = await prisma.project.findMany({
 
 Load codebase context before exploring:
 
-```
+```text
 Read docs/dev_guide/CONVENTIONS.md
 ```
 
@@ -88,13 +88,13 @@ Read docs/dev_guide/CONVENTIONS.md
 
 Before implementing anything spanning multiple files:
 
-```
+```text
 /bs:plan <feature-name>
 ```
 
 ### Session Handoff
 
-```
+```text
 /bs:context --save   # before ending session
 /bs:context --resume # at start of new session
 ```

@@ -49,7 +49,7 @@ npm run security:config
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to: **security@buildproven.com**
+Instead, please report them via email to: **[security@buildproven.com](mailto:security@buildproven.com)**
 
 Include:
 

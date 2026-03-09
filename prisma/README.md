@@ -34,6 +34,7 @@ This project uses Prisma with PostgreSQL for the database layer. The schema is d
    ```
 
 2. **Database Studio**:
+
    ```bash
    npm run db:studio
    ```
@@ -42,7 +43,7 @@ This project uses Prisma with PostgreSQL for the database layer. The schema is d
 
 Required environment variables:
 
-```
+```env
 DATABASE_URL="postgresql://user:password@localhost:5432/database"
 ```
 

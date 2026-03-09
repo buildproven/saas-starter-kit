@@ -18,11 +18,11 @@ Search and replace these in all three files:
 | -------------------- | ------------------------------------ |
 | `[COMPANY_NAME]`     | Acme Corp LLC                        |
 | `[COMPANY_TYPE]`     | a Delaware Limited Liability Company |
-| `[WEBSITE_URL]`      | https://acme.com                     |
+| `[WEBSITE_URL]`      | `https://acme.com`                   |
 | `[PRODUCT_NAME]`     | Acme SaaS                            |
-| `[PRIVACY_EMAIL]`    | privacy@acme.com                     |
-| `[SUPPORT_EMAIL]`    | support@acme.com                     |
-| `[LEGAL_EMAIL]`      | legal@acme.com                       |
+| `[PRIVACY_EMAIL]`    | `privacy@acme.com`                   |
+| `[SUPPORT_EMAIL]`    | `support@acme.com`                   |
+| `[LEGAL_EMAIL]`      | `legal@acme.com`                     |
 | `[EFFECTIVE_DATE]`   | January 1, 2026                      |
 | `[PHYSICAL_ADDRESS]` | 123 Main St, City, State ZIP         |
 

@@ -74,7 +74,7 @@ We currently do not use marketing cookies. This policy will be updated if that c
 
 Stripe sets cookies to process payments and prevent fraud.
 
-- **Privacy Policy:** https://stripe.com/privacy
+- **Privacy Policy:** [stripe.com/privacy](https://stripe.com/privacy)
 
 ### [ANALYTICS_PROVIDER] (Analytics)
 

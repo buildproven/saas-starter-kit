@@ -1,5 +1,5 @@
 import { mkdir, stat } from 'fs/promises'
-import { createWriteStream } from 'fs'
+import { createWriteStream, type Stats } from 'fs'
 import path from 'path'
 import archiver from 'archiver'
 
@@ -43,12 +43,11 @@ const TIERS: Record<string, TierConfig> = {
   },
 }
 
-async function ensureExists(resource: string) {
+async function statOrNull(resource: string): Promise<Stats | null> {
   try {
-    await stat(resource)
-    return true
+    return await stat(resource)
   } catch {
-    return false
+    return null
   }
 }
 
@@ -69,10 +68,13 @@ async function createArchive(tier: TierConfig, format: 'zip' | 'tar') {
   const filesToInclude = new Set([...BASE_FILES, ...tier.extras])
 
   for (const item of filesToInclude) {
-    if (await ensureExists(item)) {
+    const info = await statOrNull(item)
+    if (!info) {
+      console.warn(`[template:package] Skipping missing resource: ${item}`)
+    } else if (info.isDirectory()) {
       archive.directory(item, item)
     } else {
-      console.warn(`[template:package] Skipping missing resource: ${item}`)
+      archive.file(item, { name: item })
     }
   }
 

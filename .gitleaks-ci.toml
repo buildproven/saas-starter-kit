@@ -1,0 +1,14 @@
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+  "template/tests/.*\\.tsbuildinfo",
+  "\\.next/",
+  "node_modules/",
+  # Test fixture files containing placeholder/fake credentials
+  "src/lib/email/template-delivery\\.test\\.ts",
+  "src/lib/env\\.test\\.ts",
+  "tests/setup\\.ts",
+  "jest\\.setup\\.ts",
+]
