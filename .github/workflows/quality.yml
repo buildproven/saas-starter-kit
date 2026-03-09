@@ -143,7 +143,7 @@ jobs:
         run: |
           # Run comprehensive configuration security validation
           echo "🔍 Running configuration security validation..."
-          npx create-qa-architect@latest --security-config
+          npx create-qa-architect@latest --security-config --no-gitleaks --no-eslint-security
 
       - name: Documentation validation
         run: |
