@@ -17,6 +17,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
+    "security:audit": "npm audit --audit-level high",
     "security:deps": "npm audit --audit-level high",
     "security:secrets": "gitleaks detect --source . --no-git 2>/dev/null || echo 'Gitleaks not installed'",
     "security:config": "npx create-qa-architect@latest --security-config",
