@@ -83,6 +83,9 @@ jobs:
           fi
         continue-on-error: true
 
+      - name: Generate Prisma client
+        run: npx prisma generate
+
       - name: Run typecheck
         id: typecheck
         run: |

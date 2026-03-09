@@ -17,6 +17,7 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
+    "security:audit": "npm audit --audit-level high",
     "security:deps": "npm audit --audit-level high",
     "security:secrets": "gitleaks detect --source . --no-git 2>/dev/null || echo 'Gitleaks not installed'",
     "security:config": "npx create-qa-architect@latest --security-config",
@@ -67,7 +68,7 @@
   },
   "dependencies": {
     "@octokit/rest": "^20.1.2",
-    "@prisma/client": "^7.2.0",
+    "@prisma/client": "7.2.0",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-slot": "^1.2.3",
@@ -114,8 +115,8 @@
     "cross-env": "^10.1.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-jest": "^27.0.0",
-    "eslint-plugin-react-hooks": "^4.0.0",
+    "eslint-plugin-jest": "^29.15.0",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-security": "^3.0.1",
     "globals": "^15.9.0",
     "husky": "^9.1.4",
@@ -126,7 +127,7 @@
     "next-router-mock": "^0.9.0",
     "postcss": "^8.4.0",
     "prettier": "^3.0.0",
-    "prisma": "^7.2.0",
+    "prisma": "7.2.0",
     "stylelint": "^16.8.0",
     "stylelint-config-standard": "^37.0.0",
     "tailwindcss": "^4",
@@ -137,7 +138,9 @@
     "webpack-bundle-analyzer": "^4.10.2"
   },
   "overrides": {
-    "glob": "^11.0.0"
+    "glob": "^11.0.0",
+    "@hono/node-server": "^1.19.10",
+    "hono": "^4.12.4"
   },
   "lint-staged": {
     "package.json": [

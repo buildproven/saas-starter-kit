@@ -12,7 +12,7 @@ This document describes the major components, data flows, and extension points f
 - **Observability**: Sentry client/server SDKs, structured error logging helpers.
 - **Tooling**: Vitest, Testing Library, Playwright, ESLint (incl. security plugin), Stylelint, Prettier, Husky & lint-staged.
 
-```
+```text
 ┌─────────────┐
 │  Browser    │
 │ (Next.js UI)│

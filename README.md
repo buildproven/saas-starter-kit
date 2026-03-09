@@ -6,7 +6,7 @@ A batteries-included SaaS foundation built with Next.js 16 (App Router), Prisma,
 
 > **Maintainer & Ownership**
 > This project is maintained by **BuildProven LLC**, a studio focused on AI-assisted product development, micro-SaaS, and "vibe coding" workflows for solo founders and small teams.
-> Learn more at **https://www.buildproven.com**.
+> Learn more at **[buildproven.com](https://www.buildproven.com)**.
 
 ---
 
@@ -30,7 +30,7 @@ A batteries-included SaaS foundation built with Next.js 16 (App Router), Prisma,
 
 For commercial packages and pricing, visit [buildproven.com](https://buildproven.com).
 
-### License
+### Licensing
 
 **Dual Licensed:**
 

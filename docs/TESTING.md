@@ -4,7 +4,7 @@ This guide outlines the testing patterns and conventions used in this SaaS start
 
 ## Test Structure
 
-```
+```text
 src/
 ├── components/
 │   └── ui/
@@ -265,6 +265,7 @@ npm run test:e2e               # Playwright end-to-end suite
    - Run "Debug Vitest Tests" configuration
 
 3. **Test Individual Components**
+
    ```bash
    npm test -- Button.test.tsx --reporter verbose
    ```
