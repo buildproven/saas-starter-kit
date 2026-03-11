@@ -49,7 +49,7 @@ npm run security:config
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to: **[security@buildproven.com](mailto:security@buildproven.com)**
+Instead, please report them via email to: **[brett@mail.buildproven.ai](mailto:brett@mail.buildproven.ai)**
 
 Include:
 
@@ -79,9 +79,9 @@ You should receive a response within 48 hours.
 
 ## Legal
 
-- [Privacy Policy](https://buildproven.com/privacy-policy)
-- [Terms of Service](https://buildproven.com/terms)
+- [Privacy Policy](https://buildproven.ai/privacy-policy)
+- [Terms of Service](https://buildproven.ai/terms)
 
 ---
 
-> **BuildProven LLC** · [buildproven.com](https://buildproven.com)
+> **BuildProven LLC** · [buildproven.ai](https://buildproven.ai)
