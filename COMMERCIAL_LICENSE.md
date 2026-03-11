@@ -26,7 +26,7 @@ The MIT License applies to the core template code. See [LICENSE](./LICENSE) for 
 
 ## Commercial Packages
 
-For current pricing and package details, visit [buildproven.com](https://buildproven.com).
+For current pricing and package details, visit [buildproven.ai](https://buildproven.ai).
 
 ## License Terms
 
@@ -69,13 +69,13 @@ Any project that:
 
 ## Purchase
 
-Visit [buildproven.com](https://buildproven.com) to purchase a commercial license.
+Visit [buildproven.ai](https://buildproven.ai) to purchase a commercial license.
 
 ## Legal
 
-- [Privacy Policy](https://buildproven.com/privacy-policy)
-- [Terms of Service](https://buildproven.com/terms)
+- [Privacy Policy](https://buildproven.ai/privacy-policy)
+- [Terms of Service](https://buildproven.ai/terms)
 
 ---
 
-> **BuildProven LLC** · [buildproven.com](https://buildproven.com)
+> **BuildProven LLC** · [buildproven.ai](https://buildproven.ai)
