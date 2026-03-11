@@ -548,7 +548,7 @@ export default function MarketingPage() {
               <ul className="space-y-2 text-gray-400">
                 <li>
                   <a
-                    href="https://buildproven.com/privacy-policy"
+                    href="https://buildproven.ai/privacy-policy"
                     className="hover:text-white"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -558,7 +558,7 @@ export default function MarketingPage() {
                 </li>
                 <li>
                   <a
-                    href="https://buildproven.com/terms"
+                    href="https://buildproven.ai/terms"
                     className="hover:text-white"
                     target="_blank"
                     rel="noopener noreferrer"
