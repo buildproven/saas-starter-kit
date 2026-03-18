@@ -13,6 +13,11 @@ updates:
     commit-message:
       prefix: 'chore(deps)'
       include: 'scope'
+    # eslint 10 breaks eslint-plugin-react-hooks (only supports ^9)
+    # Ignore major eslint bumps until the plugin ecosystem catches up
+    ignore:
+      - dependency-name: 'eslint'
+        update-types: ['version-update:semver-major']
     groups:
       all-dependencies:
         patterns:
