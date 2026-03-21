@@ -61,7 +61,11 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
-    "test:secrets": "trufflehog filesystem . --only-verified --fail 2>/dev/null || echo 'TruffleHog not installed - run: brew install trufflehog'"
+    "test:secrets": "trufflehog filesystem . --only-verified --fail 2>/dev/null || echo 'TruffleHog not installed - run: brew install trufflehog'",
+    "dead-code": "knip --no-exit-code || echo \"Dead code found (non-blocking)\"",
+    "dead-code:strict": "knip",
+    "pattern-check": "bash scripts/pattern-check.sh",
+    "test:patterns": "bash scripts/pattern-check.sh --all"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -123,6 +127,7 @@
     "jest": "^29.0.0",
     "jest-axe": "^9.0.0",
     "jest-environment-jsdom": "^29.0.0",
+    "knip": "^6.0.1",
     "lint-staged": "^15.2.10",
     "next-router-mock": "^0.9.0",
     "postcss": "^8.4.0",
