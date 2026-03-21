@@ -8,6 +8,7 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]' || github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@v3
 
@@ -51,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     # dependency-review and CodeQL require GitHub Advanced Security,
     # which is only available on public repos or GHAS-enabled private repos.
-    if: github.event.repository.private == false
+    if: (github.actor != 'dependabot[bot]' || github.event_name != 'pull_request') && github.event.repository.private == false
     steps:
       - uses: actions/checkout@v3
 
