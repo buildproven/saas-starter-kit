@@ -3,12 +3,23 @@ name: Quality Checks
 on:
   push:
     branches: [main, master, develop]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.editorconfig'
   pull_request:
     branches: [main, master, develop]
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
