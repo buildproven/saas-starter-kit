@@ -36,6 +36,11 @@ const configs = [
 
 // Base rules configuration
 const baseRules = {
+  // Complexity gates (AI quality)
+  complexity: ['warn', 15],
+  'max-depth': ['warn', 4],
+  'max-params': ['warn', 5],
+
   // XSS Prevention patterns - critical for web applications
   'no-eval': 'error',
   'no-implied-eval': 'error',
