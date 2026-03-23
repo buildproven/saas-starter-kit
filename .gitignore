@@ -40,3 +40,5 @@ next-env.d.ts
 .vscode/
 .idea/
 *.log
+logs/
+.scrub.log
