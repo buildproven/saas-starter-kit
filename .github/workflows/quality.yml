@@ -8,6 +8,8 @@ on:
 
 jobs:
   quality:
+    if: github.actor != 'dependabot[bot]' || github.event_name == 'schedule'
+    timeout-minutes: 10
     runs-on: ubuntu-latest
 
     steps:
