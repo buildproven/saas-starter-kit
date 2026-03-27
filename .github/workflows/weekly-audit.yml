@@ -2,12 +2,12 @@
 # Copy this to .github/workflows/weekly-audit.yml in each project
 #
 # Required secrets:
-#   AUDIT_WEBHOOK_SECRET - shared secret for authenticating with vibebuildlab API
+#   AUDIT_WEBHOOK_SECRET - shared secret for authenticating with BuildProven API
 #
 # This workflow:
 # 1. Runs weekly (Sunday 2am UTC) and on manual trigger
 # 2. Checks build, tests, lint, typecheck, security
-# 3. Reports results to vibebuildlab dashboard
+# 3. Reports results to BuildProven dashboard
 
 name: Weekly Audit
 
@@ -17,8 +17,8 @@ on:
     - cron: '0 2 * * 0'
   workflow_dispatch: # Manual trigger
 
-env:
-  VIBEBUILDLAB_API: https://dash.vibebuildlab.com/api/audit-results
+# env:
+#   VIBEBUILDLAB_API: https://dash.vibebuildlab.com/api/audit-results  # REMOVED: old vibebuildlab reporting endpoint
 
 jobs:
   audit:
@@ -132,32 +132,11 @@ jobs:
             echo "audit=fail" >> $GITHUB_OUTPUT
           fi
 
-      - name: Report to vibebuildlab
-        if: always()
-        run: |
-          # Get project slug from package.json name or repo name
-          PROJECT_SLUG=$(node -e "console.log(require('./package.json').name)" 2>/dev/null || echo "${{ github.event.repository.name }}")
-
-          curl -X POST "$VIBEBUILDLAB_API" \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.AUDIT_WEBHOOK_SECRET }}" \
-            -d "{
-              \"project\": \"${PROJECT_SLUG}\",
-              \"stages\": {
-                \"execute\": \"${{ steps.result.outputs.execute }}\",
-                \"audit\": \"${{ steps.result.outputs.audit }}\"
-              },
-              \"details\": {
-                \"tests_passed\": ${{ steps.tests.outputs.passed || 0 }},
-                \"tests_failed\": ${{ steps.tests.outputs.failed || 0 }},
-                \"lint_errors\": ${{ steps.lint.outputs.errors || 0 }},
-                \"type_errors\": ${{ steps.typecheck.outputs.errors || 0 }},
-                \"vulnerabilities\": ${{ steps.security.outputs.vulnerabilities || 0 }},
-                \"build_success\": ${{ steps.build.outputs.success }}
-              },
-              \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
-            }"
-        continue-on-error: true
+      # REMOVED: vibebuildlab reporting step (old dashboard no longer active)
+      # - name: Report to vibebuildlab
+      #   if: always()
+      #   run: |
+      #     curl -X POST "$VIBEBUILDLAB_API" ...
 
       - name: Summary
         if: always()
