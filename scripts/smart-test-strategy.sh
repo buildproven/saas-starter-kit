@@ -1,7 +1,7 @@
 #!/bin/bash
 # Smart Test Strategy - saas-starter-kit
 # Generated pattern from create-qa-architect
-# https://www.vibebuildlab.com/cqa
+# https://buildproven.ai/cqa
 set -e
 
 echo "🧠 Analyzing changes for optimal test strategy..."
