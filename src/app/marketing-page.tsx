@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
@@ -188,22 +188,27 @@ export default function MarketingPage() {
   const sessionResult = useSession()
   const session = sessionResult?.data
 
-  const handleGetStarted = (planId: string) => {
-    if (planId === 'free') {
-      // Redirect to signup or dashboard
-      window.location.href = session ? '/dashboard' : '/auth/signin'
-    } else if (planId === 'enterprise') {
-      // Redirect to contact form
-      window.location.href = '/contact'
-    } else {
-      // Redirect to checkout or billing
-      window.location.href = `/billing/checkout?plan=${planId}`
-    }
-  }
+  const handleGetStarted = useCallback(
+    (planId: string) => {
+      if (planId === 'free') {
+        window.location.href = session ? '/dashboard' : '/auth/signin'
+      } else if (planId === 'enterprise') {
+        window.location.href = '/contact'
+      } else {
+        window.location.href = `/billing/checkout?plan=${planId}`
+      }
+    },
+    [session]
+  )
 
-  const handleBuyTemplate = () => {
+  const handleGetStartedFree = useCallback(() => handleGetStarted('free'), [handleGetStarted])
+
+  const handleBuyTemplate = useCallback(() => {
     window.location.href = '/template-purchase'
-  }
+  }, [])
+
+  const handleSetMonthly = useCallback(() => setBillingCycle('monthly'), [])
+  const handleSetYearly = useCallback(() => setBillingCycle('yearly'), [])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
@@ -262,7 +267,7 @@ export default function MarketingPage() {
             everything you need to build and scale your product.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <Button size="lg" className="text-lg px-8" onClick={() => handleGetStarted('free')}>
+            <Button size="lg" className="text-lg px-8" onClick={handleGetStartedFree}>
               Get Started Free
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
@@ -323,7 +328,7 @@ export default function MarketingPage() {
             </p>
             <div className="inline-flex items-center bg-white rounded-lg p-1 border">
               <button
-                onClick={() => setBillingCycle('monthly')}
+                onClick={handleSetMonthly}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   billingCycle === 'monthly'
                     ? 'bg-blue-600 text-white'
@@ -333,7 +338,7 @@ export default function MarketingPage() {
                 Monthly
               </button>
               <button
-                onClick={() => setBillingCycle('yearly')}
+                onClick={handleSetYearly}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                   billingCycle === 'yearly'
                     ? 'bg-blue-600 text-white'
@@ -450,7 +455,7 @@ export default function MarketingPage() {
               size="lg"
               variant="secondary"
               className="text-lg px-8"
-              onClick={() => handleGetStarted('free')}
+              onClick={handleGetStartedFree}
             >
               Start Building Today
               <ArrowRight className="w-5 h-5 ml-2" />

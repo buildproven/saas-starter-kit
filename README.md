@@ -1,5 +1,10 @@
 # SaaS Starter Kit
 
+[![CI/CD](https://github.com/buildproven/saas-starter-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/buildproven/saas-starter-kit/actions/workflows/ci.yml)
+[![Quality Checks](https://github.com/buildproven/saas-starter-kit/actions/workflows/quality.yml/badge.svg)](https://github.com/buildproven/saas-starter-kit/actions/workflows/quality.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](./package.json)
+
 A batteries-included SaaS foundation built with Next.js 16 (App Router), Prisma, and Stripe-ready billing flows. Launch multi-tenant products with authentication, RBAC, subscriptions, and modern DX defaults already wired together.
 
 ---
