@@ -3,6 +3,8 @@
   "version": "1.2.0",
   "scripts": {
     "dev": "next dev",
+    "postinstall": "prisma generate",
+    "prebuild": "prisma generate",
     "build": "cross-env SKIP_DB_HEALTHCHECK=true SKIP_ENV_VALIDATION=true next build",
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
