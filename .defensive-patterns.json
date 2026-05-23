@@ -7,10 +7,23 @@
     "getSession",
     "getServerSession",
     "clerkMiddleware",
-    "auth"
+    "auth",
+    "constructEvent"
   ],
   "safeParseHelpers": ["safeJsonParse", "safeParse", ".safeParse"],
-  "publicRoutes": [],
-  "excludePaths": ["**/test/**", "**/__tests__/**", "**/*.test.*", "**/*.spec.*"],
+  "publicRoutes": [
+    "src/app/api/health/route.ts",
+    "src/app/api/hello/route.ts",
+    "src/app/api/metrics/route.ts"
+  ],
+  "excludePaths": [
+    "**/test/**",
+    "**/__tests__/**",
+    "**/*.test.*",
+    "**/*.spec.*",
+    "jest.setup.ts",
+    "jest.setup.js",
+    "scripts/**"
+  ],
   "disabled": []
 }
