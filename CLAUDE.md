@@ -8,7 +8,7 @@
 | --------- | ---------------------------------- |
 | Framework | Next.js 16 (App Router)            |
 | Language  | TypeScript 5 (strict)              |
-| Database  | PostgreSQL (Neon) + Prisma 6       |
+| Database  | PostgreSQL (Neon) + Prisma 7       |
 | Auth      | Supabase (GitHub/Google/email)     |
 | Payments  | Stripe (subscriptions + templates) |
 | UI        | shadcn/ui, Tailwind v4             |
