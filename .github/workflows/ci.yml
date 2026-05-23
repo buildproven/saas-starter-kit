@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
@@ -54,41 +54,49 @@ jobs:
           done
 
   security:
+    # Dependency review requires base + head refs, which only exist on PR events.
+    # CodeQL push-time scanning is handled by GitHub default code-scanning setup.
+    if: github.event_name == 'pull_request' && github.event.repository.private == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # dependency-review and CodeQL require GitHub Advanced Security,
-    # which is only available on public repos or GHAS-enabled private repos.
-    if: github.event.repository.private == false
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
-      - name: Security scan
-        uses: github/codeql-action/init@v2
+      - name: CodeQL init
+        uses: github/codeql-action/init@v3
         with:
           languages: javascript
 
       - name: Dependency review
-        uses: actions/dependency-review-action@v3
+        uses: actions/dependency-review-action@v4
 
-      - name: Analyze
-        uses: github/codeql-action/analyze@v2
+      - name: CodeQL analyze
+        uses: github/codeql-action/analyze@v3
 
   deploy:
     needs: [quality]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    # Opt-in: set repo variable ENABLE_VERCEL_DEPLOY=true and configure
+    # secrets VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID to enable.
+    if: |
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
+      vars.ENABLE_VERCEL_DEPLOY == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
 
       - name: Build
         run: npm run build
