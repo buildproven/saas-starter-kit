@@ -112,7 +112,12 @@ class RedisStorage implements RateLimitStorage {
     }>
 
     const data = results[0]?.result
-    return data && typeof data === 'string' ? JSON.parse(data) : null
+    if (!data || typeof data !== 'string') return null
+    try {
+      return JSON.parse(data)
+    } catch {
+      return null
+    }
   }
 }
 
