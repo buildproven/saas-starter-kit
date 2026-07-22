@@ -49,7 +49,7 @@ type TemplateSaleRecord = {
   id: string
   sessionId: string
   email: string
-  package: 'basic' | 'pro' | 'enterprise'
+  package: 'hobby' | 'pro' | 'director'
   amount: number
   status: 'PENDING' | 'COMPLETED'
   paymentIntentId?: string | null
@@ -232,7 +232,7 @@ vi.mock('@/lib/prisma', () => {
         id: randomUUID(),
         saleId: saleId,
         email: createData.email!,
-        package: createData.package ?? 'basic',
+        package: createData.package ?? 'hobby',
         licenseKey: (createData.licenseKey ?? 'LIC-UNKNOWN') as string,
         downloadToken: (createData.downloadToken ?? 'token-unknown') as string,
         githubTeamId: (createData.githubTeamId ?? null) as string | null,
@@ -397,6 +397,19 @@ vi.mock('@/lib/github/access-management', async (importOriginal) => {
 
 vi.mock('@/lib/auth/api-protection', () => ({
   rateLimit: vi.fn(() => true),
+}))
+
+vi.mock('@/lib/rate-limit-unified', () => ({
+  getClientId: vi.fn(() => 'test-client'),
+  RateLimiters: {
+    expensive: vi.fn().mockResolvedValue({
+      allowed: true,
+      remaining: 9,
+      resetAt: Date.now() + 60_000,
+      retryAfter: 0,
+    }),
+  },
+  rateLimitHeaders: vi.fn(() => ({})),
 }))
 
 const loggedErrors: Error[] = []

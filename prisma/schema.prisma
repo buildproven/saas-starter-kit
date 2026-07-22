@@ -174,7 +174,7 @@ model TemplateSale {
   id              String             @id @default(cuid())
   sessionId       String             @unique // Stripe checkout session ID
   email           String
-  package         String // 'basic', 'pro', 'enterprise'
+  package         String // 'hobby', 'pro', 'director'
   amount          Int // Amount in cents
   status          TemplateSaleStatus @default(PENDING)
   paymentIntentId String? // Stripe payment intent ID
@@ -209,7 +209,7 @@ model TemplateSaleCustomer {
   id              String    @id @default(cuid())
   saleId          String    @unique
   email           String
-  package         String // 'basic', 'pro', 'enterprise'
+  package         String // 'hobby', 'pro', 'director'
   licenseKey      String    @unique
   downloadToken   String    @unique
   githubTeamId    String? // GitHub team ID for repo access

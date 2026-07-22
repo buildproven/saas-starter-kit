@@ -10,7 +10,6 @@ interface TierConfig {
 
 const BASE_FILES = [
   'src',
-  'public',
   'package.json',
   'package-lock.json',
   'README.md',
@@ -20,26 +19,28 @@ const BASE_FILES = [
   'scripts',
   'prisma',
   'next.config.js',
+  'postcss.config.mjs',
+  'eslint.config.cjs',
+  'vitest.config.ts',
+  'playwright.config.ts',
+  'sentry.client.config.ts',
+  'sentry.edge.config.ts',
+  'sentry.server.config.ts',
   'tsconfig.json',
 ]
 
 const TIERS: Record<string, TierConfig> = {
-  basic: {
-    name: 'basic',
+  hobby: {
+    name: 'hobby',
     extras: [],
   },
   pro: {
     name: 'pro',
-    extras: ['scripts/deploy', 'docs/video-tutorials'],
+    extras: [],
   },
-  enterprise: {
-    name: 'enterprise',
-    extras: [
-      'scripts/deploy',
-      'docs/video-tutorials',
-      'scripts/enterprise-setup',
-      'docs/custom-integrations',
-    ],
+  director: {
+    name: 'director',
+    extras: [],
   },
 }
 
@@ -58,7 +59,8 @@ async function createArchive(tier: TierConfig, format: 'zip' | 'tar') {
   const outputDir = path.join(templateRoot, tier.name)
   await mkdir(outputDir, { recursive: true })
 
-  const fileName = `saas-starter-${tier.name}-v${version}.${format}`
+  const extension = format === 'tar' ? 'tar.gz' : format
+  const fileName = `saas-starter-${tier.name}-v${version}.${extension}`
   const outputPath = path.join(outputDir, fileName)
   const output = createWriteStream(outputPath)
   const archive = archiver(format, format === 'tar' ? { gzip: true } : undefined)
@@ -70,7 +72,7 @@ async function createArchive(tier: TierConfig, format: 'zip' | 'tar') {
   for (const item of filesToInclude) {
     const info = await statOrNull(item)
     if (!info) {
-      console.warn(`[template:package] Skipping missing resource: ${item}`)
+      throw new Error(`[template:package] Required resource is missing: ${item}`)
     } else if (info.isDirectory()) {
       archive.directory(item, item)
     } else {
@@ -78,7 +80,14 @@ async function createArchive(tier: TierConfig, format: 'zip' | 'tar') {
     }
   }
 
+  const completed = new Promise<void>((resolve, reject) => {
+    output.on('close', resolve)
+    output.on('error', reject)
+    archive.on('error', reject)
+  })
+
   await archive.finalize()
+  await completed
   console.log(`[template:package] Wrote ${outputPath}`)
 }
 

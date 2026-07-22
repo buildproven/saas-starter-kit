@@ -11,9 +11,8 @@ concurrency:
 
 jobs:
   quality:
-    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
 
@@ -38,20 +37,42 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Dependency security audit
+        run: npm audit --audit-level high
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser smoke tests
+        run: npm run test:e2e -- --project=chromium
+
       - name: Package template assets
         env:
           TEMPLATE_VERSION: ${{ github.sha }}
         run: |
           npm run template:package
-          for tier in basic pro enterprise; do
-            for format in zip tar; do
-              FILE="template-files/$tier/saas-starter-$tier-v${TEMPLATE_VERSION}.${format}"
+          for tier in hobby pro director; do
+            for extension in zip tar.gz; do
+              FILE="template-files/$tier/saas-starter-$tier-v${TEMPLATE_VERSION}.${extension}"
               if [ ! -f "$FILE" ]; then
                 echo "❌ Missing packaged asset: $FILE"
                 exit 1
               fi
             done
           done
+
+      - name: Verify consumer archive
+        env:
+          TEMPLATE_VERSION: ${{ github.sha }}
+        run: |
+          mkdir -p /tmp/saas-starter-consumer
+          unzip -q "template-files/hobby/saas-starter-hobby-v${TEMPLATE_VERSION}.zip" -d /tmp/saas-starter-consumer
+          cd /tmp/saas-starter-consumer
+          npm ci
+          npm run build
 
   security:
     # Dependency review requires base + head refs, which only exist on PR events.

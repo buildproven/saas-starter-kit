@@ -16,16 +16,13 @@ export const mockStore = {
   reset: vi.fn(),
 }
 
-// Mock session data for testing
-export const mockSession = {
-  user: {
-    id: '1',
-    name: 'Test User',
-    email: 'test@example.com',
-    image: 'https://example.com/avatar.jpg',
-    role: 'USER' as const,
-  },
-  expires: '2025-01-01',
+// Mock authenticated user data for testing
+export const mockAuthUser = {
+  id: '1',
+  name: 'Test User',
+  email: 'test@example.com',
+  image: 'https://example.com/avatar.jpg',
+  role: 'USER' as const,
 }
 
 // Mock the store module
@@ -33,15 +30,7 @@ vi.mock('@/lib/store', () => ({
   useAppStore: () => mockStore,
 }))
 
-// Mock NextAuth
-vi.mock('next-auth/react', () => ({
-  useSession: vi.fn(() => ({
-    data: mockSession,
-    status: 'authenticated',
-    update: vi.fn(),
-  })),
-  SessionProvider: ({ children }: { children: React.ReactNode }) => children,
-}))
+vi.mock('@/lib/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 
 // Create a custom render function that includes providers
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
@@ -81,22 +70,9 @@ export const resetMocks = () => {
   vi.clearAllMocks()
 }
 
-// Helper to mock different session states
-export const mockUseSession = async (
-  sessionData: typeof mockSession | null = mockSession,
-  status: 'authenticated' | 'loading' | 'unauthenticated' = 'authenticated'
-) => {
-  const nextAuthReact = vi.mocked(await import('next-auth/react'))
-  nextAuthReact.useSession.mockReturnValue({
-    data: sessionData,
-    status,
-    update: vi.fn(),
-  } as ReturnType<typeof nextAuthReact.useSession>)
-}
-
 // Mock user, organization, and request objects for API route testing
-export const createMockUser = (overrides?: Partial<(typeof mockSession)['user']>) => ({
-  ...mockSession.user,
+export const createMockUser = (overrides?: Partial<typeof mockAuthUser>) => ({
+  ...mockAuthUser,
   ...overrides,
 })
 

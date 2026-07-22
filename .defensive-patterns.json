@@ -14,7 +14,8 @@
   "publicRoutes": [
     "src/app/api/health/route.ts",
     "src/app/api/hello/route.ts",
-    "src/app/api/metrics/route.ts"
+    "src/app/api/metrics/route.ts",
+    "src/app/api/template-sales/checkout/route.ts"
   ],
   "excludePaths": [
     "**/test/**",

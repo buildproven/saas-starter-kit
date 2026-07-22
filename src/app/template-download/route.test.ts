@@ -180,7 +180,7 @@ describe('Production archiver flow', () => {
     prismaMock.templateSaleCustomer.findUnique.mockResolvedValue({
       id: 'cust_prod_1',
       saleId: 'sale_prod_1',
-      package: 'basic',
+      package: 'hobby',
       accessExpiresAt: null,
       sale: { id: 'sale_prod_1', status: 'COMPLETED' },
     })
@@ -205,7 +205,7 @@ describe('Production archiver flow', () => {
     prismaMock.templateSaleCustomer.findUnique.mockResolvedValue({
       id: 'cust_dir_1',
       saleId: 'sale_dir_1',
-      package: 'basic',
+      package: 'hobby',
       accessExpiresAt: null,
       sale: { id: 'sale_dir_1', status: 'COMPLETED' },
     })
@@ -232,7 +232,7 @@ describe('Production archiver flow', () => {
     prismaMock.templateSaleCustomer.findUnique.mockResolvedValue({
       id: 'cust_sec_1',
       saleId: 'sale_sec_1',
-      package: 'basic',
+      package: 'hobby',
       accessExpiresAt: null,
       sale: { id: 'sale_sec_1', status: 'COMPLETED' },
     })

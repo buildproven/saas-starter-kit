@@ -17,8 +17,8 @@ A batteries-included SaaS foundation built with Next.js 16 (App Router), Prisma,
 
 ## Features
 
-- **Next.js App Router** with hybrid rendering, server actions, and middleware-driven RBAC
-- **Authentication & Authorization** using Supabase Auth (Google/GitHub/email), Prisma for user data, and role-aware middleware (`USER`, `ADMIN`, `SUPER_ADMIN`)
+- **Next.js App Router** with hybrid rendering, server actions, and proxy-driven RBAC
+- **Authentication & Authorization** using Supabase Auth (Google/GitHub/email), Prisma for user data, and role-aware proxy enforcement (`USER`, `ADMIN`, `SUPER_ADMIN`)
 - **Multi-tenant data model** with Organizations, Projects, API Keys, Plans, and Usage tracking powered by Prisma & PostgreSQL
 - **Billing scaffolding** with Stripe-compatible helpers (checkout, billing portal, subscription enforcement)
 - **Production tooling**: Vitest + Testing Library + Playwright, ESLint (security plugin), Prettier, Tailwind v4 (shadcn/ui tokens), Sentry, Husky + lint-staged, and GitHub Actions
@@ -61,7 +61,7 @@ For commercial packages and pricing, visit [buildproven.ai](https://buildproven.
 
 ### Prerequisites
 
-- Node.js >= 20 (Volta and `.nvmrc` provided)
+- Node.js >= 22 (see the `engines` field in `package.json`)
 - PostgreSQL 14+ (local or managed)
 - npm >= 10
 - Stripe + Sentry credentials (optional in local dev)

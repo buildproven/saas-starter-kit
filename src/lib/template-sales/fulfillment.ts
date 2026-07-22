@@ -2,9 +2,8 @@ import { prisma } from '@/lib/prisma'
 import { logError, ErrorType } from '@/lib/error-logging'
 import { sendTemplateDeliveryEmail } from '@/lib/email/template-delivery'
 import { grantGitHubAccess, normalizeGithubUsername } from '@/lib/github/access-management'
+import { TEMPLATE_PACKAGES, type TemplatePackage } from '@/lib/template-sales/packages'
 import crypto from 'node:crypto'
-
-type TemplatePackage = 'hobby' | 'pro' | 'director'
 
 interface FulfillmentParams {
   sessionId: string
@@ -25,12 +24,6 @@ interface FulfillmentResult {
   githubAccessGranted: boolean
   githubTeamId?: string | null
   githubUsername?: string | null
-}
-
-const SUPPORT_TIERS: Record<TemplatePackage, string> = {
-  hobby: 'community',
-  pro: 'priority_email',
-  director: 'priority_email',
 }
 
 const ACCESS_WINDOWS_DAYS: Record<TemplatePackage, number | null> = {
@@ -257,7 +250,7 @@ function generateSecureDownloadToken(): string {
 }
 
 function getSupportTier(packageType: TemplatePackage): string {
-  return SUPPORT_TIERS[packageType]
+  return TEMPLATE_PACKAGES[packageType].supportTier
 }
 
 function getAccessExpiration(packageType: TemplatePackage): Date | null {

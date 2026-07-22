@@ -1,7 +1,7 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
 import { ReactNode } from 'react'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface RoleGateProps {
   children: ReactNode
@@ -16,35 +16,21 @@ export function RoleGate({
   fallback = null,
   requireAll = false,
 }: RoleGateProps) {
-  const { data: session } = useSession()
+  const { user, canAccess } = useAuth()
 
-  if (!session) {
+  if (!user) {
     return <>{fallback}</>
   }
 
-  const userRole = (session.user as { role?: string })?.role || 'USER'
   const hasAccess = requireAll
-    ? allowedRoles.every((role) => checkRoleAccess(userRole, role))
-    : allowedRoles.some((role) => checkRoleAccess(userRole, role))
+    ? allowedRoles.every((role) => canAccess(role))
+    : allowedRoles.some((role) => canAccess(role))
 
   if (!hasAccess) {
     return <>{fallback}</>
   }
 
   return <>{children}</>
-}
-
-function checkRoleAccess(userRole: string, requiredRole: string): boolean {
-  const roleHierarchy = {
-    USER: 1,
-    ADMIN: 2,
-    SUPER_ADMIN: 3,
-  }
-
-  const userLevel = roleHierarchy[userRole as keyof typeof roleHierarchy] || 0
-  const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0
-
-  return userLevel >= requiredLevel
 }
 
 // Convenience components for common use cases

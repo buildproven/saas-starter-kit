@@ -1,107 +1,70 @@
 # Deployment Guide
 
-This guide explains how to promote the SaaS Starter Kit to production (Vercel recommended) and configure the supporting services (database, Stripe, Sentry).
+This guide deploys an application created from the SaaS Starter Kit. Vercel is used as an example, but the required runtime configuration is platform-independent.
 
-> **Tip**: Make sure your code passes `npm run lint`, `npm run typecheck`, and `npm test` before deploying.
+## 1. Provision services
 
-## 1. Prepare Infrastructure
+1. **PostgreSQL:** Provision a managed PostgreSQL database and save its connection string as `DATABASE_URL`.
+2. **Supabase Auth:** Create a Supabase project, copy its URL and anonymous key, then configure Google, GitHub, or email providers in the Supabase dashboard. Add `https://your-domain.example/api/auth/callback` and your local development callback URL to Supabase's redirect allow list.
+3. **Stripe (optional):** Create the subscription prices you need, then set `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET`. Configure the subscription webhook endpoint as `https://your-domain.example/api/webhooks/subscription`.
+4. **Rate limiting:** Provision Upstash Redis for production and generate a `RATE_LIMIT_HMAC_SECRET` with `openssl rand -hex 32`.
+5. **Monitoring (optional):** Create a Sentry project and save the DSN and release-upload credentials.
 
-1. **PostgreSQL**
-   - Provision a managed instance (e.g., Vercel Postgres, Supabase, Neon, RDS).
-   - Whitelist Vercel IPs or set up secure networking as required.
+## 2. Configure environment variables
 
-2. **Authentication Providers**
-   - Create Google and GitHub OAuth apps (or replace with your preferred providers).
-   - Configure callback URLs: `https://your-domain.com/api/auth/callback/<provider>`.
+Set the following in the deployment platform for Preview and Production as appropriate. The complete, commented list is in `.env.example`.
 
-3. **Stripe (optional but recommended)**
-   - Create a Stripe account, obtain `STRIPE_SECRET_KEY` and a publishable key.
-   - Create Products and recurring Prices for each tier (Starter, Pro, Enterprise) in both monthly and yearly cadences. Record the resulting `price_...` IDs.
-   - Set up a webhook endpoint (e.g., `https://your-domain.com/api/webhooks/stripe`) and note the signing secret.
+| Category                   | Variables                                                                                                                                                   |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Required                   | `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`                                                                                 |
+| Production rate limiting   | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `RATE_LIMIT_HMAC_SECRET`                                                                              |
+| Stripe billing             | `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*`                                                        |
+| Template sales             | `STRIPE_TEMPLATE_HOBBY_PRICE_ID`, `STRIPE_TEMPLATE_PRO_PRICE_ID`, `STRIPE_TEMPLATE_DIRECTOR_PRICE_ID`, `TEMPLATE_FULFILLMENT_SECRET`, `TEMPLATE_FILES_PATH` |
+| Template repository access | `GITHUB_ACCESS_TOKEN`, `GITHUB_ORG`                                                                                                                         |
+| Monitoring                 | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`                                                                               |
 
-4. **Sentry (optional)**
-   - Create a project for monitoring.
-   - Collect DSN, organization slug, project slug, and auth token for source map uploads.
+OAuth client secrets are managed by Supabase, not by this app. Do not add `NEXTAUTH_*`, `GOOGLE_CLIENT_*`, or `GITHUB_CLIENT_*` variables for this authentication flow.
 
-## 2. Configure Environment Variables
+## 3. Initialize the database
 
-Populate these variables in your deployment environment (Vercel dashboard → Settings → Environment Variables).
-
-| Category                  | Variables                                                                                            |
-| ------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Core                      | `DATABASE_URL`, `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_APP_VERSION`  |
-| OAuth                     | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`               |
-| Stripe                    | `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_*` |
-| Template Sales (optional) | `STRIPE_TEMPLATE_*` price IDs, `TEMPLATE_FULFILLMENT_SECRET`, `TEMPLATE_FILES_PATH`                  |
-| Sentry                    | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`                        |
-| Optional                  | `NEXT_PUBLIC_BASE_URL` (overrides default `http://localhost:3000` for emails, billing helpers)       |
-
-On Vercel, set variables for **Preview** and **Production** environments. Keep secrets out of version control.
-
-## 3. Database Migration & Seeding
-
-From your local machine (or CI runner):
+From a trusted local environment or CI runner:
 
 ```bash
-npm install
-cp .env.example .env.production.local # or set variables via shell
-export DATABASE_URL="postgres://..."
+npm ci
+export DATABASE_URL="postgresql://..."
 npm run db:push
+# Optional: creates the example plan data
 npm run db:seed
 ```
 
-> ℹ️ The `db:seed` script calls Stripe to fetch product and price metadata. Ensure `STRIPE_SECRET_KEY` and each `STRIPE_PRICE_*` variable are configured and point to existing Stripe prices before running the seed.
+Prisma 7 uses the PostgreSQL driver adapter configured in `src/lib/prisma.ts`; keep `@prisma/client` and `@prisma/adapter-pg` on the same Prisma version when upgrading.
 
-`db:seed` inserts the default plans defined in `prisma/seed.ts`. Run it once per environment. If you plan to sell the template itself, make sure the Stripe template price IDs, GitHub credentials (`GITHUB_ACCESS_TOKEN` / `GITHUB_ORG`), and template asset path (`TEMPLATE_FILES_PATH`) are configured before seeding. After updating the source, regenerate deliverable archives with `npm run template:package`. Support can resync GitHub access later through the SUPER_ADMIN-only endpoint at `/api/admin/template-sales/github-access`.
+## 4. Deploy
 
-## 4. Deploy to Vercel
+With a Git integration, connect the repository to the target project, configure the variables above, and let the platform run `npm ci` followed by `npm run build`.
 
-### Option A – Git integration
-
-1. Push your branch to GitHub.
-2. Import the repo in Vercel and link to the desired project.
-3. Configure environment variables when prompted.
-4. Vercel will run `npm install && npm run build`. Successful builds auto-deploy.
-
-### Option B – Vercel CLI
+For Vercel CLI:
 
 ```bash
-npm install -g vercel
+npm install --global vercel
 vercel login
 vercel link
-vercel env pull .env.production.local    # optional sync
 vercel --prod
 ```
 
-During CLI deployment, Vercel reads vars from the dashboard; unconfigured keys will prompt for input.
+Use a preview deployment to validate the database, Supabase redirect URLs, billing, and webhook signature before promoting a production release.
 
-## 5. Post-Deployment Checklist
+## 5. Verify after deployment
 
-- ✅ Verify `/api/health` returns a 200 response and shows `database.status: "connected"`.
-- ✅ Sign in via `/auth/signin` using a configured provider.
-- ✅ Confirm role-based middleware by visiting `/dashboard` and `/unauthorized`.
-- ✅ Test billing flows (checkout/portal) using Stripe test keys.
-- ✅ Trigger Sentry error manually (e.g., throw in dev) to confirm reporting.
-- ✅ Configure Stripe webhooks to hit `https://your-domain.com/api/webhooks/stripe` (implement handler in `src/app/api/webhooks/stripe/route.ts` if not already).
-- ✅ Enable GitHub Actions secrets (`VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`) if you plan to deploy via CI/CD.
+- Request `/api/health` and confirm `database.status` is `connected`.
+- Sign in through `/auth/signin` using a configured Supabase provider.
+- Confirm dashboard access for a regular user and `/unauthorized` behavior for a user without the required role.
+- Send a signed Stripe test event to `/api/webhooks/subscription` and confirm it is recorded once.
+- If template sales are enabled, create and download a test purchase for Hobby, Pro, and Director. Pro and Director can receive GitHub access; Hobby cannot.
+- Verify Sentry receives a controlled staging error if monitoring is enabled.
 
-## 6. Scaling & Maintenance Tips
+## 6. Rollback and maintenance
 
-- **Migrations**: Prefer `prisma migrate deploy` for controlled releases. Update `package.json` scripts if you adopt migrations instead of `db:push`.
-- **Monitoring**: Expand Sentry configuration with release tracking (`NEXT_PUBLIC_APP_VERSION`) and performance monitoring thresholds.
-- **Caching**: Add edge caching or ISR to performance-critical routes as you develop user dashboards.
-- **Billing**: Replace the mocked `BillingService` methods with actual Stripe calls, secure webhook signature verification, and persist Stripe IDs on relevant models.
-
-## 7. Rollback Strategy
-
-- Keep database backups (managed services usually support automated snapshots).
-- Tag releases (e.g., `v1.2.0`) and use Vercel's deployment history to rollback.
-- Store environment variable versions separately (1Password/HashiCorp Vault) to revert quickly if needed.
-
-## 8. CI/CD Recommendations
-
-- Extend `.github/workflows/quality.yml` with build and deployment jobs once quality gates pass.
-- Cache `~/.npm` and Prisma artifacts to speed up pipelines.
-- Consider running `npm run test:coverage` with reporting to guarantee coverage thresholds remain enforced.
-
-When everything is green, you have a production-ready deployment of the SaaS starter.
+- Keep database backups and deployable release identifiers.
+- Use the hosting provider's deployment history to roll back application code. Review database changes before rolling back code that relies on newer schema.
+- Keep the dependency audit green, regenerate template archives after any source or configuration change, and rerun the release checklist before each distribution.

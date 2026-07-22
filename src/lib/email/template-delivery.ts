@@ -5,9 +5,11 @@
  * with download links, access instructions, and next steps.
  */
 
+import type { TemplatePackage } from '@/lib/template-sales/packages'
+
 interface DeliveryEmailParams {
   customerEmail: string
-  package: 'hobby' | 'pro' | 'director'
+  package: TemplatePackage
   accessCredentials: {
     licenseKey: string
     downloadToken: string

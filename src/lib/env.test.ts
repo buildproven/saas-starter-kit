@@ -23,8 +23,8 @@ describe('env validation', () => {
     Object.assign(process.env, {
       NODE_ENV: 'test',
       DATABASE_URL: 'postgresql://user:pass@localhost:5432/test',
-      NEXTAUTH_URL: 'http://localhost:3000',
-      NEXTAUTH_SECRET: 'this-is-a-very-long-secret-at-least-32-characters-long',
+      NEXT_PUBLIC_SUPABASE_URL: 'https://example.supabase.co',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'test-anon-key',
     })
   })
 
@@ -56,16 +56,16 @@ describe('env validation', () => {
       expect(process.exit).toHaveBeenCalledWith(1)
     })
 
-    it('fails when NEXTAUTH_SECRET is too short', () => {
-      process.env.NEXTAUTH_SECRET = 'short'
+    it('fails when the Supabase anonymous key is missing', () => {
+      delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
       validateEnv()
 
       expect(process.exit).toHaveBeenCalledWith(1)
     })
 
-    it('fails when NEXTAUTH_URL is not a URL', () => {
-      process.env.NEXTAUTH_URL = 'not-a-url'
+    it('fails when the Supabase URL is not a URL', () => {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'not-a-url'
 
       validateEnv()
 
@@ -118,7 +118,7 @@ describe('env validation', () => {
 
       expect(env.NODE_ENV).toBe('test')
       expect(env.DATABASE_URL).toBe('postgresql://user:pass@localhost:5432/test')
-      expect(env.NEXTAUTH_URL).toBe('http://localhost:3000')
+      expect(env.NEXT_PUBLIC_SUPABASE_URL).toBe('https://example.supabase.co')
     })
   })
 
@@ -129,9 +129,9 @@ describe('env validation', () => {
     })
 
     it('returns true for template_sales when fully configured', () => {
-      process.env.STRIPE_TEMPLATE_BASIC_PRICE_ID = 'price_basic'
+      process.env.STRIPE_TEMPLATE_HOBBY_PRICE_ID = 'price_hobby'
       process.env.STRIPE_TEMPLATE_PRO_PRICE_ID = 'price_pro'
-      process.env.STRIPE_TEMPLATE_ENTERPRISE_PRICE_ID = 'price_enterprise'
+      process.env.STRIPE_TEMPLATE_DIRECTOR_PRICE_ID = 'price_director'
 
       clearEnvCache()
       validateEnv()

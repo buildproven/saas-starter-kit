@@ -1,8 +1,8 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { ReactNode, useEffect } from 'react'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface ProtectedRouteProps {
   children: ReactNode
@@ -17,28 +17,24 @@ export function ProtectedRoute({
   fallback,
   redirectTo = '/auth/signin',
 }: ProtectedRouteProps) {
-  const { data: session, status } = useSession()
+  const { user, isLoading, canAccess } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
-    if (status === 'loading') return // Still loading
+    if (isLoading) return
 
-    if (!session) {
+    if (!user) {
       router.push(redirectTo)
       return
     }
 
-    // Check if user has required role
-    const userRole = (session.user as { role?: string })?.role || 'USER'
-    const hasAccess = checkRoleAccess(userRole, requiredRole)
-
-    if (!hasAccess) {
+    if (!canAccess(requiredRole)) {
       router.push('/unauthorized')
     }
-  }, [session, status, router, requiredRole, redirectTo])
+  }, [user, isLoading, canAccess, router, requiredRole, redirectTo])
 
   // Show loading state
-  if (status === 'loading') {
+  if (isLoading) {
     if (fallback) return <>{fallback}</>
 
     return (
@@ -52,34 +48,18 @@ export function ProtectedRoute({
   }
 
   // User not authenticated
-  if (!session) {
+  if (!user) {
     if (fallback) return <>{fallback}</>
     return null // Will redirect
   }
 
   // Check role access
-  const userRole = (session.user as { role?: string })?.role || 'USER'
-  const hasAccess = checkRoleAccess(userRole, requiredRole)
-
-  if (!hasAccess) {
+  if (!canAccess(requiredRole)) {
     if (fallback) return <>{fallback}</>
     return null // Will redirect
   }
 
   return <>{children}</>
-}
-
-function checkRoleAccess(userRole: string, requiredRole: string): boolean {
-  const roleHierarchy = {
-    USER: 1,
-    ADMIN: 2,
-    SUPER_ADMIN: 3,
-  }
-
-  const userLevel = roleHierarchy[userRole as keyof typeof roleHierarchy] || 0
-  const requiredLevel = roleHierarchy[requiredRole as keyof typeof roleHierarchy] || 0
-
-  return userLevel >= requiredLevel
 }
 
 // Higher-order component version
