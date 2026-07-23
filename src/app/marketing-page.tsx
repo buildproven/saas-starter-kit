@@ -458,7 +458,7 @@ export default function MarketingPage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="text-lg px-8 border-white text-white hover:bg-white hover:text-blue-600"
+                className="bg-transparent text-lg px-8 border-white text-white hover:bg-white hover:text-blue-600"
                 asChild
               >
                 <a href="/contact">Talk to Sales</a>
