@@ -1,5 +1,4 @@
-@import url('tailwindcss');
-@import url('tw-animate-css');
+@import 'tailwindcss';
 
 @theme {
   --color-background: hsl(var(--background));

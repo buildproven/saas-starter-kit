@@ -17,6 +17,7 @@
           "utility"
         ]
       }
-    ]
+    ],
+    "import-notation": "string"
   }
 }
