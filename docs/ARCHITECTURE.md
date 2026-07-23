@@ -5,7 +5,7 @@ This document describes the major components, data flows, and extension points f
 ## High-Level Stack
 
 - **Framework**: Next.js 16 App Router with TypeScript.
-- **Authentication**: NextAuth (JWT strategy) with Prisma adapter.
+- **Authentication**: Supabase Auth (OAuth and email) with Prisma for application data.
 - **Database**: PostgreSQL accessed through Prisma ORM.
 - **State Management**: Zustand for client-side session and UI state sync.
 - **UI Layer**: Tailwind CSS + shadcn/ui-inspired component primitives and Lucide icons.
@@ -18,7 +18,7 @@ This document describes the major components, data flows, and extension points f
 │ (Next.js UI)│
 └────┬────────┘
      │
-     │ Zustand cache, NextAuth client
+     │ Zustand cache, Supabase client
      ▼
 ┌─────────────┐        Prisma Client        ┌──────────────┐
 │ Next.js App │  ─────────────────────────▶ │  PostgreSQL  │
@@ -34,8 +34,8 @@ This document describes the major components, data flows, and extension points f
 
 ### Authentication & Authorization
 
-- `src/lib/auth.ts` defines `authOptions` with Prisma adapter, Google/GitHub providers, and JWT callbacks that embed `user.id` and `user.role`.
-- JWT sessions are required so middleware (`src/middleware.ts`) can read `req.nextauth.token.role`.
+- `src/lib/supabase/` creates browser and server clients. OAuth provider configuration and redirect allow lists are managed in the Supabase dashboard.
+- `src/proxy.ts` refreshes Supabase sessions and enforces the configured path role hierarchy. Authorization checks in handlers still validate the user and scope data access.
 - `src/lib/auth/api-protection.ts` exports helpers (`withAuth`, `withAdminAuth`, `withSuperAdminAuth`) that enforce role hierarchy in API handlers while injecting the `AuthenticatedUser`.
 - UI-level protection uses `ProtectedRoute`, `RoleGate`, and `useAuth()` to guard routes and components.
 
@@ -46,12 +46,12 @@ This document describes the major components, data flows, and extension points f
   - `src/app/auth/*` – sign-in/out/error flows.
   - `src/app/dashboard` + `src/app/profile` – authenticated dashboards built with shadcn components.
   - `src/app/api/*` – REST endpoints grouped by domain (organizations, projects, billing, etc.).
-- `src/middleware.ts` inspects the pathname, identifies required access (public, authenticated, admin, super-admin), and redirects unauthenticated users to `/auth/signin` or `/unauthorized`.
+- `src/proxy.ts` refreshes Supabase sessions for matched paths and redirects or rejects requests that do not meet the required role. API handlers use `src/lib/auth/api-protection.ts` to validate a user and role before acting.
 
 ### Data Access
 
 - The Prisma schema (`prisma/schema.prisma`) models:
-  - **User** (with role), `Account` & `Session` (NextAuth), `VerificationToken`
+  - **User** (with role), organizations, memberships, and application records
   - **Organization**, `OrganizationMember`, and related `Project`, `ApiKey`, `Subscription`, `Plan`, `UsageRecord`
 - `src/lib/prisma.ts` exports a singleton Prisma client.
 - `src/lib/db-utils.ts` wraps common operations (organization creation, subscription management, usage tracking, API key helpers). These are used inside API routes and can be reused in server actions.

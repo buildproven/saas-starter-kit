@@ -6,7 +6,7 @@
 
 ## What This Project Does
 
-Production-ready multi-tenant SaaS foundation built on Next.js 16 (App Router), Prisma + PostgreSQL, and Supabase Auth. Entry point: `src/app/` for routes, `src/middleware.ts` for RBAC enforcement. Ships with Stripe billing, shadcn/ui, Vitest, and Playwright.
+Production-ready multi-tenant SaaS foundation built on Next.js 16 (App Router), Prisma + PostgreSQL, and Supabase Auth. Entry point: `src/app/` for routes, `src/proxy.ts` for RBAC enforcement. Ships with Stripe billing, shadcn/ui, Vitest, and Playwright.
 
 ## Directory Structure
 
@@ -23,7 +23,7 @@ saas-starter-kit/
 │   │   ├── auth/        # get-user, requireUser helpers
 │   │   ├── billing/     # Stripe checkout, billing portal, webhooks
 │   │   └── edge-rate-limit.ts
-│   ├── middleware.ts     # Auth + RBAC enforcement (runs on every request)
+│   ├── proxy.ts          # Auth + RBAC enforcement (runs on matched requests)
 │   └── types/           # Shared TypeScript types
 ├── prisma/
 │   ├── schema.prisma    # Database schema (PostgreSQL)
@@ -41,7 +41,7 @@ saas-starter-kit/
 
 | File                        | Role                                                           |
 | --------------------------- | -------------------------------------------------------------- |
-| `src/middleware.ts`         | Auth + RBAC — runs on every request, enforces roles            |
+| `src/proxy.ts`              | Auth + RBAC — runs on matched requests, enforces roles         |
 | `src/lib/auth/get-user.ts`  | `getUser()` / `requireUser()` — use in every protected handler |
 | `src/lib/billing/`          | Stripe checkout, billing portal, subscription helpers          |
 | `src/lib/supabase/`         | Auth client (browser) + server (RSC/API)                       |
@@ -124,11 +124,11 @@ npm run quality:check  # All three combined
 
 - **Required env vars**: `DATABASE_URL` and Supabase vars are mandatory. Stripe/Sentry are optional locally but required for billing/monitoring flows.
 - **Rate limiting**: Upstash Redis in prod; falls back to in-memory in dev/tests. Don't skip rate limiting on public endpoints.
-- **DB queries must always scope by userId/orgId** — the middleware enforces roles but does not scope data — you must do it in every query.
+- **DB queries must always scope by userId/orgId** — the proxy enforces roles but does not scope data — you must do it in every query.
 - **No `any` types** — TypeScript strict mode is enforced via lint-staged and CI.
 - **Pre-push hook runs**: typecheck + lint + tests via `npm run validate:pre-push`. Don't bypass with `--no-verify`.
 - **Build skips env validation** — `SKIP_ENV_VALIDATION=true` is set in the build script intentionally for CI. Local dev validates normally.
-- **Roles**: `USER`, `ADMIN`, `SUPER_ADMIN` — enforced in middleware and expected in DB queries.
+- **Roles**: `USER`, `ADMIN`, `SUPER_ADMIN` — enforced in the proxy and expected in DB queries.
 
 ## Active Development Areas
 

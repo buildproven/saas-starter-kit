@@ -14,17 +14,9 @@ const envSchema = z.object({
   // Database
   DATABASE_URL: z.string().url('DATABASE_URL must be a valid PostgreSQL connection string'),
 
-  // Authentication
-  NEXTAUTH_URL: z.string().url('NEXTAUTH_URL must be a valid URL'),
-  NEXTAUTH_SECRET: z
-    .string()
-    .min(32, 'NEXTAUTH_SECRET must be at least 32 characters for security'),
-
-  // OAuth Providers (optional)
-  GOOGLE_CLIENT_ID: z.string().optional(),
-  GOOGLE_CLIENT_SECRET: z.string().optional(),
-  GITHUB_CLIENT_ID: z.string().optional(),
-  GITHUB_CLIENT_SECRET: z.string().optional(),
+  // Authentication (provider setup happens in the Supabase dashboard)
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL'),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required'),
 
   // Stripe (required for billing)
   STRIPE_SECRET_KEY: z
@@ -41,9 +33,9 @@ const envSchema = z.object({
     .optional(),
 
   // Template Sales (optional feature)
-  STRIPE_TEMPLATE_BASIC_PRICE_ID: z.string().optional(),
+  STRIPE_TEMPLATE_HOBBY_PRICE_ID: z.string().optional(),
   STRIPE_TEMPLATE_PRO_PRICE_ID: z.string().optional(),
-  STRIPE_TEMPLATE_ENTERPRISE_PRICE_ID: z.string().optional(),
+  STRIPE_TEMPLATE_DIRECTOR_PRICE_ID: z.string().optional(),
   TEMPLATE_FULFILLMENT_SECRET: z.string().optional(),
   TEMPLATE_FILES_PATH: z.string().optional(),
   TEMPLATE_VERSION: z.string().optional(),
@@ -160,9 +152,9 @@ export function isFeatureEnabled(feature: 'template_sales' | 'sentry' | 'github_
   switch (feature) {
     case 'template_sales':
       return !!(
-        env.STRIPE_TEMPLATE_BASIC_PRICE_ID &&
+        env.STRIPE_TEMPLATE_HOBBY_PRICE_ID &&
         env.STRIPE_TEMPLATE_PRO_PRICE_ID &&
-        env.STRIPE_TEMPLATE_ENTERPRISE_PRICE_ID
+        env.STRIPE_TEMPLATE_DIRECTOR_PRICE_ID
       )
     case 'sentry':
       return !!env.NEXT_PUBLIC_SENTRY_DSN

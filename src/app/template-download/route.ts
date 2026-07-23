@@ -251,7 +251,7 @@ async function generateTemplateDownload(params: {
       if (
         file.tier === 'all' ||
         file.tier === packageType ||
-        (file.tier === 'pro+' && ['pro', 'enterprise'].includes(packageType))
+        (file.tier === 'pro+' && ['pro', 'director'].includes(packageType))
       ) {
         try {
           // Sanitize path to prevent traversal attacks
@@ -317,18 +317,12 @@ function getTemplateFilesDefault(
     { path: 'README.md', name: 'README.md', tier: 'all' },
     { path: 'docs/', name: 'docs/', tier: 'all' },
     { path: '.env.example', name: '.env.example', tier: 'all' },
-    { path: 'src/lib/white-label/', name: 'src/lib/white-label/', tier: 'pro+' },
-    { path: 'scripts/deploy/', name: 'scripts/deploy/', tier: 'pro+' },
-    { path: 'docs/video-tutorials/', name: 'docs/video-tutorials/', tier: 'pro+' },
-    { path: 'enterprise/', name: 'enterprise/', tier: 'enterprise' },
-    { path: 'scripts/enterprise-setup/', name: 'scripts/enterprise-setup/', tier: 'enterprise' },
-    { path: 'docs/custom-integrations/', name: 'docs/custom-integrations/', tier: 'enterprise' },
   ]
 
   return allFiles.filter((file) => {
     if (file.tier === 'all') return true
     if (file.tier === packageType) return true
-    if (file.tier === 'pro+' && ['pro', 'enterprise'].includes(packageType)) return true
+    if (file.tier === 'pro+' && ['pro', 'director'].includes(packageType)) return true
     return false
   })
 }

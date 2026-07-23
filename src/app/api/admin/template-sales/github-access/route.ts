@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { withSuperAdminAuth, type AuthenticatedUser } from '@/lib/auth/api-protection'
 import { prisma } from '@/lib/prisma'
 import { grantGitHubAccess, normalizeGithubUsername } from '@/lib/github/access-management'
+import { isTemplatePackage } from '@/lib/template-sales/packages'
 
 const githubUsernameRegex = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i
 
@@ -82,10 +83,10 @@ async function postHandler(request: NextRequest, { user }: AuthContext): Promise
     let invitationResult: Awaited<ReturnType<typeof grantGitHubAccess>> | null = null
     const shouldRetry = parsed.retry !== false && sale.package !== 'hobby'
 
-    if (shouldRetry) {
+    if (shouldRetry && isTemplatePackage(sale.package)) {
       invitationResult = await grantGitHubAccess({
         email: customerEmail,
-        package: sale.package as 'hobby' | 'pro' | 'director',
+        package: sale.package,
         saleId: sale.id,
         githubUsername: normalizedUsername,
       })

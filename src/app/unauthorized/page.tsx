@@ -1,25 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 export default function UnauthorizedPage() {
-  const sessionResult = useSession()
-  const session = sessionResult?.data
-  const status = sessionResult?.status ?? 'loading'
+  const { user, isLoading, role } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
     // Redirect to sign-in if not authenticated
-    if (status === 'loading') return // Still loading
-    if (!session) {
+    if (isLoading) return
+    if (!user) {
       router.push('/auth/signin')
     }
-  }, [session, status, router])
+  }, [user, isLoading, router])
 
-  if (status === 'loading') {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -30,7 +28,7 @@ export default function UnauthorizedPage() {
     )
   }
 
-  if (!session) {
+  if (!user) {
     return null // Will redirect to sign-in
   }
 
@@ -81,8 +79,8 @@ export default function UnauthorizedPage() {
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-yellow-800">Current Access Level</h3>
                     <div className="mt-2 text-sm text-yellow-700">
-                      <p>User: {session.user?.email}</p>
-                      <p>Role: {(session.user as { role?: string })?.role || 'USER'}</p>
+                      <p>User: {user.email}</p>
+                      <p>Role: {role || 'USER'}</p>
                     </div>
                   </div>
                 </div>

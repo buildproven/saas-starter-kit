@@ -12,61 +12,38 @@ import { prisma } from '@/lib/prisma'
 import { getStripeClient } from '@/lib/stripe'
 import { logError, ErrorType } from '@/lib/error-logging'
 import { fulfillTemplateSale } from '@/lib/template-sales/fulfillment'
-
-// Helper function to check if template sales are configured
-function isTemplateSalesConfigured(): boolean {
-  return !!(
-    process.env.STRIPE_SECRET_KEY &&
-    process.env.STRIPE_TEMPLATE_HOBBY_PRICE_ID &&
-    process.env.STRIPE_TEMPLATE_PRO_PRICE_ID &&
-    process.env.STRIPE_TEMPLATE_DIRECTOR_PRICE_ID
-  )
-}
-
-// Template sales packages (canonical pricing from PRICING_STRATEGY.md)
-const TEMPLATE_PACKAGES = {
-  hobby: {
-    name: 'SaaS Starter Kit - Hobby',
-    price: 9900, // $99
-    priceId: process.env.STRIPE_TEMPLATE_HOBBY_PRICE_ID!,
-    features: [
-      'Complete Next.js 14 SaaS template',
-      'Authentication & authorization',
-      'Multi-tenant architecture',
-      'Basic billing integration',
-      'Documentation & examples',
-      'Community support',
-    ],
-  },
-  pro: {
-    name: 'SaaS Starter Kit - Pro',
-    price: 24900, // $249
-    priceId: process.env.STRIPE_TEMPLATE_PRO_PRICE_ID!,
-    features: [
-      'Everything in Hobby',
-      'White-label customization rights',
-      'Video tutorials',
-      'Priority email support',
-      'GitHub repository access',
-    ],
-  },
-  director: {
-    name: 'SaaS Starter Kit - Director',
-    price: 39900, // $399
-    priceId: process.env.STRIPE_TEMPLATE_DIRECTOR_PRICE_ID!,
-    features: [
-      'Everything in Pro',
-      '3 months Vibe Lab Pro access',
-      '1-hour consultation call',
-      'Priority support',
-    ],
-  },
-}
+import { getClientId, RateLimiters, rateLimitHeaders } from '@/lib/rate-limit-unified'
+import {
+  getTemplatePackagePriceId,
+  isTemplatePackage,
+  isTemplateSalesConfigured,
+  TEMPLATE_PACKAGE_IDS,
+  TEMPLATE_PACKAGES,
+} from '@/lib/template-sales/packages'
 
 const githubUsernameRegex = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i
 
+// PUBLIC ROUTE: unauthenticated purchasers are protected by a strict client rate limit.
+async function enforceCheckoutRateLimit(request: NextRequest) {
+  const rateLimit = await RateLimiters.expensive(`template-sales:${getClientId(request)}`)
+  if (rateLimit.allowed) {
+    return null
+  }
+
+  return NextResponse.json(
+    {
+      error: 'Too many checkout requests',
+      retryAfter: rateLimit.retryAfter,
+    },
+    {
+      status: 429,
+      headers: rateLimitHeaders(rateLimit),
+    }
+  )
+}
+
 const CheckoutRequestSchema = z.object({
-  package: z.enum(['hobby', 'pro', 'director']),
+  package: z.enum(TEMPLATE_PACKAGE_IDS),
   email: z.string().email().max(254), // RFC 5321 max email length
   companyName: z.string().max(200).optional(),
   useCase: z.string().max(2000).optional(),
@@ -85,9 +62,14 @@ const CheckoutRequestSchema = z.object({
 
 // POST /api/template-sales/checkout
 export async function POST(request: NextRequest) {
+  const rateLimitResponse = await enforceCheckoutRateLimit(request)
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     // Check if template sales are configured
-    if (!isTemplateSalesConfigured()) {
+    if (!process.env.STRIPE_SECRET_KEY || !isTemplateSalesConfigured()) {
       return NextResponse.json(
         {
           error: 'Template sales not configured',
@@ -101,8 +83,9 @@ export async function POST(request: NextRequest) {
     const validatedData = CheckoutRequestSchema.parse(body)
 
     const selectedPackage = TEMPLATE_PACKAGES[validatedData.package]
-    if (!selectedPackage) {
-      return NextResponse.json({ error: 'Invalid package selected' }, { status: 400 })
+    const priceId = getTemplatePackagePriceId(validatedData.package)
+    if (!priceId) {
+      return NextResponse.json({ error: 'Package price is not configured' }, { status: 503 })
     }
 
     // Create Stripe checkout session
@@ -112,7 +95,7 @@ export async function POST(request: NextRequest) {
       payment_method_types: ['card'],
       line_items: [
         {
-          price: selectedPackage.priceId,
+          price: priceId,
           quantity: 1,
         },
       ],
@@ -136,7 +119,7 @@ export async function POST(request: NextRequest) {
       invoice_creation: {
         enabled: true,
         invoice_data: {
-          description: `Purchase of ${selectedPackage.name}`,
+          description: `Purchase of SaaS Starter Kit - ${selectedPackage.name}`,
           metadata: {
             package: validatedData.package,
             templateSale: 'true',
@@ -151,14 +134,19 @@ export async function POST(request: NextRequest) {
         sessionId: session.id,
         email: validatedData.email,
         package: validatedData.package,
-        amount: selectedPackage.price,
+        amount: selectedPackage.priceInCents,
         status: 'PENDING',
         companyName: validatedData.companyName,
         useCase: validatedData.useCase,
         githubUsername: validatedData.githubUsername,
         metadata: {
           stripeSessionId: session.id,
-          packageDetails: selectedPackage,
+          packageDetails: {
+            id: selectedPackage.id,
+            name: selectedPackage.name,
+            priceInCents: selectedPackage.priceInCents,
+            features: [...selectedPackage.features],
+          },
           githubUsername: validatedData.githubUsername,
         },
       },
@@ -193,9 +181,14 @@ export async function POST(request: NextRequest) {
 
 // GET /api/template-sales/checkout - Verify completed purchase
 export async function GET(request: NextRequest) {
+  const rateLimitResponse = await enforceCheckoutRateLimit(request)
+  if (rateLimitResponse) {
+    return rateLimitResponse
+  }
+
   try {
     // Check if template sales are configured
-    if (!isTemplateSalesConfigured()) {
+    if (!process.env.STRIPE_SECRET_KEY || !isTemplateSalesConfigured()) {
       return NextResponse.json(
         {
           error: 'Template sales not configured',
@@ -264,10 +257,14 @@ export async function GET(request: NextRequest) {
         updatedSale.githubUsername ||
         (typeof metadata.githubUsername === 'string' ? metadata.githubUsername : undefined)
 
+      if (!isTemplatePackage(updatedSale.package)) {
+        throw new Error(`Stored template sale has an unknown package: ${updatedSale.package}`)
+      }
+
       fulfillmentSummary = await fulfillTemplateSale({
         sessionId,
         customerEmail: session.customer_details?.email || updatedSale.email,
-        package: updatedSale.package as 'hobby' | 'pro' | 'director',
+        package: updatedSale.package,
         customerName: session.customer_details?.name,
         companyName: session.customer_details?.name || updatedSale.companyName || undefined,
         githubUsername,
@@ -278,7 +275,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       sale: updatedSale,
-      package: TEMPLATE_PACKAGES[updatedSale.package as keyof typeof TEMPLATE_PACKAGES],
+      package: isTemplatePackage(updatedSale.package)
+        ? TEMPLATE_PACKAGES[updatedSale.package]
+        : null,
       fulfillment: fulfillmentSummary,
     })
   } catch (error) {

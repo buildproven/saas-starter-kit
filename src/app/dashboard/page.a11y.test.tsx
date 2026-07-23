@@ -4,17 +4,6 @@ import { axe } from 'vitest-axe'
 
 import DashboardPage from './page'
 
-vi.mock('next-auth/react', () => ({
-  __esModule: true,
-  useSession: () => ({
-    data: { user: { name: 'Test User', email: 'test@example.com' } },
-    status: 'authenticated',
-  }),
-  SessionProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  signIn: vi.fn(),
-  signOut: vi.fn(),
-}))
-
 vi.mock('@/lib/hooks/useAuth', () => ({
   useAuth: () => ({ user: { name: 'Test User', email: 'test@example.com' }, isLoading: false }),
 }))

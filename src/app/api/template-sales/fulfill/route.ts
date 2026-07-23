@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { fulfillTemplateSale } from '@/lib/template-sales/fulfillment'
 import { logError, ErrorType } from '@/lib/error-logging'
+import { TEMPLATE_PACKAGE_IDS } from '@/lib/template-sales/packages'
 
 const FulfillmentRequestSchema = z.object({
   sessionId: z.string(),
   customerEmail: z.string().email(),
-  package: z.enum(['hobby', 'pro', 'director']),
+  package: z.enum(TEMPLATE_PACKAGE_IDS),
   customerName: z.string().optional(),
   companyName: z.string().optional(),
 })

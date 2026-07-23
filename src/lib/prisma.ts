@@ -1,18 +1,20 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
 function createPrismaClient(): PrismaClient {
-  // Skip Prisma initialization during build if no valid DATABASE_URL
+  const connectionString = process.env.DATABASE_URL
+
   if (
-    process.env.NODE_ENV === 'production' &&
-    (!process.env.DATABASE_URL ||
-      process.env.DATABASE_URL.includes('localhost') ||
-      process.env.DATABASE_URL.includes('user:password'))
+    !connectionString ||
+    connectionString.includes('user:password') ||
+    (process.env.NODE_ENV === 'production' && connectionString.includes('localhost'))
   ) {
-    // Return a proxy that throws helpful errors during build
+    // Keep build-time route analysis independent of a database while making any
+    // runtime query fail with an actionable configuration error.
     return new Proxy({} as PrismaClient, {
       get(_, prop) {
         if (prop === 'then') return undefined // Allow Promise resolution
@@ -24,7 +26,10 @@ function createPrismaClient(): PrismaClient {
     })
   }
 
+  const adapter = new PrismaPg({ connectionString })
+
   return new PrismaClient({
+    adapter,
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
 }

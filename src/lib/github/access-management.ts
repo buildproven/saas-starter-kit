@@ -6,10 +6,11 @@
  */
 
 import { Octokit } from '@octokit/rest'
+import type { TemplatePackage } from '@/lib/template-sales/packages'
 
 interface GitHubAccessParams {
   email: string
-  package: 'hobby' | 'pro' | 'director'
+  package: TemplatePackage
   saleId: string
   githubUsername?: string | null
 }

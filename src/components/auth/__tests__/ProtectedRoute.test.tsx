@@ -1,62 +1,44 @@
 import { render, screen } from '@testing-library/react'
-import type { Session } from 'next-auth'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/lib/hooks/useAuth'
 import { ProtectedRoute } from '../ProtectedRoute'
 
-// Mock next-auth
-vi.mock('next-auth/react')
-const mockUseSession = useSession as vi.MockedFunction<typeof useSession>
+vi.mock('@/lib/hooks/useAuth', () => ({ useAuth: vi.fn() }))
 
-// Extended user type for testing
-interface TestUser extends Record<string, unknown> {
-  id: string
-  email: string
-  name: string
-  role: string
-}
-
-const authenticatedSession = (overrides: Partial<TestUser> = {}): Session => ({
-  user: {
-    id: '1',
-    email: 'user@example.com',
-    name: 'Test User',
-    role: 'USER',
-    ...overrides,
-  } as TestUser,
-  expires: '2025-01-01T00:00:00.000Z',
-})
-
-const withStatus = <TStatus extends ReturnType<typeof useSession>['status']>(
-  status: TStatus,
-  session: TStatus extends 'authenticated' ? Session : null
-) => ({
-  data: session,
-  status,
-  update: vi.fn(),
-})
-
-// Mock next/navigation
 const mockPush = vi.fn()
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({
-    push: mockPush,
-    back: vi.fn(),
-    forward: vi.fn(),
-    refresh: vi.fn(),
-    replace: vi.fn(),
-    prefetch: vi.fn(),
-  }),
+  useRouter: () => ({ push: mockPush }),
 }))
+
+type AuthState = ReturnType<typeof useAuth>
+type Role = AuthState['role']
+
+function authState(role: Role, isLoading = false): AuthState {
+  const levels = { USER: 1, ADMIN: 2, SUPER_ADMIN: 3 }
+  const user = role ? { id: 'user-1', email: 'user@example.com', name: 'Test User', role } : null
+
+  return {
+    user,
+    isAuthenticated: Boolean(user),
+    isLoading,
+    role,
+    hasRole: (requiredRole) => role === requiredRole,
+    hasAnyRole: (roles) => role !== null && roles.includes(role),
+    hasAllRoles: (roles) => role !== null && roles.every((requiredRole) => role === requiredRole),
+    isAdmin: role !== null && levels[role] >= levels.ADMIN,
+    isSuperAdmin: role === 'SUPER_ADMIN',
+    canAccess: (requiredRole) => role !== null && levels[role] >= levels[requiredRole],
+  }
+}
+
+const mockUseAuth = vi.mocked(useAuth)
 
 beforeEach(() => {
   mockPush.mockClear()
 })
 
 describe('ProtectedRoute', () => {
-  it('should render children when user is authenticated with sufficient role', () => {
-    mockUseSession.mockReturnValue(
-      withStatus('authenticated', authenticatedSession({ role: 'ADMIN' }))
-    )
+  it('renders children when the signed-in user meets the required role', () => {
+    mockUseAuth.mockReturnValue(authState('ADMIN'))
 
     render(
       <ProtectedRoute requiredRole="USER">
@@ -65,10 +47,11 @@ describe('ProtectedRoute', () => {
     )
 
     expect(screen.getByText('Protected Content')).toBeInTheDocument()
+    expect(mockPush).not.toHaveBeenCalled()
   })
 
-  it('should show loading state when session is loading', () => {
-    mockUseSession.mockReturnValue(withStatus('loading', null))
+  it('renders its loading state while authentication is resolving', () => {
+    mockUseAuth.mockReturnValue(authState(null, true))
 
     render(
       <ProtectedRoute>
@@ -77,22 +60,23 @@ describe('ProtectedRoute', () => {
     )
 
     expect(screen.getByText('Loading...')).toBeInTheDocument()
+    expect(mockPush).not.toHaveBeenCalled()
   })
 
-  it('should redirect to signin when user is not authenticated', () => {
-    mockUseSession.mockReturnValue(withStatus('unauthenticated', null))
+  it('redirects an anonymous visitor to the configured sign-in page', () => {
+    mockUseAuth.mockReturnValue(authState(null))
 
     render(
-      <ProtectedRoute>
+      <ProtectedRoute redirectTo="/custom-signin">
         <div>Protected Content</div>
       </ProtectedRoute>
     )
 
-    expect(mockPush).toHaveBeenCalledWith('/auth/signin')
+    expect(mockPush).toHaveBeenCalledWith('/custom-signin')
   })
 
-  it('should redirect to unauthorized when user lacks required role', () => {
-    mockUseSession.mockReturnValue(withStatus('authenticated', authenticatedSession()))
+  it('redirects a signed-in user without the required role to unauthorized', () => {
+    mockUseAuth.mockReturnValue(authState('USER'))
 
     render(
       <ProtectedRoute requiredRole="ADMIN">
@@ -103,8 +87,8 @@ describe('ProtectedRoute', () => {
     expect(mockPush).toHaveBeenCalledWith('/unauthorized')
   })
 
-  it('should render fallback when provided and user lacks access', () => {
-    mockUseSession.mockReturnValue(withStatus('unauthenticated', null))
+  it('uses the supplied fallback while access is denied', () => {
+    mockUseAuth.mockReturnValue(authState(null))
 
     render(
       <ProtectedRoute fallback={<div>Please sign in</div>}>
@@ -114,39 +98,5 @@ describe('ProtectedRoute', () => {
 
     expect(screen.getByText('Please sign in')).toBeInTheDocument()
     expect(screen.queryByText('Protected Content')).not.toBeInTheDocument()
-  })
-
-  it('should allow super admin to access admin routes', () => {
-    mockUseSession.mockReturnValue(
-      withStatus(
-        'authenticated',
-        authenticatedSession({
-          email: 'superadmin@example.com',
-          role: 'SUPER_ADMIN',
-          name: 'Super Admin',
-        })
-      )
-    )
-
-    render(
-      <ProtectedRoute requiredRole="ADMIN">
-        <div>Admin Content</div>
-      </ProtectedRoute>
-    )
-
-    expect(screen.getByText('Admin Content')).toBeInTheDocument()
-    expect(mockPush).not.toHaveBeenCalled()
-  })
-
-  it('should use custom redirect path when provided', () => {
-    mockUseSession.mockReturnValue(withStatus('unauthenticated', null))
-
-    render(
-      <ProtectedRoute redirectTo="/custom-signin">
-        <div>Protected Content</div>
-      </ProtectedRoute>
-    )
-
-    expect(mockPush).toHaveBeenCalledWith('/custom-signin')
   })
 })

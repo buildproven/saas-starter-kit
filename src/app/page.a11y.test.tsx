@@ -4,14 +4,6 @@ import { axe } from 'vitest-axe'
 
 import HomePage from './page'
 
-vi.mock('next-auth/react', () => ({
-  __esModule: true,
-  useSession: () => ({ data: null, status: 'unauthenticated' }),
-  SessionProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  signIn: vi.fn(),
-  signOut: vi.fn(),
-}))
-
 // Mock useAuth to prevent async state updates that cause act warnings
 vi.mock('@/hooks/use-auth', () => ({
   useAuth: () => ({ user: null, loading: false }),

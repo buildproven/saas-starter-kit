@@ -1,9 +1,8 @@
 import { render, screen, resetMocks } from '@/lib/test-utils'
 import Home from './page'
 
-// Mock next-auth
-vi.mock('next-auth/react', () => ({
-  useSession: () => ({ data: null }),
+vi.mock('@/hooks/use-auth', () => ({
+  useAuth: () => ({ user: null, loading: false, signOut: vi.fn() }),
 }))
 
 describe('Home Page', () => {

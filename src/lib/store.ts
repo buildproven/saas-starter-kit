@@ -32,7 +32,7 @@ interface ApiKey {
 }
 
 interface AppState {
-  // User state (synced with NextAuth session)
+  // User state (synced with Supabase session)
   user: User | null
   isAuthenticated: boolean
 

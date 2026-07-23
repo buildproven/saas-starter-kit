@@ -8,8 +8,7 @@ on:
 
 jobs:
   quality:
-    if: github.actor != 'dependabot[bot]' || github.event_name == 'schedule'
-    timeout-minutes: 10
+    timeout-minutes: 20
     runs-on: ubuntu-latest
 
     steps:
@@ -44,7 +43,7 @@ jobs:
 
           # Check for known vulnerabilities in dependencies
           echo "🔍 Checking for vulnerable dependencies..."
-          npm audit --audit-level=moderate || true
+          npm audit --audit-level=high
 
           # Verify npm package signatures (Node.js 16+)
           if command -v npm &> /dev/null; then
@@ -62,7 +61,10 @@ jobs:
         run: npx stylelint "**/*.{css,scss,sass,less,pcss}" --allow-empty-input
 
       - name: Security audit
-        run: npm audit --audit-level high --omit=dev
+        run: npm audit --audit-level high
+
+      - name: Build
+        run: npm run build
 
       - name: Install gitleaks
         run: |

@@ -48,15 +48,30 @@ vi.mock('@/lib/template-sales/fulfillment', () => ({
   fulfillTemplateSale: vi.fn(),
 }))
 
+vi.mock('@/lib/rate-limit-unified', () => ({
+  getClientId: vi.fn(() => 'test-client'),
+  RateLimiters: {
+    expensive: vi.fn().mockResolvedValue({
+      allowed: true,
+      remaining: 9,
+      resetAt: Date.now() + 60_000,
+      retryAfter: 0,
+    }),
+  },
+  rateLimitHeaders: vi.fn(() => ({})),
+}))
+
 import { NextRequest } from 'next/server'
 import { getStripeClient } from '@/lib/stripe'
 import { prisma } from '@/lib/prisma'
 import { fulfillTemplateSale } from '@/lib/template-sales/fulfillment'
+import { RateLimiters } from '@/lib/rate-limit-unified'
 import { POST, GET } from './route'
 
 const mockStripe = getStripeClient as vi.Mock
 const mockTemplateSaleModel = vi.mocked(prisma.templateSale, true)
 const mockFulfillTemplateSale = fulfillTemplateSale as vi.Mock
+const mockCheckoutRateLimit = vi.mocked(RateLimiters.expensive)
 
 describe('Template Sales Checkout API', () => {
   const originalEnv = process.env
@@ -72,6 +87,12 @@ describe('Template Sales Checkout API', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCheckoutRateLimit.mockResolvedValue({
+      allowed: true,
+      remaining: 9,
+      resetAt: Date.now() + 60_000,
+      retryAfter: 0,
+    })
     mockStripe.mockReturnValue(mockStripeClient)
     process.env = {
       ...originalEnv,
@@ -95,6 +116,20 @@ describe('Template Sales Checkout API', () => {
   }
 
   describe('POST /api/template-sales/checkout', () => {
+    it('returns 429 before creating a Stripe session when rate limited', async () => {
+      mockCheckoutRateLimit.mockResolvedValue({
+        allowed: false,
+        remaining: 0,
+        resetAt: Date.now() + 60_000,
+        retryAfter: 60,
+      })
+
+      const response = await POST(createRequest({ package: 'hobby', email: 'test@example.com' }))
+
+      expect(response.status).toBe(429)
+      expect(mockStripeClient.checkout.sessions.create).not.toHaveBeenCalled()
+    })
+
     it('returns 501 when template sales not configured', async () => {
       delete process.env.STRIPE_TEMPLATE_HOBBY_PRICE_ID
 

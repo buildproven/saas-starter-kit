@@ -15,58 +15,20 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Check, Star, ArrowRight, Code, Zap, Shield } from 'lucide-react'
+import {
+  TEMPLATE_PACKAGE_IDS,
+  TEMPLATE_PACKAGES,
+  type TemplatePackage,
+} from '@/lib/template-sales/packages'
 
-const packages = [
-  {
-    id: 'hobby',
-    name: 'Hobby',
-    price: '$99',
-    description: 'Perfect for solo developers and small projects',
-    features: [
-      'Complete Next.js 14 SaaS template',
-      'Authentication & authorization system',
-      'Multi-tenant architecture',
-      'Basic Stripe billing integration',
-      'Comprehensive documentation',
-      'Community support',
-      'Lifetime updates',
-    ],
-    popular: false,
-    badge: 'Starter',
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: '$249',
-    description: 'For serious developers and growing teams',
-    features: [
-      'Everything in Hobby',
-      'White-label customization rights',
-      'Video tutorials & walkthroughs',
-      'Priority email support',
-      'GitHub repository access',
-    ],
-    popular: true,
-    badge: 'Most Popular',
-  },
-  {
-    id: 'director',
-    name: 'Director',
-    price: '$399',
-    description: 'For founders who want extra support',
-    features: [
-      'Everything in Pro',
-      '3 months Vibe Lab Pro access',
-      '1-hour consultation call',
-      'Priority support',
-    ],
-    popular: false,
-    badge: 'Premium',
-  },
-]
+const packages = TEMPLATE_PACKAGE_IDS.map((id) => ({
+  ...TEMPLATE_PACKAGES[id],
+  popular: id === 'pro',
+  badge: id === 'hobby' ? 'Starter' : id === 'pro' ? 'Most Popular' : 'Premium',
+}))
 
 export default function TemplatePurchasePage() {
-  const [selectedPackage, setSelectedPackage] = useState<string>('pro')
+  const [selectedPackage, setSelectedPackage] = useState<TemplatePackage>('pro')
   const [formData, setFormData] = useState({
     email: '',
     companyName: '',
@@ -172,7 +134,7 @@ export default function TemplatePurchasePage() {
                 <CardDescription>{pkg.description}</CardDescription>
                 <div className="mt-4">
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-3xl font-bold text-blue-600">{pkg.price}</span>
+                    <span className="text-3xl font-bold text-blue-600">{pkg.displayPrice}</span>
                   </div>
                   <p className="text-sm text-gray-500 mt-1">One-time payment</p>
                 </div>
@@ -208,7 +170,7 @@ export default function TemplatePurchasePage() {
             </CardTitle>
             <CardDescription>
               You&apos;ve selected the <strong>{selectedPkg?.name}</strong> for{' '}
-              <strong>{selectedPkg?.price}</strong>
+              <strong>{selectedPkg?.displayPrice}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -240,7 +202,7 @@ export default function TemplatePurchasePage() {
             <div className="space-y-2">
               <Label htmlFor="github">
                 GitHub Username{' '}
-                {selectedPackage !== 'basic' && (
+                {selectedPackage !== 'hobby' && (
                   <span className="text-gray-500 font-normal">(required for repo access)</span>
                 )}
               </Label>
@@ -253,9 +215,8 @@ export default function TemplatePurchasePage() {
                 spellCheck={false}
               />
               <p className="text-sm text-gray-500">
-                Used to grant repository access for Pro/Enterprise packages. If you are purchasing
-                for a teammate, enter their GitHub username. Leave blank to invite via email
-                instead.
+                Used to grant repository access for Pro/Director packages. If you are purchasing for
+                a teammate, enter their GitHub username. Leave blank to invite via email instead.
               </p>
             </div>
 
@@ -298,7 +259,7 @@ export default function TemplatePurchasePage() {
                 'Processing...'
               ) : (
                 <>
-                  Purchase {selectedPkg?.name} for {selectedPkg?.price}
+                  Purchase {selectedPkg?.name} for {selectedPkg?.displayPrice}
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </>
               )}

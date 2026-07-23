@@ -1,7 +1,7 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
 import Image from 'next/image'
+import { useAuth } from '@/lib/hooks/useAuth'
 
 interface UserProfileProps {
   className?: string
@@ -9,9 +9,9 @@ interface UserProfileProps {
 }
 
 export function UserProfile({ className = '', showEmail = true }: UserProfileProps) {
-  const { data: session, status } = useSession()
+  const { user, isLoading } = useAuth()
 
-  if (status === 'loading') {
+  if (isLoading) {
     return (
       <div className={`animate-pulse flex items-center space-x-3 ${className}`}>
         <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
@@ -23,11 +23,9 @@ export function UserProfile({ className = '', showEmail = true }: UserProfilePro
     )
   }
 
-  if (!session?.user) {
+  if (!user) {
     return null
   }
-
-  const { user } = session
 
   return (
     <div className={`flex items-center space-x-3 ${className}`}>
