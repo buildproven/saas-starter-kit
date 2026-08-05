@@ -3,7 +3,7 @@
 [![CI/CD](https://github.com/buildproven/saas-starter-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/buildproven/saas-starter-kit/actions/workflows/ci.yml)
 [![Quality Checks](https://github.com/buildproven/saas-starter-kit/actions/workflows/quality.yml/badge.svg)](https://github.com/buildproven/saas-starter-kit/actions/workflows/quality.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![Node.js](https://img.shields.io/badge/node-%3E%3D22-brightgreen)](./package.json)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D24.18.0%20%3C25-brightgreen)](./package.json)
 
 A batteries-included SaaS foundation built with Next.js 16 (App Router), Prisma, and Stripe-ready billing flows. Launch multi-tenant products with authentication, RBAC, subscriptions, and modern DX defaults already wired together.
 
@@ -61,7 +61,7 @@ For commercial packages and pricing, visit [buildproven.ai](https://buildproven.
 
 ### Prerequisites
 
-- Node.js >= 22 (see the `engines` field in `package.json`)
+- Node.js >= 24.18.0 and < 25 (see the `engines` field in `package.json`)
 - PostgreSQL 14+ (local or managed)
 - npm >= 10
 - Stripe + Sentry credentials (optional in local dev)
