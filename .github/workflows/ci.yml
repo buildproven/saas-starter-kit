@@ -94,6 +94,30 @@ jobs:
       - name: CodeQL analyze
         uses: github/codeql-action/analyze@v3
 
+  # Branch protection requires this stable aggregate check name.  It is
+  # intentionally fail-closed: a skipped PR-only security job is acceptable
+  # on push, but a failed or skipped quality job is never reported as green.
+  summary:
+    name: summary
+    needs: [quality, security]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required CI jobs
+        env:
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          SECURITY_RESULT: ${{ needs.security.result }}
+        run: |
+          if [ "$QUALITY_RESULT" != "success" ]; then
+            echo "::error::quality completed with $QUALITY_RESULT"
+            exit 1
+          fi
+
+          if [ "$SECURITY_RESULT" != "success" ] && [ "$SECURITY_RESULT" != "skipped" ]; then
+            echo "::error::security completed with $SECURITY_RESULT"
+            exit 1
+          fi
+
   deploy:
     needs: [quality]
     # Opt-in: set repo variable ENABLE_VERCEL_DEPLOY=true and configure
