@@ -1,5 +1,5 @@
 # Dependabot configuration — optimized to reduce CI minutes
-# Monthly updates, grouped aggressively, limited PRs
+# Monthly updates, grouped by risk and dependency type, limited PRs
 
 version: 2
 updates:
@@ -19,9 +19,20 @@ updates:
       - dependency-name: 'eslint'
         update-types: ['version-update:semver-major']
     groups:
-      all-dependencies:
+      production-minor-and-patch:
+        dependency-type: 'production'
         patterns:
           - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+      development-minor-and-patch:
+        dependency-type: 'development'
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
 
   - package-ecosystem: 'github-actions'
     directory: '/'
