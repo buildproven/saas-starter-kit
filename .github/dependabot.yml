@@ -18,6 +18,12 @@ updates:
     ignore:
       - dependency-name: 'eslint'
         update-types: ['version-update:semver-major']
+      # Prettier minor releases can change formatting output. Upgrade them in a
+      # dedicated migration that reformats and validates the repository.
+      - dependency-name: 'prettier'
+        update-types:
+          - 'version-update:semver-minor'
+          - 'version-update:semver-major'
     groups:
       production-minor-and-patch:
         dependency-type: 'production'
