@@ -6,13 +6,13 @@ This guide covers installing, configuring, and running the SaaS Starter Kit.
 
 ## Prerequisites
 
-| Requirement      | Version                           |
-| ---------------- | --------------------------------- |
-| Node.js          | >= 20 (Volta `.nvmrc` provided)   |
-| npm              | >= 10                             |
-| PostgreSQL       | 14+ (local or managed, e.g. Neon) |
-| Stripe account   | Required for billing              |
-| Supabase project | Required for auth                 |
+| Requirement      | Version                                       |
+| ---------------- | --------------------------------------------- |
+| Node.js          | >= 24.18.0 and < 25 (Volta `.nvmrc` provided) |
+| npm              | >= 10                                         |
+| PostgreSQL       | 14+ (local or managed, e.g. Neon)             |
+| Stripe account   | Required for billing                          |
+| Supabase project | Required for auth                             |
 
 ---
 
