@@ -107,15 +107,20 @@ jobs:
         env:
           QUALITY_RESULT: ${{ needs.quality.result }}
           SECURITY_RESULT: ${{ needs.security.result }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ "$QUALITY_RESULT" != "success" ]; then
             echo "::error::quality completed with $QUALITY_RESULT"
             exit 1
           fi
 
-          if [ "$SECURITY_RESULT" != "success" ] && [ "$SECURITY_RESULT" != "skipped" ]; then
-            echo "::error::security completed with $SECURITY_RESULT"
-            exit 1
+          if [ "$SECURITY_RESULT" != "success" ]; then
+            if [ "$SECURITY_RESULT" = "skipped" ] && [ "$EVENT_NAME" = "push" ]; then
+              echo "::notice::security skipped on push"
+            else
+              echo "::error::security completed with $SECURITY_RESULT"
+              exit 1
+            fi
           fi
 
   deploy:
