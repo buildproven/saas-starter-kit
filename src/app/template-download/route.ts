@@ -35,8 +35,7 @@ type ValidatedCustomer = TemplateSaleCustomerModel & {
 }
 
 type TokenValidationResult =
-  | { valid: true; customer: ValidatedCustomer }
-  | { valid: false; error: string; status: number }
+  { valid: true; customer: ValidatedCustomer } | { valid: false; error: string; status: number }
 
 // GET /template-download?token=...&format=zip
 export async function GET(request: NextRequest) {
