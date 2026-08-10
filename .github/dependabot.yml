@@ -8,8 +8,6 @@ updates:
     schedule:
       interval: 'monthly'
     open-pull-requests-limit: 2
-    labels:
-      - 'dependencies'
     commit-message:
       prefix: 'chore(deps)'
       include: 'scope'
@@ -23,6 +21,11 @@ updates:
       - dependency-name: 'prettier'
         update-types:
           - 'version-update:semver-minor'
+          - 'version-update:semver-major'
+      # stylelint-config-standard 40 requires stylelint 17. Upgrade both in a
+      # dedicated migration instead of creating an unresolvable Dependabot PR.
+      - dependency-name: 'stylelint-config-standard'
+        update-types:
           - 'version-update:semver-major'
     groups:
       production-minor-and-patch:
@@ -45,8 +48,5 @@ updates:
     schedule:
       interval: 'monthly'
     open-pull-requests-limit: 1
-    labels:
-      - 'dependencies'
-      - 'github-actions'
     commit-message:
       prefix: 'ci'
