@@ -1,7 +1,7 @@
 import { mkdir, stat } from 'fs/promises'
 import { createWriteStream, type Stats } from 'fs'
 import path from 'path'
-import archiver from 'archiver'
+import { TarArchive, ZipArchive } from 'archiver'
 
 interface TierConfig {
   name: string
@@ -63,7 +63,7 @@ async function createArchive(tier: TierConfig, format: 'zip' | 'tar') {
   const fileName = `saas-starter-${tier.name}-v${version}.${extension}`
   const outputPath = path.join(outputDir, fileName)
   const output = createWriteStream(outputPath)
-  const archive = archiver(format, format === 'tar' ? { gzip: true } : undefined)
+  const archive = format === 'tar' ? new TarArchive({ gzip: true }) : new ZipArchive()
 
   archive.pipe(output)
 

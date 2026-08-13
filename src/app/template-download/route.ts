@@ -239,7 +239,7 @@ async function generateTemplateDownload(params: {
     const { PassThrough } = await import('stream')
 
     const templateBasePath = process.env.TEMPLATE_FILES_PATH || './template-files'
-    const archive = archiver.default(format as 'zip' | 'tar')
+    const archive = format === 'tar' ? new archiver.TarArchive() : new archiver.ZipArchive()
     const passThrough = new PassThrough()
     const chunks: Buffer[] = []
 
