@@ -6,5 +6,6 @@
     "test": "npm test"
   },
   "testCommand": "npm test",
-  "dailyBudgetUsd": 5
+  "dailyBudgetUsd": 5,
+  "install": "npm ci"
 }
