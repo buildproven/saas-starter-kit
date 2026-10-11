@@ -89,14 +89,14 @@ Read docs/dev_guide/CONVENTIONS.md
 Before implementing anything spanning multiple files:
 
 ```text
-/bs:plan <feature-name>
+Use plan mode; save the plan to docs/plans/<feature-name>.md
 ```
 
 ### Session Handoff
 
 ```text
-/bs:context --save   # before ending session
-/bs:context --resume # at start of new session
+/handoff save   # before ending session (pushes the branch, leaves a note on its PR)
+/handoff resume # at start of new session, on any computer or in the cloud
 ```
 
 ---
